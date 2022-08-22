@@ -11,6 +11,21 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "incremental": true,
-    "skipLibCheck": true
-  }
+    "skipLibCheck": true,
+    "paths": {
+      "@tookey/database": [
+        "libs/database/src"
+      ],
+      "@tookey/database/*": [
+        "libs/database/src/*"
+      ],
+      "@tookey/access": [
+        "libs/access/src"
+      ],
+      "@tookey/access/*": [
+        "libs/access/src/*"
+      ]
+    }
+  },
+  "reflection": true
 }

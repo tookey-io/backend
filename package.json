@@ -1,5 +1,5 @@
 {
-  "name": "nest-typescript-starter",
+  "name": "@tookey/backend",
   "private": true,
   "version": "1.0.0",
   "description": "Nest TypeScript starter repository",
@@ -7,7 +7,7 @@
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
@@ -17,18 +17,29 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./apps/app/test/jest-e2e.json"
   },
   "dependencies": {
     "@nestjs/common": "^9.0.0",
+    "@nestjs/config": "^2.2.0",
     "@nestjs/core": "^9.0.0",
     "@nestjs/passport": "^9.0.0",
     "@nestjs/platform-express": "^9.0.0",
+    "@nestjs/typeorm": "^9.0.1",
+    "cache-manager": "^4.1.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.13.2",
+    "crypto": "^1.0.1",
+    "nestjs-telegraf": "^2.6.0",
     "passport": "^0.6.0",
     "passport-headerapikey": "^1.2.2",
+    "pg": "^8.7.3",
+    "qrcode": "^1.5.1",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
-    "rxjs": "^7.5.5"
+    "rxjs": "^7.5.5",
+    "telegraf": "^4.8.6",
+    "typeorm": "^0.3.7"
   },
   "devDependencies": {
     "@nestjs/cli": "^9.0.0",
@@ -37,6 +48,7 @@
     "@types/express": "^4.17.13",
     "@types/jest": "^28.1.4",
     "@types/node": "^18.0.3",
+    "@types/qrcode": "^1.5.0",
     "@types/supertest": "^2.0.12",
     "@typescript-eslint/eslint-plugin": "^5.30.5",
     "@typescript-eslint/parser": "^5.30.5",
@@ -59,7 +71,7 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
@@ -67,7 +79,15 @@
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "coverageDirectory": "./coverage",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/apps/",
+      "<rootDir>/libs/"
+    ],
+    "moduleNameMapper": {
+      "^@tookey/database(|/.*)$": "<rootDir>/libs/database/src/$1",
+      "^@app/access(|/.*)$": "<rootDir>/libs/access/src/$1"
+    }
   }
 }
