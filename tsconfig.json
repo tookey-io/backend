@@ -24,6 +24,12 @@
       ],
       "@tookey/access/*": [
         "libs/access/src/*"
+      ],
+      "@tookey/amqp": [
+        "libs/amqp/src"
+      ],
+      "@tookey/amqp/*": [
+        "libs/amqp/src/*"
       ]
     }
   },

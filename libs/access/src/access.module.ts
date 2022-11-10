@@ -1,13 +1,11 @@
 import { Module } from '@nestjs/common';
-import { AccessTokenRepository } from '@tookey/database/entities/token.entity';
-import { TypeOrmExModule } from '@tookey/database/typeorm-ex-module';
+import { AccessTokenRepository, TypeOrmExModule } from '@tookey/database';
+
 import { AccessService } from './access.service';
 
 @Module({
-  imports: [
-    TypeOrmExModule.forCustomRepository([AccessTokenRepository])
-  ],
+  imports: [TypeOrmExModule.forCustomRepository([AccessTokenRepository])],
   providers: [AccessService],
   exports: [AccessService],
 })
-export class AccessModule { }
+export class AccessModule {}

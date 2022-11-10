@@ -1,3 +1,3 @@
 export type AccessConfig = {
-    defaultTtl: number
-}
+  defaultTtl: number;
+};

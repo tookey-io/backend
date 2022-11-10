@@ -1,34 +1,40 @@
-import { Module } from '@nestjs/common';
-import { UserRepository } from '@tookey/database/entities/user.entity';
-import { TypeOrmExModule } from '@tookey/database/typeorm-ex-module';
 import { TelegrafModule } from 'nestjs-telegraf';
-import { BotUpdate } from './bot.update';
+
+import { Module } from '@nestjs/common';
+import { AccessModule } from '@tookey/access';
+import {
+  TypeOrmExModule,
+  UserRepository,
+  UserTelegramRepository,
+} from '@tookey/database';
+
 import { BotService } from './bot.service';
+import { BotUpdate } from './bot.update';
+import { DefaultStateMiddleware } from './middlewares/default-state.middleware';
 import { TelegramUserMiddleware } from './middlewares/telegram-user.middleware';
 import { KeysScene } from './scenes/keys.scene';
 import { MenuScene } from './scenes/menu.scene';
-import { DefaultStateMiddleware } from './middlewares/default-state.middleware';
-import { AccessModule } from 'libs/access/src';
-
-@Module({
-  imports: [
-    TypeOrmExModule.forCustomRepository([UserRepository])
-  ],
-  providers: [TelegramUserMiddleware, DefaultStateMiddleware],
-  exports: [TelegramUserMiddleware, DefaultStateMiddleware]
-})
-export class TelegrafUnderlyingModule { }
 
 @Module({
   imports: [
     AccessModule,
-    TypeOrmExModule.forCustomRepository([UserRepository]),
+    TypeOrmExModule.forCustomRepository([
+      UserRepository,
+      UserTelegramRepository,
+    ]),
     TelegrafModule.forRootAsync({
       useClass: BotService,
       imports: [BotModule],
-    })
+    }),
   ],
   exports: [TelegramUserMiddleware, DefaultStateMiddleware],
-  providers: [TelegramUserMiddleware, DefaultStateMiddleware, BotService, BotUpdate, MenuScene, KeysScene],
+  providers: [
+    TelegramUserMiddleware,
+    DefaultStateMiddleware,
+    BotService,
+    BotUpdate,
+    MenuScene,
+    KeysScene,
+  ],
 })
-export class BotModule { }
+export class BotModule {}

@@ -1,30 +1,39 @@
+import * as crypto from 'crypto';
+import { addMilliseconds, compareAsc } from 'date-fns';
+
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AccessTokenRepository } from '@tookey/database/entities/token.entity';
-import { User } from '@tookey/database/entities/user.entity';
-import * as crypto from 'crypto';
+import { AccessTokenRepository, User } from '@tookey/database';
+
 import { AccessConfig } from './access.types';
 
 @Injectable()
 export class AccessService {
-    constructor(
-        private readonly config: ConfigService<AccessConfig>,
-        private readonly tokens: AccessTokenRepository
-    ) {}
+  constructor(
+    private readonly config: ConfigService<AccessConfig>,
+    private readonly accessTokens: AccessTokenRepository,
+  ) {}
 
-    async getAccessToken(user: User) {
-        const found = await this.tokens.getByUserId(user.id)
-        if (found && found.validUntil.getTime() > Date.now()) {
-            return found
-        } else {
-            const token = crypto.randomBytes(32).toString('hex')
-            const accessToken = this.tokens.create({
-                token,
-                user,
-                validUntil: Date.now() + this.config.get("defaultTtl", { infer: true })
-            })
+  async getAccessToken(user: User) {
+    const found = await this.accessTokens.getByUserId(user.id);
+    if (found && compareAsc(found.validUntil, new Date())) return found;
 
-            return accessToken
-        }
-    }
+    const accessToken = this.accessTokens.create({
+      user,
+      token: crypto.randomBytes(32).toString('hex'),
+      validUntil: addMilliseconds(
+        new Date(),
+        this.config.get('defaultTtl', { infer: true }),
+      ),
+    });
+
+    await this.accessTokens.createOrUpdateOne(accessToken);
+
+    return accessToken;
+  }
+
+  async isValidToken(token: string): Promise<boolean> {
+    const count = await this.accessTokens.countBy({ token });
+    return count > 0;
+  }
 }

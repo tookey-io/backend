@@ -1,64 +1,73 @@
-import { UserRepository } from '@tookey/database/entities/user.entity';
-import { Action, Ctx, Scene, SceneEnter, SceneLeave, Sender } from 'nestjs-telegraf';
+import { Ctx, Scene, SceneEnter, SceneLeave, Sender } from 'nestjs-telegraf';
 import { Markup } from 'telegraf';
 import * as tg from 'telegraf/types';
+
+import { Logger } from '@nestjs/common';
+import { UserRepository } from '@tookey/database';
+
 import { TookeyContext } from '../bot.types';
 import { KeysScene } from './keys.scene';
 import { storeMsgFn } from './scene.utils';
 
-@Scene(MenuScene.ID)
+@Scene(MenuScene.name)
 export class MenuScene {
-    static ID = 'menu'
+  private readonly logger = new Logger(MenuScene.name);
 
-    constructor(private readonly users: UserRepository) { }
+  constructor(private readonly users: UserRepository) {}
 
-    @SceneLeave()
-    async onLeave(@Ctx() ctx: TookeyContext) {
+  @SceneEnter()
+  async onSceneEnter(@Ctx() ctx: TookeyContext, @Sender() from: tg.User) {
+    this.logger.log('onSceneEnter');
+    this.logger.log(ctx.scene.state);
 
-    }
+    const storeId = storeMsgFn(ctx);
+    const userTelegram = ctx.user;
 
-    @SceneEnter()
-    async onSceneEnter(@Ctx() ctx: TookeyContext, @Sender() from: tg.User) {
-        console.log(ctx.scene.state)
+    // const messages: number[] = [];
 
-        const storeId = storeMsgFn(ctx)
-        const user = ctx.user;
+    if (userTelegram.user.isFresh) {
+      storeId(
+        await ctx.replyWithHTML(
+          [
+            `<b>Hi, ${from.first_name}!</b>`,
+            ``,
+            `<b>Tookey</b> (2K in short) is security protocol designed to protect DeFi and Web3 from private key disclosure threats, inducting distributed key management and signing system`,
+          ].join('\n'),
+          Markup.inlineKeyboard([
+            Markup.button.url('🔗 Official Website', 'tookey.io'),
+            Markup.button.url('🔗 Documentation', 'tookey.io/docs'),
+          ]),
+        ),
+      );
 
-        const messages: number[] = [];
-
-        if (user.isFresh) {
-            storeId(await ctx.replyWithHTML(
+      await this.unfresh(ctx);
+    } else {
+      storeId(
+        await ctx.replyWithHTML(
+          `Hi, ${from.first_name}!`,
+          !userTelegram.user.isFresh
+            ? undefined
+            : Markup.inlineKeyboard([
                 [
-                    `<b>Hi, ${from.first_name}!</b>`,
-                    ``,
-                    `<b>Tookey</b> (2K in short) is security protocol designed to protect DeFi and Web3 from private key disclosure threats, inducting distributed key management and signing system`,
-                ].join('\n'),
-                Markup.inlineKeyboard([
-                    Markup.button.url('🔗 Official Website', 'tookey.io'),
-                    Markup.button.url('🔗 Documentation', 'tookey.io/docs'),
-                ]),
-            ));
-
-            await this.unfresh(ctx);
-        } else {
-            storeId(await ctx.replyWithHTML(
-                `Hi, ${from.first_name}!`,
-                !user.isFresh
-                    ? undefined
-                    : Markup.inlineKeyboard([
-                        [
-                            Markup.button.url('🔗 Official Website', 'tookey.io'),
-                            Markup.button.url('🔗 Documentation', 'tookey.io/docs'),
-                        ],
-                    ]),
-            ));
-        }
-
-        await ctx.scene.enter(KeysScene.ID, ctx.scene.state)
+                  Markup.button.url('🔗 Official Website', 'tookey.io'),
+                  Markup.button.url('🔗 Documentation', 'tookey.io/docs'),
+                ],
+              ]),
+        ),
+      );
     }
 
-    private async unfresh(ctx: TookeyContext) {
-        ctx.user.fresh = false;
-        await this.users.save(ctx.user);
-    }
+    await ctx.scene.enter(KeysScene.name, ctx.scene.state);
+  }
+
+  @SceneLeave()
+  async onSceneLeave(@Ctx() ctx: TookeyContext) {
+    this.logger.log('onSceneLeave');
+    this.logger.log(ctx.scene.state);
+  }
+
+  private async unfresh(ctx: TookeyContext) {
+    ctx.user.user.fresh = false;
+    await this.users.save(ctx.user);
+  }
 }

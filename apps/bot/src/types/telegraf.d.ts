@@ -1,11 +1,8 @@
-import { User } from '@tookey/database/entities/user.entity'
-import { Context } from 'telegraf'
+import { UserTelegram } from '@tookey/database';
 
 declare module 'telegraf' {
   export interface Context {
-    foo: string
-    user: User
-    // dbuser: User
+    user: UserTelegram;
     // i18n: I18N
   }
 }

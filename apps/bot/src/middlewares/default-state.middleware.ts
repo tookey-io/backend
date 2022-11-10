@@ -1,14 +1,15 @@
-import { Injectable } from "@nestjs/common";
-import { MiddlewareFn, Context } from "telegraf";
-import { Update } from "telegraf/types";
-import { TelegrafMiddleware, TookeyContext } from "../bot.types";
+import { Injectable, Logger } from '@nestjs/common';
+
+import { TelegrafMiddleware, TookeyContext } from '../bot.types';
 
 @Injectable()
 export class DefaultStateMiddleware implements TelegrafMiddleware {
-    async use(ctx: TookeyContext, next: () => Promise<void>) {
-        console.log(ctx)
-        // ctx.session.state.messages ??= []
+  private readonly logger = new Logger(DefaultStateMiddleware.name);
 
-        await next()
-    }
+  async use(ctx: TookeyContext, next: () => Promise<void>) {
+    this.logger.debug(ctx.update);
+    // ctx.session.state.messages ??= []
+
+    await next();
+  }
 }

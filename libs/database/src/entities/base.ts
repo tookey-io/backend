@@ -1,24 +1,29 @@
+import { Exclude } from 'class-transformer';
 import {
-    CreateDateColumn,
-    DeleteDateColumn,
-    PrimaryGeneratedColumn,
-    UpdateDateColumn,
-    VersionColumn
+  CreateDateColumn,
+  DeleteDateColumn,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+  VersionColumn,
 } from 'typeorm';
 
 export abstract class MetaEntity {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @CreateDateColumn()
-    createdAt: Date;
+  @Exclude()
+  @CreateDateColumn()
+  createdAt: Date;
 
-    @UpdateDateColumn()
-    updatedAt: Date;
+  @Exclude()
+  @UpdateDateColumn()
+  updatedAt: Date;
 
-    @DeleteDateColumn()
-    deletedAt?: Date;
+  @Exclude()
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 
-    @VersionColumn()
-    revision: number;
+  @Exclude()
+  @VersionColumn()
+  revision: number;
 }
