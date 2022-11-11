@@ -10,7 +10,7 @@ import {
   Repository,
 } from 'typeorm';
 
-import { Status } from '../database.types';
+import { TaskStatus } from '../database.types';
 import { CustomRepository } from '../typeorm-ex.decorator';
 import { MetaEntity } from './base';
 import { KeyParticipant } from './key-participant.entity';
@@ -56,8 +56,8 @@ export class Key extends MetaEntity {
   participants: KeyParticipant[];
 
   @Index()
-  @Column({ type: 'enum', enum: Status, default: Status.Created })
-  status: Status;
+  @Column({ type: 'enum', enum: TaskStatus, default: TaskStatus.Created })
+  status: TaskStatus;
 
   @Column({ type: 'int', unsigned: true, array: true, default: [] })
   participantsActive: number[];

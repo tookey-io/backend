@@ -8,7 +8,7 @@ import {
   Repository,
 } from 'typeorm';
 
-import { Status } from '../database.types';
+import { TaskStatus } from '../database.types';
 import { CustomRepository } from '../typeorm-ex.decorator';
 import { MetaEntity } from './base';
 import { Key } from './key.entity';
@@ -35,8 +35,8 @@ export class Sign extends MetaEntity {
   metadata: any;
 
   @Index()
-  @Column({ type: 'enum', enum: Status, default: Status.Created })
-  status: Status;
+  @Column({ type: 'enum', enum: TaskStatus, default: TaskStatus.Created })
+  status: TaskStatus;
 
   @Column({ type: 'varchar', nullable: true })
   result: string;

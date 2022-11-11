@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   Post,
   Query,
   UseGuards,
@@ -39,6 +40,8 @@ import { KeyService } from './keys.service';
 // @ApiUnauthorizedResponse()
 @UseInterceptors(ClassSerializerInterceptor)
 export class KeyController {
+  private readonly logger = new Logger(KeyController.name);
+
   constructor(private readonly keysService: KeyService) {}
 
   @ApiOperation({ description: 'Create Key' })
@@ -77,7 +80,15 @@ export class KeyController {
     routingKey: 'backend',
     queue: 'backend',
   })
-  amqpSubscribe(@AmqpPayload() payload: AmqpPayloadDto): void {
-    this.keysService.amqpSubscribe(payload);
+  amqpSubscribe(@AmqpPayload() payload: AmqpPayloadDto): Promise<void> {
+    if (payload.action === 'keygen_status') {
+      return this.keysService.handleKeygenStatusUpdate(payload);
+    }
+
+    if (payload.action === 'sign_status') {
+      return this.keysService.handleSignStatusUpdate(payload);
+    }
+
+    this.logger.log('Unknown action', JSON.stringify(payload, undefined, 2));
   }
 }

@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Status } from '@tookey/database';
+import { TaskStatus } from '@tookey/database';
 
 @Exclude()
 export class KeyDto {
@@ -198,8 +198,8 @@ export class AmqpPayloadDto {
   active_indexes: number[];
 
   @ApiProperty()
-  @IsEnum(Status)
-  status: Status;
+  @IsEnum(TaskStatus)
+  status: TaskStatus;
 
   @ApiPropertyOptional()
   @ValidateIf(({ action }: AmqpPayloadDto) => action === 'keygen_status')

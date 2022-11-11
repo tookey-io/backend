@@ -11,7 +11,7 @@ export type DatabaseConfig = {
   isProduction: boolean;
 };
 
-export enum Status {
+export enum TaskStatus {
   Created = 'created',
   Started = 'started',
   Finished = 'finished',

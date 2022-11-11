@@ -6,7 +6,7 @@ import {
   KeyParticipantRepository,
   KeyRepository,
   SignRepository,
-  Status,
+  TaskStatus,
   UserRepository,
 } from '@tookey/database';
 
@@ -119,45 +119,49 @@ export class KeyService {
     return new SignDto(sign);
   }
 
-  async amqpSubscribe(payload: AmqpPayloadDto): Promise<void> {
-    this.logger.log('Amqp message', JSON.stringify(payload, undefined, 2));
-
-    if (payload.action === 'keygen_status') {
+  async handleKeygenStatusUpdate(payload: AmqpPayloadDto): Promise<void> {
+    try {
       const key = await this.keys.findOneBy({ roomId: payload.room_id });
 
       key.status = payload.status;
 
-      if (key.status === Status.Started) {
+      if (key.status === TaskStatus.Started) {
         key.participantsActive = payload.active_indexes;
       }
 
-      if (key.status === Status.Finished) {
+      if (key.status === TaskStatus.Finished) {
         key.participantsActive = payload.active_indexes;
         key.publicKey = payload.public_key;
       }
 
-      this.logger.log('Status', key.status);
-
       await this.keys.createOrUpdateOne(key);
-    }
 
-    if (payload.action === 'sign_status') {
+      this.logger.log('Keygen status update', key.status);
+    } catch (error) {
+      this.logger.error('Keygen status update fail', error);
+    }
+  }
+
+  async handleSignStatusUpdate(payload: AmqpPayloadDto): Promise<void> {
+    try {
       const sign = await this.signs.findOneBy({ roomId: payload.room_id });
 
       sign.status = payload.status;
 
-      if (sign.status === Status.Started) {
+      if (sign.status === TaskStatus.Started) {
         sign.participantsConfirmations = payload.active_indexes;
       }
 
-      if (sign.status === Status.Finished) {
+      if (sign.status === TaskStatus.Finished) {
         sign.participantsConfirmations = payload.active_indexes;
         sign.result = payload.result;
       }
 
-      this.logger.log('Status', sign.status);
-
       await this.signs.createOrUpdateOne(sign);
+
+      this.logger.log('Sign status update', sign.status);
+    } catch (error) {
+      this.logger.error('Sign status update fail', error);
     }
   }
 }
