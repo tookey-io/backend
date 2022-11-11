@@ -22,6 +22,9 @@ export class Key extends MetaEntity {
   @JoinColumn()
   user: User;
 
+  @Column()
+  userId: number;
+
   @Index()
   @Column({ type: 'varchar' })
   roomId: string;

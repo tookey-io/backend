@@ -16,32 +16,26 @@ export class TelegramUserMiddleware implements TelegrafMiddleware {
   ) {}
 
   async use(ctx: Context, next: () => Promise<void>) {
-    this.logger.debug(ctx.update);
-
     const telegramId = this.getTelegramId(ctx);
     const userTelegram = await this.telegramUsers.findOneBy({ telegramId });
 
     if (userTelegram) {
       this.logger.debug('telegram user exists');
 
-      const { user } = userTelegram;
+      ctx.user = userTelegram;
 
+      const { user } = userTelegram;
       if (differenceInSeconds(user.lastInteraction, new Date()) > 10) {
         user.fresh = true;
       }
-
       user.lastInteraction = new Date();
-
-      // TODO: transaction
-      await this.telegramUsers.createOrUpdateOne(userTelegram);
-      await this.users.createOrUpdateOne(user);
-
-      ctx.user = userTelegram;
+      this.users.createOrUpdateOne(user);
     } else {
       this.logger.debug('new telegram user');
 
       // TODO: transaction
-      const user = await this.users.createOrUpdateOne({});
+      const parent = await this.users.findRoot();
+      const user = await this.users.createOrUpdateOne({ parent });
       const userTelegram = await this.telegramUsers.createOrUpdateOne({
         telegramId,
         chatId: ctx.chat.id,

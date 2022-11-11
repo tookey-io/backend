@@ -44,6 +44,11 @@ export class User extends MetaEntity {
 
 @CustomRepository(User)
 export class UserRepository extends TreeRepository<User> {
+  async findRoot(): Promise<User> {
+    const users = await this.findRoots();
+    return users[0];
+  }
+
   createOrUpdateOne(
     entityLike: DeepPartial<User>,
     entityManager?: EntityManager,

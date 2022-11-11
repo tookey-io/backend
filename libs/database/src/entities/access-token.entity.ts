@@ -4,8 +4,7 @@ import {
   Entity,
   EntityManager,
   Index,
-  JoinColumn,
-  OneToOne,
+  ManyToOne,
   Repository,
 } from 'typeorm';
 
@@ -15,8 +14,7 @@ import { User } from './user.entity';
 
 @Entity()
 export class AccessToken extends MetaEntity {
-  @OneToOne(() => User)
-  @JoinColumn()
+  @ManyToOne(() => User)
   user: User;
 
   @Index({ unique: true })

@@ -19,11 +19,11 @@ export class UserTelegram extends MetaEntity {
   @JoinColumn()
   user: User;
 
-  @Column({ unique: true })
+  @Column({ type: 'bigint', unique: true })
   @Index({ unique: true })
   telegramId: number;
 
-  @Column({ unique: true, nullable: true })
+  @Column({ type: 'bigint', unique: true, nullable: true })
   @Index()
   chatId: number;
 }
