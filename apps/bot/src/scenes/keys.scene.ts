@@ -12,12 +12,16 @@ import * as tg from 'telegraf/types';
 
 import { Logger } from '@nestjs/common';
 import { AccessService } from '@tookey/access';
+import { Key, KeyRepository } from '@tookey/database';
 
 import { TookeyContext } from '../bot.types';
+import { getPagination } from '../bot.utils';
 
 @Scene(KeysScene.name)
 export class KeysScene {
   private readonly logger = new Logger(KeysScene.name);
+
+  private userKeys: Record<string, Pick<Key, 'id' | 'name'>[]> = {};
 
   private newKeysKeyboard = () =>
     Markup.inlineKeyboard([
@@ -27,28 +31,52 @@ export class KeysScene {
       ],
     ]);
 
-  private manageKeysKeyboard = (keys: any[]) =>
-    Markup.inlineKeyboard(
-      [1, 2, 3, 4].map((id) => [
-        Markup.button.callback(`🔑 Key #${id + 1}`, `manage:${id}`),
-      ]),
+  private manageKeysKeyboard = (
+    keys: Pick<Key, 'id' | 'name'>[],
+    currentPage = 1,
+    pageSize = 5,
+  ) => {
+    const totalPages = Math.ceil(keys.length / pageSize);
+
+    const items = keys.slice(
+      (currentPage - 1) * pageSize,
+      currentPage * pageSize,
     );
+
+    const getKeyTitle = (key: Pick<Key, 'id' | 'name'>) =>
+      key.name ? `🔑 Key #${key.id} (${key.name})` : `🔑 Key #${key.id}`;
+
+    return Markup.inlineKeyboard([
+      ...items.map((key) => [
+        Markup.button.callback(getKeyTitle(key), `manage:${key.id}`),
+      ]),
+      getPagination(currentPage, totalPages).map(({ text, data }) =>
+        Markup.button.callback(text, `pagination:${data}`),
+      ),
+    ]);
+  };
 
   constructor(
     @InjectBot() private readonly bot: Telegraf<TookeyContext>,
     private readonly accessService: AccessService,
+    private readonly keys: KeyRepository,
   ) {}
 
   @SceneEnter()
   async onSceneEnter(@Ctx() ctx: TookeyContext, @Sender() from: tg.User) {
     this.logger.log('onSceneEnter');
-    this.logger.log(ctx.scene.state);
 
     const userTelegram = ctx.user;
+    const { user } = userTelegram;
 
-    this.logger.log(userTelegram.user);
+    const keys = await this.keys.find({
+      where: { userId: user.id },
+      select: { id: true, name: true },
+    });
 
-    if (!userTelegram.user.keys || !userTelegram.user.keys.length) {
+    this.userKeys[from.id] = keys;
+
+    if (!keys.length) {
       await ctx.replyWithHTML(
         [
           '<b>You have no keys yet!</b>',
@@ -61,7 +89,7 @@ export class KeysScene {
     } else {
       await ctx.replyWithHTML(
         `Select a key to manage:`,
-        this.manageKeysKeyboard(userTelegram.user.keys),
+        this.manageKeysKeyboard(this.userKeys[from.id]),
       );
 
       await ctx.replyWithHTML(
@@ -74,7 +102,6 @@ export class KeysScene {
   @Action(/create/)
   async onCreate(@Ctx() ctx: TookeyContext) {
     this.logger.log('onCreate');
-    this.logger.log(ctx.scene.state);
 
     await ctx.replyWithHTML(
       [
@@ -89,7 +116,6 @@ export class KeysScene {
   @Action(/link/)
   async onLink(@Ctx() ctx: TookeyContext) {
     this.logger.log('onLink');
-    this.logger.log(ctx.scene.state);
 
     const userTelegram = ctx.user;
     const { user } = userTelegram;
@@ -145,8 +171,27 @@ export class KeysScene {
   @Action(/manage:(\d+)/)
   async onManage(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
     this.logger.log('onManage');
-    this.logger.log(ctx.scene.state);
 
     await ctx.answerCbQuery('test');
+  }
+
+  @Action(/pagination:(\d+)/)
+  async onPagination(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
+    this.logger.log('onPagination');
+
+    const { data, from, message } = ctx.update.callback_query;
+
+    const page = data.split(':')[1];
+
+    try {
+      await this.bot.telegram.editMessageReplyMarkup(
+        message.chat.id,
+        message.message_id,
+        undefined,
+        this.manageKeysKeyboard(this.userKeys[from.id], +page).reply_markup,
+      );
+    } catch (error) {
+      this.logger.error(error);
+    }
   }
 }

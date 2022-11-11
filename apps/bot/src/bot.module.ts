@@ -3,6 +3,7 @@ import { TelegrafModule } from 'nestjs-telegraf';
 import { Module } from '@nestjs/common';
 import { AccessModule } from '@tookey/access';
 import {
+  KeyRepository,
   TypeOrmExModule,
   UserRepository,
   UserTelegramRepository,
@@ -21,6 +22,7 @@ import { MenuScene } from './scenes/menu.scene';
     TypeOrmExModule.forCustomRepository([
       UserRepository,
       UserTelegramRepository,
+      KeyRepository,
     ]),
     TelegrafModule.forRootAsync({
       useClass: BotService,
