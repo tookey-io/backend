@@ -14,7 +14,7 @@ export function getPagination(
     keys.push({ text: `‹ ${currentPage - 1}`, data: `${currentPage - 1}` });
   }
 
-  keys.push({ text: `· ${currentPage} ·`, data: `${currentPage}` });
+  keys.push({ text: `· ${currentPage} ·`, data: '' });
 
   if (currentPage < totalPages - 1) {
     keys.push({ text: `${currentPage + 1} ›`, data: `${currentPage + 1}` });

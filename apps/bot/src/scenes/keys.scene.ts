@@ -21,7 +21,8 @@ import { getPagination } from '../bot.utils';
 export class KeysScene {
   private readonly logger = new Logger(KeysScene.name);
 
-  private userKeys: Record<string, Pick<Key, 'id' | 'name'>[]> = {};
+  private userKeys: Record<string, { id: number; name?: string }[]> = {};
+  private qrCode: tg.Message.PhotoMessage | undefined;
 
   private newKeysKeyboard = () =>
     Markup.inlineKeyboard([
@@ -32,7 +33,7 @@ export class KeysScene {
     ]);
 
   private manageKeysKeyboard = (
-    keys: Pick<Key, 'id' | 'name'>[],
+    keys: { id: number; name?: string }[],
     currentPage = 1,
     pageSize = 5,
   ) => {
@@ -43,18 +44,46 @@ export class KeysScene {
       currentPage * pageSize,
     );
 
-    const getKeyTitle = (key: Pick<Key, 'id' | 'name'>) =>
-      key.name ? `🔑 Key #${key.id} (${key.name})` : `🔑 Key #${key.id}`;
+    const getKeyTitle = (id: number, name?: string) =>
+      name ? `🔑 Key #${id} (${name})` : `🔑 Key #${id}`;
 
     return Markup.inlineKeyboard([
       ...items.map((key) => [
-        Markup.button.callback(getKeyTitle(key), `manage:${key.id}`),
+        Markup.button.callback(
+          getKeyTitle(key.id, key.name),
+          `manage:${key.id}`,
+        ),
       ]),
       getPagination(currentPage, totalPages).map(({ text, data }) =>
         Markup.button.callback(text, `pagination:${data}`),
       ),
     ]);
   };
+
+  private async editOrDeleteQr(
+    message: tg.Message,
+    timeLeft: number,
+  ): Promise<void> {
+    if (timeLeft === 0) {
+      await this.bot.telegram.deleteMessage(
+        message.chat.id,
+        this.qrCode.message_id,
+      );
+      this.qrCode = undefined;
+    } else {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (!this.qrCode) return;
+
+      await this.bot.telegram.editMessageCaption(
+        message.chat.id,
+        this.qrCode.message_id,
+        undefined,
+        `Removes in ${timeLeft} sec`,
+        Markup.inlineKeyboard([Markup.button.callback('Delete', 'delete')]),
+      );
+      this.editOrDeleteQr(message, timeLeft - 1);
+    }
+  }
 
   constructor(
     @InjectBot() private readonly bot: Telegraf<TookeyContext>,
@@ -74,7 +103,10 @@ export class KeysScene {
       select: { id: true, name: true },
     });
 
-    this.userKeys[from.id] = keys;
+    this.userKeys[from.id] = keys.map((key, i) => ({
+      id: i + 1,
+      name: key.name,
+    }));
 
     if (!keys.length) {
       await ctx.replyWithHTML(
@@ -114,7 +146,7 @@ export class KeysScene {
   }
 
   @Action(/link/)
-  async onLink(@Ctx() ctx: TookeyContext) {
+  async onLink(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
     this.logger.log('onLink');
 
     const userTelegram = ctx.user;
@@ -142,30 +174,14 @@ export class KeysScene {
       ].join('\n'),
     );
 
-    const timeleft = 60;
-    const temporalPhoto = await ctx.replyWithPhoto({ source: qr });
+    this.qrCode = await ctx.replyWithPhoto({ source: qr });
 
-    const editOrDelete = async (left: number) => {
-      if (left == 0) {
-        this.logger.log('delete photo');
-        await this.bot.telegram.deleteMessage(
-          userTelegram.telegramId,
-          temporalPhoto.message_id,
-        );
-      } else {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        await this.bot.telegram.editMessageCaption(
-          userTelegram.telegramId,
-          temporalPhoto.message_id,
-          undefined,
-          `Removes in ${left} sec`,
-          Markup.inlineKeyboard([Markup.button.callback('Delete', 'delete')]),
-        );
-        editOrDelete(left - 1);
-      }
-    };
+    this.editOrDeleteQr(ctx.update.callback_query.message, 60);
+  }
 
-    editOrDelete(timeleft - 1);
+  @Action(/delete/)
+  async onDelete(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
+    this.editOrDeleteQr(ctx.update.callback_query.message, 0);
   }
 
   @Action(/manage:(\d+)/)
