@@ -3,8 +3,8 @@ import * as PostgresSession from 'telegraf-postgres-session';
 
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-
 import { DatabaseConfig } from '@tookey/database';
+
 import { BotConfig } from './bot.types';
 import { DefaultStateMiddleware } from './middlewares/default-state.middleware';
 import { TelegramUserMiddleware } from './middlewares/telegram-user.middleware';

@@ -38,6 +38,7 @@ export function configuration(): AppConfiguration {
       username: process.env.PG_USER,
       password: process.env.PG_PASS,
       database: process.env.PG_DB,
+      ssl: !!process.env.PG_SSL,
     },
     amqp: {
       uri: process.env.AMQP_URI,

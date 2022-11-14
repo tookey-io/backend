@@ -4,6 +4,7 @@ export type DatabaseConnection = {
   username: string;
   password: string;
   database: string;
+  ssl: boolean;
 };
 
 export type DatabaseConfig = {
