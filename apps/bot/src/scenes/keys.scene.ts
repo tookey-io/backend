@@ -12,23 +12,29 @@ import * as tg from 'telegraf/types';
 
 import { Logger } from '@nestjs/common';
 import { AccessService } from '@tookey/access';
-import { Key, KeyRepository } from '@tookey/database';
+import { KeyParticipantRepository, KeyRepository } from '@tookey/database';
 
 import { TookeyContext } from '../bot.types';
 import { getPagination } from '../bot.utils';
+
+interface KeyParticipation {
+  id: number;
+  userIndex: number;
+  name?: string;
+}
 
 @Scene(KeysScene.name)
 export class KeysScene {
   private readonly logger = new Logger(KeysScene.name);
 
-  private userKeys: Record<string, { id: number; name?: string }[]> = {};
+  private participationKeys: Record<string, KeyParticipation[]> = {};
   private qrCode: tg.Message.PhotoMessage | undefined;
 
   private newKeysKeyboard = () =>
     Markup.inlineKeyboard([
       [
         Markup.button.callback('➕ Link a Key', 'link'),
-        Markup.button.callback('➕ Create', 'link'),
+        Markup.button.callback('➕ Create', 'create'),
       ],
     ]);
 
@@ -89,6 +95,7 @@ export class KeysScene {
     @InjectBot() private readonly bot: Telegraf<TookeyContext>,
     private readonly accessService: AccessService,
     private readonly keys: KeyRepository,
+    private readonly participants: KeyParticipantRepository,
   ) {}
 
   @SceneEnter()
@@ -98,14 +105,15 @@ export class KeysScene {
     const userTelegram = ctx.user;
     const { user } = userTelegram;
 
-    const keys = await this.keys.find({
+    const keys = await this.participants.find({
       where: { userId: user.id },
-      select: { id: true, name: true },
+      relations: { key: true },
     });
 
-    this.userKeys[from.id] = keys.map((key, i) => ({
+    this.participationKeys[from.id] = keys.map((participant, i) => ({
       id: i + 1,
-      name: key.name,
+      name: participant.key.name,
+      userIndex: participant.index,
     }));
 
     if (!keys.length) {
@@ -121,7 +129,7 @@ export class KeysScene {
     } else {
       await ctx.replyWithHTML(
         `Select a key to manage:`,
-        this.manageKeysKeyboard(this.userKeys[from.id]),
+        this.manageKeysKeyboard(this.participationKeys[from.id]),
       );
 
       await ctx.replyWithHTML(
@@ -132,22 +140,8 @@ export class KeysScene {
   }
 
   @Action(/create/)
-  async onCreate(@Ctx() ctx: TookeyContext) {
+  async onCreate(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
     this.logger.log('onCreate');
-
-    await ctx.replyWithHTML(
-      [
-        '<b>🎉 Hooray, early birds! 🐦</b>',
-        '',
-        `🚧 We're configuring or production ready vaults to store Tookey's parts of distributed key... 🚧`,
-        'We will send you notification when it ready to be your signer partner 🤗',
-      ].join('\n'),
-    );
-  }
-
-  @Action(/link/)
-  async onLink(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
-    this.logger.log('onLink');
 
     const userTelegram = ctx.user;
     const { user } = userTelegram;
@@ -179,6 +173,20 @@ export class KeysScene {
     this.editOrDeleteQr(ctx.update.callback_query.message, 60);
   }
 
+  @Action(/link/)
+  async onLink(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
+    this.logger.log('onLink');
+
+    await ctx.replyWithHTML(
+      [
+        '<b>🎉 Hooray, early birds! 🐦</b>',
+        '',
+        `🚧 We're configuring linking key feature of Tookey... 🚧`,
+        'We will send you notification when it ready to be your signer partner 🤗',
+      ].join('\n'),
+    );
+  }
+
   @Action(/delete/)
   async onDelete(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
     this.editOrDeleteQr(ctx.update.callback_query.message, 0);
@@ -204,7 +212,8 @@ export class KeysScene {
         message.chat.id,
         message.message_id,
         undefined,
-        this.manageKeysKeyboard(this.userKeys[from.id], +page).reply_markup,
+        this.manageKeysKeyboard(this.participationKeys[from.id], +page)
+          .reply_markup,
       );
     } catch (error) {
       this.logger.error(error);
