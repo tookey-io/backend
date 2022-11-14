@@ -4,6 +4,7 @@ import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from '@nestjs/typeorm';
 
 import { DatabaseConfig } from './database.types';
 import * as entities from './entities';
+import * as migrations from './migrations';
 
 @Injectable()
 export class DatabaseService implements TypeOrmOptionsFactory {
@@ -17,8 +18,8 @@ export class DatabaseService implements TypeOrmOptionsFactory {
       ...db,
       entities,
       synchronize: true,
-      migrations: [],
-      migrationsTableName: 'typeorm_migrations',
+      migrations,
+      migrationsTableName: 'migrations',
       migrationsRun: true,
     };
   }
