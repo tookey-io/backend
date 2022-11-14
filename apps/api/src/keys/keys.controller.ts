@@ -11,6 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import {
+  ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -47,6 +48,7 @@ export class KeyController {
   @ApiOperation({ description: 'Create a Key' })
   @ApiOkResponse({ type: KeyDto })
   @ApiNotFoundResponse()
+  @ApiInternalServerErrorResponse()
   @Post()
   createKey(@Body() dto: KeyCreateRequestDto): Promise<KeyDto> {
     return this.keysService.create(dto);

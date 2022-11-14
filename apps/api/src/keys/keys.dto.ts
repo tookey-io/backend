@@ -5,6 +5,8 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  IsUUID,
+  MaxLength,
   ValidateIf,
 } from 'class-validator';
 
@@ -20,7 +22,7 @@ export class KeyDto {
 
   @ApiProperty()
   @Expose()
-  @IsString()
+  @IsUUID()
   roomId: string;
 
   @ApiProperty()
@@ -47,7 +49,7 @@ export class KeyDto {
 
   @ApiProperty()
   @Expose()
-  @IsString()
+  @IsString({ each: true })
   @Transform(({ value }) => value || [])
   tags: string[];
 
@@ -76,7 +78,7 @@ export class SignDto {
 
   @ApiProperty()
   @Expose()
-  @IsString()
+  @IsUUID()
   roomId: string;
 
   @ApiProperty()
@@ -115,30 +117,33 @@ export class KeyCreateRequestDto {
   @IsNumber()
   userId: number;
 
-  @ApiProperty()
+  @ApiProperty({ default: 2 })
   @IsNumber()
   participantsThreshold: number;
 
-  @ApiProperty()
+  @ApiProperty({ default: 3 })
   @IsNumber()
   participantsCount: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ default: 60 })
   @IsNumber()
   timeoutSeconds?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @MaxLength(40)
   @IsString()
   name?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @MaxLength(200)
   @IsString()
   description?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @MaxLength(40, { each: true })
   @IsString({ each: true })
   tags?: string[];
 }
@@ -167,7 +172,7 @@ export class KeySignRequestDto {
   keyId: number;
 
   @ApiProperty()
-  @IsString()
+  @IsUUID()
   roomId: string;
 
   @ApiProperty()

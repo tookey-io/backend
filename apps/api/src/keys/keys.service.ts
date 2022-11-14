@@ -1,6 +1,12 @@
 import { randomUUID } from 'crypto';
+import { DataSource } from 'typeorm';
 
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { AmqpService } from '@tookey/amqp';
 import {
   KeyParticipantRepository,
@@ -28,6 +34,7 @@ export class KeyService {
   private readonly logger = new Logger(KeyService.name);
 
   constructor(
+    private readonly dataSource: DataSource,
     private readonly amqp: AmqpService,
     private readonly keys: KeyRepository,
     private readonly participants: KeyParticipantRepository,
@@ -39,43 +46,67 @@ export class KeyService {
     const user = await this.users.findOneBy({ id: dto.userId });
     if (!user) throw new NotFoundException('User not found');
 
-    const { id, participantIndex } = await this.keys.createOrUpdateOne({
-      user,
-      roomId: randomUUID(),
-      participantsCount: dto.participantsCount,
-      participantsThreshold: dto.participantsThreshold,
-      timeoutSeconds: dto.timeoutSeconds,
-      name: dto.name,
-      description: dto.description,
-      tags: dto.tags,
-    });
+    const queryRunner = this.dataSource.createQueryRunner();
 
-    await this.participants.createOrUpdateOne({
-      keyId: id,
-      userId: user.id,
-      index: participantIndex,
-    });
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    const { participants, ...key } = await this.keys.findOne({
-      where: { id },
-      relations: { participants: true },
-    });
+    const entityManager = queryRunner.manager;
 
-    this.amqp.publish<AmqpKeygenJoinDto>('amq.topic', 'manager', {
-      action: 'keygen_join',
-      user_id: `${user.id}`,
-      room_id: key.roomId,
-      key_id: `${key.id}`,
-      participant_index: key.participantIndex,
-      participants_count: key.participantsCount,
-      participants_threshold: key.participantsThreshold - 1,
-      timeout_seconds: key.timeoutSeconds,
-    });
+    try {
+      const { id, participantIndex } = await this.keys.createOrUpdateOne(
+        {
+          user,
+          roomId: randomUUID(),
+          participantsCount: dto.participantsCount,
+          participantsThreshold: dto.participantsThreshold,
+          timeoutSeconds: dto.timeoutSeconds,
+          name: dto.name,
+          description: dto.description,
+          tags: dto.tags,
+        },
+        entityManager,
+      );
 
-    return new KeyDto({
-      ...key,
-      participants: participants.map((participant) => participant.index),
-    });
+      await this.participants.createOrUpdateOne(
+        {
+          keyId: id,
+          userId: user.id,
+          index: participantIndex,
+        },
+        entityManager,
+      );
+
+      await queryRunner.commitTransaction();
+
+      const { participants, ...key } = await this.keys.findOne({
+        where: { id },
+        relations: { participants: true },
+      });
+
+      this.amqp.publish<AmqpKeygenJoinDto>('amq.topic', 'manager', {
+        action: 'keygen_join',
+        user_id: `${user.id}`,
+        room_id: key.roomId,
+        key_id: `${key.id}`,
+        participant_index: key.participantIndex,
+        participants_count: key.participantsCount,
+        participants_threshold: key.participantsThreshold - 1,
+        timeout_seconds: key.timeoutSeconds,
+      });
+
+      return new KeyDto({
+        ...key,
+        participants: participants.map((participant) => participant.index),
+      });
+    } catch (error) {
+      queryRunner.isTransactionActive &&
+        (await queryRunner.rollbackTransaction());
+      this.logger.error('create key transaction', error);
+      throw new InternalServerErrorException();
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async get(dto: KeyGetRequestDto): Promise<KeyDto> {

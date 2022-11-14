@@ -14,7 +14,7 @@ import { User } from './user.entity';
 
 @Entity()
 export class KeyParticipant extends MetaEntity {
-  @ManyToOne(() => Key, (key) => key.participants)
+  @ManyToOne(() => Key, (key) => key.participants, { onDelete: 'CASCADE' })
   key: Key;
 
   @Column()

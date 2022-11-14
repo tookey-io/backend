@@ -1,5 +1,6 @@
 import { differenceInSeconds } from 'date-fns';
 import { Context } from 'telegraf';
+import { DataSource } from 'typeorm';
 
 import { Injectable, Logger } from '@nestjs/common';
 import { UserRepository, UserTelegramRepository } from '@tookey/database';
@@ -11,6 +12,7 @@ export class TelegramUserMiddleware implements TelegrafMiddleware {
   private readonly logger = new Logger(TelegramUserMiddleware.name);
 
   constructor(
+    private readonly dataSource: DataSource,
     private readonly users: UserRepository,
     private readonly telegramUsers: UserTelegramRepository,
   ) {}
@@ -33,16 +35,38 @@ export class TelegramUserMiddleware implements TelegrafMiddleware {
     } else {
       this.logger.debug('new telegram user');
 
-      // TODO: transaction
-      const parent = await this.users.findRoot();
-      const user = await this.users.createOrUpdateOne({ parent });
-      const userTelegram = await this.telegramUsers.createOrUpdateOne({
-        telegramId,
-        chatId: ctx.chat.id,
-        user,
-      });
+      const queryRunner = this.dataSource.createQueryRunner();
 
-      ctx.user = userTelegram;
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      const entityManager = queryRunner.manager;
+
+      try {
+        const parent = await this.users.findRoot();
+        const user = await this.users.createOrUpdateOne(
+          { parent },
+          entityManager,
+        );
+        const userTelegram = await this.telegramUsers.createOrUpdateOne(
+          {
+            telegramId,
+            chatId: ctx.chat.id,
+            user,
+          },
+          entityManager,
+        );
+
+        await queryRunner.commitTransaction();
+
+        ctx.user = userTelegram;
+      } catch (error) {
+        queryRunner.isTransactionActive &&
+          (await queryRunner.rollbackTransaction());
+        this.logger.error('new telegram user transaction', error);
+      } finally {
+        await queryRunner.release();
+      }
     }
 
     await next();
