@@ -44,7 +44,7 @@ export class KeyController {
 
   constructor(private readonly keysService: KeyService) {}
 
-  @ApiOperation({ description: 'Create Key' })
+  @ApiOperation({ description: 'Create a Key' })
   @ApiOkResponse({ type: KeyDto })
   @ApiNotFoundResponse()
   @Post()
@@ -52,7 +52,7 @@ export class KeyController {
     return this.keysService.create(dto);
   }
 
-  @ApiOperation({ description: 'Get Key' })
+  @ApiOperation({ description: 'Get a Key' })
   @ApiOkResponse({ type: KeyDto })
   @ApiNotFoundResponse()
   @Get()
@@ -60,14 +60,14 @@ export class KeyController {
     return this.keysService.get(dto);
   }
 
-  @ApiOperation({ description: 'Delete Key' })
+  @ApiOperation({ description: 'Delete a Key' })
   @ApiOkResponse({ type: KeyDeleteResponseDto })
   @Delete()
   deleteKey(@Body() dto: KeyDeleteRequestDto): Promise<KeyDeleteResponseDto> {
     return this.keysService.delete(dto);
   }
 
-  @ApiOperation({ description: 'Sign Key' })
+  @ApiOperation({ description: 'Sign a Key' })
   @ApiOkResponse({ type: SignDto })
   @ApiNotFoundResponse()
   @Post('sign')

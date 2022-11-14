@@ -119,6 +119,10 @@ export class KeyCreateRequestDto {
   @IsNumber()
   participantsThreshold: number;
 
+  @ApiProperty()
+  @IsNumber()
+  participantsCount: number;
+
   @ApiPropertyOptional()
   @IsNumber()
   timeoutSeconds?: number;
@@ -165,6 +169,10 @@ export class KeySignRequestDto {
   @ApiProperty()
   @IsString()
   roomId: string;
+
+  @ApiProperty()
+  @IsNumber({}, { each: true })
+  participantsConfirmations: number[];
 
   @ApiProperty()
   @IsString()

@@ -53,9 +53,7 @@ export class Key extends MetaEntity {
   @Column({ type: 'varchar', nullable: true, array: true })
   tags: string[];
 
-  @OneToMany(() => KeyParticipant, (participant) => participant.key, {
-    eager: true,
-  })
+  @OneToMany(() => KeyParticipant, (participant) => participant.key)
   participants: KeyParticipant[];
 
   @Index()

@@ -42,6 +42,7 @@ export class KeyService {
     const { id, participantIndex } = await this.keys.createOrUpdateOne({
       user,
       roomId: randomUUID(),
+      participantsCount: dto.participantsCount,
       participantsThreshold: dto.participantsThreshold,
       timeoutSeconds: dto.timeoutSeconds,
       name: dto.name,
@@ -55,7 +56,10 @@ export class KeyService {
       index: participantIndex,
     });
 
-    const { participants, ...key } = await this.keys.findOneBy({ id });
+    const { participants, ...key } = await this.keys.findOne({
+      where: { id },
+      relations: { participants: true },
+    });
 
     this.amqp.publish<AmqpKeygenJoinDto>('amq.topic', 'manager', {
       action: 'keygen_join',
@@ -97,10 +101,10 @@ export class KeyService {
 
     const { id } = await this.signs.createOrUpdateOne({
       key,
-      roomId: dto.roomId,
+      roomId: randomUUID(),
       data: dto.data,
       metadata: dto.metadata,
-      participantsConfirmations: [],
+      participantsConfirmations: dto.participantsConfirmations,
       timeoutAt: new Date(),
     });
 
@@ -108,7 +112,7 @@ export class KeyService {
 
     this.amqp.publish<AmqpSignApproveDto>('amq.topic', 'manager', {
       action: 'sign_approve',
-      user_id: `${sign.key.user}`,
+      user_id: `${sign.key.userId}`,
       room_id: sign.roomId,
       key_id: `${sign.key.id}`,
       participants_indexes: sign.participantsConfirmations,
