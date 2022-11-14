@@ -24,7 +24,11 @@ export class BotService implements TelegrafOptionsFactory {
     return {
       token: this.configService.get('telegramToken', { infer: true }),
       middlewares: [
-        new PostgresSession({ ...db, user: username }).middleware(),
+        new PostgresSession({
+          ...db,
+          user: username,
+          ssl: db.ssl ? { rejectUnauthorized: false } : false,
+        }).middleware(),
         this.telegramUser.use.bind(this.telegramUser),
         this.defaultState.use.bind(this.defaultState),
       ],
