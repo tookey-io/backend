@@ -17,7 +17,7 @@ export class DatabaseService implements TypeOrmOptionsFactory {
       type: 'postgres',
       ...db,
       entities,
-      synchronize: true,
+      synchronize: false,
       migrations,
       migrationsTableName: 'migrations',
       migrationsRun: true,
