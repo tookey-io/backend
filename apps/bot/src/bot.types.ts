@@ -1,4 +1,5 @@
 import { Context, MiddlewareFn, Scenes } from 'telegraf';
+import * as tg from 'telegraf/types';
 
 import { UserTelegram } from '@tookey/database';
 
@@ -31,5 +32,9 @@ export interface TookeySceneSession extends Scenes.SceneSessionData {
 //     session: TookeySession
 // }
 
-export type TookeyContext<U extends {} = {}> =
-  Scenes.SceneContext<TookeySceneSession> & { update: U };
+export type TookeyContext<
+  U extends Record<string, any> =
+    | tg.Update.CallbackQueryUpdate
+    | tg.Update.InlineQueryUpdate
+    | tg.Update.MessageUpdate,
+> = Scenes.SceneContext<TookeySceneSession> & { update: U };

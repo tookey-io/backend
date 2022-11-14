@@ -1,5 +1,4 @@
 import { TelegrafModuleOptions, TelegrafOptionsFactory } from 'nestjs-telegraf';
-import * as PostgresSession from 'telegraf-postgres-session';
 
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -7,6 +6,7 @@ import { DatabaseConfig } from '@tookey/database';
 
 import { BotConfig } from './bot.types';
 import { DefaultStateMiddleware } from './middlewares/default-state.middleware';
+import { TelegramSessionMiddleware } from './middlewares/telegram-session.middleware';
 import { TelegramUserMiddleware } from './middlewares/telegram-user.middleware';
 
 @Injectable()
@@ -15,21 +15,17 @@ export class BotService implements TelegrafOptionsFactory {
 
   constructor(
     private readonly configService: ConfigService<BotConfig & DatabaseConfig>,
+    private readonly telegramSession: TelegramSessionMiddleware,
     private readonly telegramUser: TelegramUserMiddleware,
     private readonly defaultState: DefaultStateMiddleware,
   ) {}
 
   createTelegrafOptions(): TelegrafModuleOptions {
-    const { username, ...db } = this.configService.get('db', { infer: true });
     return {
       token: this.configService.get('telegramToken', { infer: true }),
       middlewares: [
-        new PostgresSession({
-          ...db,
-          user: username,
-          ssl: db.ssl ? { rejectUnauthorized: false } : false,
-        }).middleware(),
         this.telegramUser.use.bind(this.telegramUser),
+        this.telegramSession.use.bind(this.telegramSession),
         this.defaultState.use.bind(this.defaultState),
       ],
     };

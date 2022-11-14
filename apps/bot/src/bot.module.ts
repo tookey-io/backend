@@ -5,6 +5,7 @@ import { AccessModule } from '@tookey/access';
 import {
   KeyParticipantRepository,
   KeyRepository,
+  TelegramSessionRepository,
   TypeOrmExModule,
   UserRepository,
   UserTelegramRepository,
@@ -13,6 +14,7 @@ import {
 import { BotService } from './bot.service';
 import { BotUpdate } from './bot.update';
 import { DefaultStateMiddleware } from './middlewares/default-state.middleware';
+import { TelegramSessionMiddleware } from './middlewares/telegram-session.middleware';
 import { TelegramUserMiddleware } from './middlewares/telegram-user.middleware';
 import { KeysScene } from './scenes/keys.scene';
 import { MenuScene } from './scenes/menu.scene';
@@ -25,16 +27,22 @@ import { MenuScene } from './scenes/menu.scene';
       UserTelegramRepository,
       KeyRepository,
       KeyParticipantRepository,
+      TelegramSessionRepository,
     ]),
     TelegrafModule.forRootAsync({
       useClass: BotService,
       imports: [BotModule],
     }),
   ],
-  exports: [TelegramUserMiddleware, DefaultStateMiddleware],
+  exports: [
+    TelegramUserMiddleware,
+    DefaultStateMiddleware,
+    TelegramSessionMiddleware,
+  ],
   providers: [
     TelegramUserMiddleware,
     DefaultStateMiddleware,
+    TelegramSessionMiddleware,
     BotService,
     BotUpdate,
     MenuScene,

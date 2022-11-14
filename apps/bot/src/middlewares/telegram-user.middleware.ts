@@ -5,7 +5,7 @@ import { DataSource } from 'typeorm';
 import { Injectable, Logger } from '@nestjs/common';
 import { UserRepository, UserTelegramRepository } from '@tookey/database';
 
-import { TelegrafMiddleware } from '../bot.types';
+import { TelegrafMiddleware, TookeyContext } from '../bot.types';
 
 @Injectable()
 export class TelegramUserMiddleware implements TelegrafMiddleware {
@@ -17,7 +17,7 @@ export class TelegramUserMiddleware implements TelegrafMiddleware {
     private readonly telegramUsers: UserTelegramRepository,
   ) {}
 
-  async use(ctx: Context, next: () => Promise<void>) {
+  async use(ctx: TookeyContext, next: () => Promise<void>) {
     const telegramId = this.getTelegramId(ctx);
     const userTelegram = await this.telegramUsers.findOneBy({ telegramId });
 

@@ -18,7 +18,7 @@ export class BotUpdate {
 
   @Action(/activate/)
   async onActivate(
-    @Ctx() ctx: TookeyContext<tg.Update.MessageUpdate>,
+    @Ctx() ctx: TookeyContext,
     // @Sender() sender: tg.User,
   ) {
     this.logger.log('onActivate');
@@ -27,10 +27,7 @@ export class BotUpdate {
   }
 
   @Start()
-  async onStart(
-    @Ctx() ctx: TookeyContext<tg.Update.MessageUpdate>,
-    @Sender() sender: tg.User,
-  ) {
+  async onStart(@Ctx() ctx: TookeyContext, @Sender() sender: tg.User) {
     this.logger.log('onStart');
     this.logger.log(ctx.scene.state);
     this.logger.log(ctx.session);

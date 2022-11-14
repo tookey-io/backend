@@ -18,8 +18,8 @@ export class DatabaseService implements TypeOrmOptionsFactory {
       ...db,
       ssl: db.ssl ? { rejectUnauthorized: false } : false,
       entities,
-      synchronize: false,
       migrations,
+      synchronize: false,
       migrationsTableName: 'migrations',
       migrationsRun: true,
     };
