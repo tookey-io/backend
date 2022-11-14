@@ -16,6 +16,7 @@ export class DatabaseService implements TypeOrmOptionsFactory {
     return {
       type: 'postgres',
       ...db,
+      ssl: db.ssl ? { rejectUnauthorized: false } : false,
       entities,
       synchronize: false,
       migrations,
