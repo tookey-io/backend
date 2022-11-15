@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { addSeconds } from 'date-fns';
-import { DataSource } from 'typeorm';
+import { DataSource, Not } from 'typeorm';
 
 import {
   ForbiddenException,
@@ -148,7 +148,10 @@ export class KeyService {
   }
 
   async checkUserLimits(user: UserDto): Promise<void> {
-    const userKeysCount = await this.keys.countBy({ userId: user.id });
+    const userKeysCount = await this.keys.countBy({
+      userId: user.id,
+      status: Not(TaskStatus.Timeout),
+    });
     if (userKeysCount >= user.keyLimit) {
       throw new ForbiddenException('Keys limit reached');
     }
@@ -171,7 +174,7 @@ export class KeyService {
 
   async getKeys(userId?: number): Promise<KeyDto[]> {
     const keys = await this.keys.find({
-      where: { userId },
+      where: { userId, status: Not(TaskStatus.Timeout) },
       relations: { participants: true },
     });
     if (!keys.length) throw new NotFoundException('Keys not found');

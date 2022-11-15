@@ -11,6 +11,7 @@ import {
 import * as QR from 'qrcode';
 import { Markup, Telegraf } from 'telegraf';
 import * as tg from 'telegraf/types';
+import { Not } from 'typeorm';
 
 import { Logger } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
@@ -19,6 +20,7 @@ import {
   Key,
   KeyParticipantRepository,
   KeyRepository,
+  TaskStatus,
   UserTelegramRepository,
 } from '@tookey/database';
 
@@ -42,87 +44,6 @@ export class KeysScene extends BaseScene {
   private participationKeys: Record<string, KeyParticipation[]> = {};
   private qrCodes: Record<number, tg.Message.PhotoMessage> = {};
 
-  private newKeysKeyboard = () =>
-    Markup.inlineKeyboard([
-      [
-        Markup.button.callback('➕ Link a Key', 'link'),
-        Markup.button.callback('➕ Create', 'create'),
-      ],
-    ]);
-
-  private manageKeysKeyboard = (
-    keys: KeyParticipation[],
-    currentPage = 1,
-    pageSize = 5,
-  ) => {
-    const totalPages = Math.ceil(keys.length / pageSize);
-
-    const items = keys.slice(
-      (currentPage - 1) * pageSize,
-      currentPage * pageSize,
-    );
-
-    return Markup.inlineKeyboard([
-      ...items.map((key) => [
-        Markup.button.callback(this.getKeyTitle(key), `manage:${key.keyId}`),
-      ]),
-      getPagination(currentPage, totalPages).map(({ text, data }) =>
-        Markup.button.callback(text, `pagination:${data}`),
-      ),
-    ]);
-  };
-
-  private async editOrDeleteQr(
-    message: tg.Message,
-    timeLeft: number,
-  ): Promise<void> {
-    const qrCode = this.qrCodes[message.chat.id];
-
-    if (qrCode && timeLeft === 0) {
-      await this.bot.telegram.deleteMessage(message.chat.id, qrCode.message_id);
-      delete this.qrCodes[message.chat.id];
-      return;
-    }
-
-    if (qrCode) {
-      await this.bot.telegram.editMessageCaption(
-        message.chat.id,
-        qrCode.message_id,
-        undefined,
-        [
-          'Scan QR code in <b>Tookey Signer</b> to authenticate',
-          `Removes in ${timeLeft} sec`,
-        ].join('\n'),
-        { parse_mode: 'HTML' },
-      );
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      this.editOrDeleteQr(message, timeLeft - 1);
-    }
-  }
-
-  private getKeyTitle(key: KeyParticipation) {
-    return key.name ? `🔑 Key #${key.id} (${key.name})` : `🔑 Key #${key.id}`;
-  }
-
-  private async updateParticipationKeys(ctx: TookeyContext): Promise<void> {
-    const userTelegram = ctx.user;
-    const { user } = userTelegram;
-
-    const keys = await this.participants.find({
-      where: { userId: user.id },
-      relations: { key: true },
-    });
-
-    this.participationKeys[userTelegram.telegramId] = keys.map(
-      (participant, i) => ({
-        id: i + 1,
-        keyId: participant.keyId,
-        name: participant.key.name,
-        userIndex: participant.index,
-      }),
-    );
-  }
-
   constructor(
     @InjectBot() private readonly bot: Telegraf<TookeyContext>,
     private readonly accessService: AccessService,
@@ -137,32 +58,12 @@ export class KeysScene extends BaseScene {
   @SceneEnter()
   async onSceneEnter(@Ctx() ctx: TookeyContext, @Sender() from: tg.User) {
     this.logger.log('onSceneEnter');
+    await this.replyWithKeys(ctx, from);
+  }
 
-    await this.updateParticipationKeys(ctx);
-
-    const keys = this.participationKeys[from.id];
-
-    if (!keys.length) {
-      await ctx.replyWithHTML(
-        [
-          '<b>You have no keys yet!</b>',
-          '',
-          'With <b>2K</b> you can generate distributed key and provide/revoke access to your key for any telegram user',
-          'You will approve any transaction from third-party',
-        ].join('\n'),
-        this.newKeysKeyboard(),
-      );
-    } else {
-      await ctx.replyWithHTML(
-        `Select a key to manage:`,
-        this.manageKeysKeyboard(keys),
-      );
-
-      await ctx.replyWithHTML(
-        `Do you have any unlinked key or do you want create new one?`,
-        this.newKeysKeyboard(),
-      );
-    }
+  @Command('/keys')
+  async keysList(@Ctx() ctx: TookeyContext, @Sender() from: tg.User) {
+    await this.replyWithKeys(ctx, from);
   }
 
   @Command('/auth')
@@ -235,18 +136,17 @@ export class KeysScene extends BaseScene {
     const keyData = await this.keys.findOneBy({ id: keyId });
 
     const buildHTMLKeyData = (key: Key): string => {
-      const info: string[] = [
-        `<b>${this.getKeyTitle(keyParticipation)}</b>`,
-        '',
-      ];
+      const info: string[] = [`<b>${this.getKeyTitle(keyParticipation)}</b>`];
 
       if (key.description) info.push(key.description);
-      if (key.tags) info.push(key.tags.map((tag) => `#${tag}`).join(' '));
+      if (key.tags) {
+        info.push(`Tags: ${key.tags.map((tag) => `#${tag}`).join(' ')}`);
+      }
 
       if (key.description || key.tags) info.push('');
 
       if (key.publicKey) info.push(`<code>${key.publicKey}</code>`);
-      else info.push(`Status: ${key.status}`);
+      else info.push(`<code>Status: ${key.status}</code>`);
 
       return [
         ...info,
@@ -347,5 +247,114 @@ export class KeysScene extends BaseScene {
         },
       },
     );
+  }
+
+  private newKeysKeyboard = () =>
+    Markup.inlineKeyboard([
+      [
+        Markup.button.callback('➕ Link a Key', 'link'),
+        Markup.button.callback('➕ Create', 'create'),
+      ],
+    ]);
+
+  private manageKeysKeyboard = (
+    keys: KeyParticipation[],
+    currentPage = 1,
+    pageSize = 5,
+  ) => {
+    const totalPages = Math.ceil(keys.length / pageSize);
+
+    const items = keys.slice(
+      (currentPage - 1) * pageSize,
+      currentPage * pageSize,
+    );
+
+    return Markup.inlineKeyboard([
+      ...items.map((key) => [
+        Markup.button.callback(this.getKeyTitle(key), `manage:${key.keyId}`),
+      ]),
+      getPagination(currentPage, totalPages).map(({ text, data }) =>
+        Markup.button.callback(text, `pagination:${data}`),
+      ),
+    ]);
+  };
+
+  private async editOrDeleteQr(
+    message: tg.Message,
+    timeLeft: number,
+  ): Promise<void> {
+    const qrCode = this.qrCodes[message.chat.id];
+
+    if (qrCode && timeLeft === 0) {
+      await this.bot.telegram.deleteMessage(message.chat.id, qrCode.message_id);
+      delete this.qrCodes[message.chat.id];
+      return;
+    }
+
+    if (qrCode) {
+      await this.bot.telegram.editMessageCaption(
+        message.chat.id,
+        qrCode.message_id,
+        undefined,
+        [
+          'Scan QR code in <b>Tookey Signer</b> to authenticate',
+          `Removes in ${timeLeft} sec`,
+        ].join('\n'),
+        { parse_mode: 'HTML' },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      this.editOrDeleteQr(message, timeLeft - 1);
+    }
+  }
+
+  private getKeyTitle(key: KeyParticipation) {
+    return key.name ? `🔑 Key #${key.id} [${key.name}]` : `🔑 Key #${key.id}`;
+  }
+
+  private async updateParticipationKeys(ctx: TookeyContext): Promise<void> {
+    const userTelegram = ctx.user;
+    const { user } = userTelegram;
+
+    const keys = await this.participants.find({
+      where: { userId: user.id, key: { status: Not(TaskStatus.Timeout) } },
+      relations: { key: true },
+    });
+
+    this.participationKeys[userTelegram.telegramId] = keys.map(
+      (participant, i) => ({
+        id: i + 1,
+        keyId: participant.keyId,
+        name: participant.key.name,
+        userIndex: participant.index,
+      }),
+    );
+  }
+
+  private async replyWithKeys(ctx: TookeyContext, from: tg.User) {
+    await this.updateParticipationKeys(ctx);
+
+    const keys = this.participationKeys[from.id];
+
+    if (!keys.length) {
+      await ctx.replyWithHTML(
+        [
+          '<b>You have no keys yet!</b>',
+          '',
+          'With <b>2K</b> you can generate distributed key and provide/revoke access to your key for any telegram user',
+          'You will approve any transaction from third-party',
+        ].join('\n'),
+        this.newKeysKeyboard(),
+      );
+    } else {
+      await ctx.replyWithHTML(
+        `Select a key to manage:`,
+        this.manageKeysKeyboard(keys),
+      );
+
+      await ctx.replyWithHTML(
+        `Do you have any unlinked key or do you want create new one?`,
+        this.newKeysKeyboard(),
+      );
+    }
   }
 }
