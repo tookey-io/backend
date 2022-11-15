@@ -40,7 +40,7 @@ export class KeysScene extends BaseScene {
   private readonly logger = new Logger(KeysScene.name);
 
   private participationKeys: Record<string, KeyParticipation[]> = {};
-  private qrCode: tg.Message.PhotoMessage | undefined;
+  private qrCodes: Record<number, tg.Message.PhotoMessage> = {};
 
   private newKeysKeyboard = () =>
     Markup.inlineKeyboard([
@@ -76,25 +76,26 @@ export class KeysScene extends BaseScene {
     message: tg.Message,
     timeLeft: number,
   ): Promise<void> {
-    if (!this.qrCode) return;
+    const qrCode = this.qrCodes[message.chat.id];
 
-    if (timeLeft === 0) {
-      await this.bot.telegram.deleteMessage(
-        message.chat.id,
-        this.qrCode.message_id,
-      );
-      this.qrCode = undefined;
-    } else {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (!this.qrCode) return;
+    if (qrCode && timeLeft === 0) {
+      await this.bot.telegram.deleteMessage(message.chat.id, qrCode.message_id);
+      delete this.qrCodes[message.chat.id];
+      return;
+    }
 
+    if (qrCode) {
       await this.bot.telegram.editMessageCaption(
         message.chat.id,
-        this.qrCode.message_id,
+        qrCode.message_id,
         undefined,
-        `Removes in ${timeLeft} sec`,
-        Markup.inlineKeyboard([Markup.button.callback('Delete', 'delete')]),
+        [
+          'Scan QR code in <b>Tookey Signer</b> to authenticate',
+          `Removes in ${timeLeft} sec`,
+        ].join('\n'),
+        { parse_mode: 'HTML' },
       );
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       this.editOrDeleteQr(message, timeLeft - 1);
     }
   }
@@ -174,13 +175,14 @@ export class KeysScene extends BaseScene {
 
     this.logger.debug(token, 'token');
 
-    await ctx.replyWithHTML(
-      ['Scan QR code in <b>Tookey Signer</b> to authenticate'].join('\n'),
-    );
+    await ctx.deleteMessage(ctx.message.message_id);
 
-    this.qrCode = await ctx.replyWithPhoto({ source: qr });
-
-    this.editOrDeleteQr(ctx.update.message, 60);
+    if (!this.qrCodes[userTelegram.telegramId]) {
+      this.qrCodes[userTelegram.telegramId] = await ctx.replyWithPhoto({
+        source: qr,
+      });
+      this.editOrDeleteQr(ctx.update.message, 60);
+    }
   }
 
   @Action(/create/)
@@ -211,11 +213,6 @@ export class KeysScene extends BaseScene {
         'We will send you notification when it ready to be your signer partner 🤗',
       ].join('\n'),
     );
-  }
-
-  @Action(/delete/)
-  async onDelete(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
-    this.editOrDeleteQr(ctx.update.callback_query.message, 0);
   }
 
   @Action(/manage:(\d+)/)
