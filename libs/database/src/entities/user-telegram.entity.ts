@@ -30,6 +30,18 @@ export class UserTelegram extends MetaEntity {
   @Index()
   @Column({ type: 'bigint', unique: true, nullable: true })
   chatId: number;
+
+  @Column({ type: 'varchar', nullable: true })
+  firstName: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  lastName: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  username: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  languageCode: string;
 }
 
 @CustomRepository(UserTelegram)
