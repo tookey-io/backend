@@ -25,7 +25,7 @@ export class MenuScene {
 
     // const messages: number[] = [];
 
-    if (userTelegram.user.isFresh) {
+    if (userTelegram.user.fresh) {
       storeId(
         await ctx.replyWithHTML(
           [
@@ -45,7 +45,7 @@ export class MenuScene {
       storeId(
         await ctx.replyWithHTML(
           `Hi, ${from.first_name}!`,
-          !userTelegram.user.isFresh
+          !userTelegram.user.fresh
             ? undefined
             : Markup.inlineKeyboard([
                 [
@@ -67,7 +67,9 @@ export class MenuScene {
   }
 
   private async unfresh(ctx: TookeyContext) {
-    ctx.user.user.fresh = false;
-    await this.users.save(ctx.user);
+    const userTelegram = ctx.user;
+    const { user } = userTelegram;
+    user.fresh = false;
+    await this.users.save(user);
   }
 }

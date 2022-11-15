@@ -13,6 +13,8 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TaskStatus } from '@tookey/database';
 
+import { CREATE_RESPONSE_TYPE, KeyCreateResponseType } from './keys.types';
+
 @Exclude()
 export class KeyDto {
   @ApiProperty()
@@ -113,10 +115,6 @@ export class SignDto {
 }
 
 export class KeyCreateRequestDto {
-  @ApiProperty()
-  @IsNumber()
-  userId: number;
-
   @ApiProperty({ default: 2 })
   @IsNumber()
   participantsThreshold: number;
@@ -146,6 +144,14 @@ export class KeyCreateRequestDto {
   @MaxLength(40, { each: true })
   @IsString({ each: true })
   tags?: string[];
+}
+
+export class KeyCreateEventResponseDto {
+  @IsNumber()
+  userId: number;
+
+  @IsEnum(CREATE_RESPONSE_TYPE)
+  decision: KeyCreateResponseType;
 }
 
 export class KeyGetRequestDto {

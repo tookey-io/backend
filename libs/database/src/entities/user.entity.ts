@@ -36,10 +36,6 @@ export class User extends MetaEntity {
 
   @OneToMany(() => Key, (key) => key.id)
   keys: Key[];
-
-  get isFresh() {
-    return this.fresh;
-  }
 }
 
 @CustomRepository(User)

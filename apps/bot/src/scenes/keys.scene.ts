@@ -1,6 +1,7 @@
 import { formatDistanceToNow } from 'date-fns';
 import {
   Action,
+  Command,
   Ctx,
   InjectBot,
   Scene,
@@ -12,9 +13,20 @@ import { Markup, Telegraf } from 'telegraf';
 import * as tg from 'telegraf/types';
 
 import { Logger } from '@nestjs/common';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { AccessService } from '@tookey/access';
-import { Key, KeyParticipantRepository, KeyRepository } from '@tookey/database';
+import {
+  Key,
+  KeyParticipantRepository,
+  KeyRepository,
+  UserTelegramRepository,
+} from '@tookey/database';
 
+import { KeyCreateRequestDto } from '../../../api/src/keys/keys.dto';
+import {
+  KeyCreateResponseType,
+  KeyEvent,
+} from '../../../api/src/keys/keys.types';
 import { TookeyContext } from '../bot.types';
 import { getPagination } from '../bot.utils';
 import { BaseScene } from './base.scene';
@@ -67,6 +79,8 @@ export class KeysScene extends BaseScene {
     message: tg.Message,
     timeLeft: number,
   ): Promise<void> {
+    if (!this.qrCode) return;
+
     if (timeLeft === 0) {
       await this.bot.telegram.deleteMessage(
         message.chat.id,
@@ -116,6 +130,8 @@ export class KeysScene extends BaseScene {
     private readonly accessService: AccessService,
     private readonly keys: KeyRepository,
     private readonly participants: KeyParticipantRepository,
+    private readonly telegramUsers: UserTelegramRepository,
+    private readonly eventEmitter: EventEmitter2,
   ) {
     super();
   }
@@ -151,10 +167,8 @@ export class KeysScene extends BaseScene {
     }
   }
 
-  @Action(/create/)
-  async onCreate(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
-    this.logger.log('onCreate');
-
+  @Command('/auth')
+  async authCode(@Ctx() ctx: TookeyContext<tg.Update.MessageUpdate>) {
     const userTelegram = ctx.user;
     const { user } = userTelegram;
     const { token } = await this.accessService.getAccessToken(user);
@@ -162,6 +176,19 @@ export class KeysScene extends BaseScene {
     const qr = await QR.toBuffer(encoded);
 
     this.logger.log(token, 'token');
+
+    await ctx.replyWithHTML(
+      ['Scan QR code in <b>Tookey Signer</b> to authenticate'].join('\n'),
+    );
+
+    this.qrCode = await ctx.replyWithPhoto({ source: qr });
+
+    this.editOrDeleteQr(ctx.update.message, 60);
+  }
+
+  @Action(/create/)
+  async onCreate(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
+    this.logger.log('onCreate');
 
     await ctx.replyWithHTML(
       [
@@ -173,16 +200,6 @@ export class KeysScene extends BaseScene {
         Markup.button.url('🔗 Download', 'tookey.io/download'),
       ]),
     );
-
-    await ctx.replyWithHTML(
-      [
-        'Scan QR code in <b>Tookey Signer</b> to link imported key or press a button:',
-      ].join('\n'),
-    );
-
-    this.qrCode = await ctx.replyWithPhoto({ source: qr });
-
-    this.editOrDeleteQr(ctx.update.callback_query.message, 60);
   }
 
   @Action(/link/)
@@ -268,5 +285,74 @@ export class KeysScene extends BaseScene {
     } catch (error) {
       this.logger.error(error);
     }
+  }
+
+  @Action(/keyCreate:(.*)/)
+  async onKeyCreate(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
+    const telegramUser = ctx.user;
+    const { user } = telegramUser;
+    await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+
+    const decision = this.getCallbackPayload(ctx, 'keyCreate:');
+
+    if (decision === 'approve' || decision === 'reject') {
+      this.eventEmitter.emit(KeyEvent.CREATE_RESPONSE, {
+        decision,
+        userId: user.id,
+      });
+    }
+    if (decision === 'approve') {
+      ctx.replyWithHTML(['<b>✅ Key generation approved</b>'].join('\n'));
+    }
+    if (decision === 'reject') {
+      ctx.replyWithHTML(['<b>⛔ Key generation rejected</b>'].join('\n'));
+    }
+  }
+
+  @OnEvent(KeyEvent.CREATE_REQUEST)
+  async onKeyCreateRequest(dto: KeyCreateRequestDto, userId: number) {
+    const telegramUser = await this.telegramUsers.findOneBy({ userId });
+    if (!telegramUser) return;
+
+    const message = [
+      'We are ready to start the key generation process. Do you approve this action?',
+      '',
+    ];
+
+    if (dto.name) {
+      message.push(`<code>Name: ${dto.name}</code>`);
+    }
+    if (dto.description) {
+      message.push(`<code>Description: ${dto.description}</code>`);
+    }
+    if (dto.tags) {
+      message.push(
+        `<code>Tags: ${dto.tags.map((tag) => `#${tag}`).join(' ')}</code>`,
+      );
+    }
+
+    if (dto.name || dto.description || dto.tags) message.push('');
+
+    message.push(`<code>Participants Count: ${dto.participantsCount}</code>`);
+    message.push(
+      `<code>Participants Threshold: ${dto.participantsThreshold}</code>`,
+    );
+    message.push(`<code>Timeout: ${dto.timeoutSeconds}s</code>`);
+
+    await this.bot.telegram.sendMessage(
+      telegramUser.chatId,
+      message.join('\n'),
+      {
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '✅ Approve', callback_data: 'keyCreate:approve' },
+              { text: '⛔ Reject', callback_data: 'keyCreate:reject' },
+            ],
+          ],
+        },
+      },
+    );
   }
 }

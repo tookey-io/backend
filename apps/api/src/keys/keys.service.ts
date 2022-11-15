@@ -2,24 +2,29 @@ import { randomUUID } from 'crypto';
 import { DataSource } from 'typeorm';
 
 import {
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  RequestTimeoutException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AmqpService } from '@tookey/amqp';
 import {
   KeyParticipantRepository,
   KeyRepository,
   SignRepository,
   TaskStatus,
-  UserRepository,
 } from '@tookey/database';
 
+import { UserDto } from '../user/user.dto';
+import { UserService } from '../user/user.service';
 import {
   AmqpKeygenJoinDto,
   AmqpPayloadDto,
   AmqpSignApproveDto,
+  KeyCreateEventResponseDto,
   KeyCreateRequestDto,
   KeyDeleteRequestDto,
   KeyDeleteResponseDto,
@@ -28,6 +33,7 @@ import {
   KeySignRequestDto,
   SignDto,
 } from './keys.dto';
+import { KeyEvent } from './keys.types';
 
 @Injectable()
 export class KeyService {
@@ -39,12 +45,51 @@ export class KeyService {
     private readonly keys: KeyRepository,
     private readonly participants: KeyParticipantRepository,
     private readonly signs: SignRepository,
-    private readonly users: UserRepository,
+    private readonly users: UserService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async create(dto: KeyCreateRequestDto): Promise<KeyDto> {
-    const user = await this.users.findOneBy({ id: dto.userId });
+  async sendCreateApprove(
+    dto: KeyCreateRequestDto,
+    userId: number,
+  ): Promise<KeyDto> {
+    const user = await this.users.getUser({ id: userId });
     if (!user) throw new NotFoundException('User not found');
+
+    await this.checkUserLimits(user);
+
+    this.eventEmitter.emit(KeyEvent.CREATE_REQUEST, dto, userId);
+
+    return await this.eventEmitter
+      .waitFor(KeyEvent.CREATE_RESPONSE, {
+        handleError: false,
+        timeout: dto.timeoutSeconds * 1000,
+        filter: (data: KeyCreateEventResponseDto) => data.userId === userId,
+        Promise,
+        overload: false,
+      })
+      .then(([{ decision }]: [KeyCreateEventResponseDto]) => {
+        if (decision === 'approve') return this.create(dto, userId);
+        if (decision === 'reject') throw new Error(decision);
+        throw new Error();
+      })
+      .catch((error) => {
+        if (error.message === 'reject') {
+          throw new ForbiddenException('Rejected by user');
+        }
+        if (error.message === 'timeout') {
+          throw new RequestTimeoutException('Rejected by user');
+        }
+        this.logger.error(error);
+        throw new InternalServerErrorException(error.message);
+      });
+  }
+
+  async create(dto: KeyCreateRequestDto, userId: number): Promise<KeyDto> {
+    const user = await this.users.getUser({ id: userId });
+    if (!user) throw new NotFoundException('User not found');
+
+    await this.checkUserLimits(user);
 
     const queryRunner = this.dataSource.createQueryRunner();
 
@@ -95,10 +140,14 @@ export class KeyService {
         timeout_seconds: key.timeoutSeconds,
       });
 
-      return new KeyDto({
+      const newKey = new KeyDto({
         ...key,
         participants: participants.map((participant) => participant.index),
       });
+
+      this.eventEmitter.emit('key.create.done', newKey);
+
+      return newKey;
     } catch (error) {
       queryRunner.isTransactionActive &&
         (await queryRunner.rollbackTransaction());
@@ -109,25 +158,55 @@ export class KeyService {
     }
   }
 
-  async get(dto: KeyGetRequestDto): Promise<KeyDto> {
-    const data = await this.keys.findOneBy(dto);
-    if (!data) throw new NotFoundException('Key not found');
+  async checkUserLimits(user: UserDto): Promise<void> {
+    const userKeysCount = await this.keys.countBy({ userId: user.id });
+    if (userKeysCount >= user.keyLimit) {
+      throw new ForbiddenException('Keys limit reached');
+    }
+  }
 
-    const { participants, ...key } = data;
+  async getKey(dto: KeyGetRequestDto, userId?: number): Promise<KeyDto> {
+    const key = await this.keys.findOne({
+      where: { ...dto, userId },
+      relations: { participants: true },
+    });
+    if (!key) throw new NotFoundException('Key not found');
+
+    const { participants, ...keyProps } = key;
 
     return new KeyDto({
-      ...key,
+      ...keyProps,
       participants: participants.map((participant) => participant.index),
     });
   }
 
-  async delete(dto: KeyDeleteRequestDto): Promise<KeyDeleteResponseDto> {
-    const { affected } = await this.keys.delete({ id: dto.id });
+  async getKeys(userId?: number): Promise<KeyDto[]> {
+    const keys = await this.keys.find({
+      where: { userId },
+      relations: { participants: true },
+    });
+    if (!keys.length) throw new NotFoundException('Keys not found');
+
+    return keys.map((key) => {
+      const { participants, ...keyProps } = key;
+
+      return new KeyDto({
+        ...keyProps,
+        participants: participants.map((participant) => participant.index),
+      });
+    });
+  }
+
+  async delete(
+    dto: KeyDeleteRequestDto,
+    userId?: number,
+  ): Promise<KeyDeleteResponseDto> {
+    const { affected } = await this.keys.delete({ id: dto.id, userId });
     return { affected };
   }
 
-  async sign(dto: KeySignRequestDto): Promise<SignDto> {
-    const key = await this.keys.findOneBy({ id: dto.keyId });
+  async sign(dto: KeySignRequestDto, userId?: number): Promise<SignDto> {
+    const key = await this.keys.findOneBy({ id: dto.keyId, userId });
     if (!key) throw new NotFoundException('Key not found');
 
     const { id } = await this.signs.createOrUpdateOne({

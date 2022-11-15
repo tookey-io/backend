@@ -19,6 +19,9 @@ export class UserTelegram extends MetaEntity {
   @JoinColumn()
   user: User;
 
+  @Column()
+  userId: number;
+
   @Column({ type: 'bigint', unique: true })
   @Index({ unique: true })
   telegramId: number;

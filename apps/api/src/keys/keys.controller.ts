@@ -5,30 +5,31 @@ import {
   Delete,
   Get,
   Logger,
+  Param,
+  ParseIntPipe,
   Post,
-  Query,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import {
+  ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiSecurity,
+  ApiRequestTimeoutResponse,
   ApiTags,
-  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { AmqpPayload, AmqpSubscribe } from '@tookey/amqp';
 
-import { ApiKeyGuard } from '../guards/apikey.guard';
+import { Auth } from '../decorators/auth.decorator';
+import { CurrentUser } from '../decorators/current-user.decorator';
+import { UserContextDto } from '../user/user.dto';
 import {
   AmqpPayloadDto,
   KeyCreateRequestDto,
   KeyDeleteRequestDto,
   KeyDeleteResponseDto,
   KeyDto,
-  KeyGetRequestDto,
   KeySignRequestDto,
   SignDto,
 } from './keys.dto';
@@ -36,9 +37,7 @@ import { KeyService } from './keys.service';
 
 @Controller('api/keys')
 @ApiTags('keys')
-// @UseGuards(ApiKeyGuard)
-// @ApiSecurity('apiKey')
-// @ApiUnauthorizedResponse()
+@Auth()
 @UseInterceptors(ClassSerializerInterceptor)
 export class KeyController {
   private readonly logger = new Logger(KeyController.name);
@@ -48,33 +47,55 @@ export class KeyController {
   @ApiOperation({ description: 'Create a Key' })
   @ApiOkResponse({ type: KeyDto })
   @ApiNotFoundResponse()
+  @ApiForbiddenResponse()
+  @ApiRequestTimeoutResponse()
   @ApiInternalServerErrorResponse()
   @Post()
-  createKey(@Body() dto: KeyCreateRequestDto): Promise<KeyDto> {
-    return this.keysService.create(dto);
+  createKey(
+    @Body() dto: KeyCreateRequestDto,
+    @CurrentUser() user: UserContextDto,
+  ): Promise<KeyDto> {
+    return this.keysService.sendCreateApprove(dto, user.id);
   }
 
   @ApiOperation({ description: 'Get a Key' })
   @ApiOkResponse({ type: KeyDto })
   @ApiNotFoundResponse()
+  @Get(':id')
+  getKey(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: UserContextDto,
+  ): Promise<KeyDto> {
+    return this.keysService.getKey({ id }, user.id);
+  }
+
+  @ApiOperation({ description: 'Get Keys' })
+  @ApiOkResponse({ type: KeyDto })
+  @ApiNotFoundResponse()
   @Get()
-  getKey(@Query() dto: KeyGetRequestDto): Promise<KeyDto> {
-    return this.keysService.get(dto);
+  getKeys(@CurrentUser('id') userId: number): Promise<KeyDto[]> {
+    return this.keysService.getKeys(userId);
   }
 
   @ApiOperation({ description: 'Delete a Key' })
   @ApiOkResponse({ type: KeyDeleteResponseDto })
   @Delete()
-  deleteKey(@Body() dto: KeyDeleteRequestDto): Promise<KeyDeleteResponseDto> {
-    return this.keysService.delete(dto);
+  deleteKey(
+    @Body() dto: KeyDeleteRequestDto,
+    @CurrentUser() user: UserContextDto,
+  ): Promise<KeyDeleteResponseDto> {
+    return this.keysService.delete(dto, user.id);
   }
 
   @ApiOperation({ description: 'Sign a Key' })
   @ApiOkResponse({ type: SignDto })
   @ApiNotFoundResponse()
   @Post('sign')
-  sign(@Body() dto: KeySignRequestDto): Promise<SignDto> {
-    return this.keysService.sign(dto);
+  sign(
+    @Body() dto: KeySignRequestDto,
+    @CurrentUser() user: UserContextDto,
+  ): Promise<SignDto> {
+    return this.keysService.sign(dto, user.id);
   }
 
   @AmqpSubscribe({

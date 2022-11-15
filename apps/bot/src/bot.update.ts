@@ -83,7 +83,7 @@ export class BotUpdate {
 
   @Action(/approve/)
   onApprove(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
-    ctx.deleteMessage(ctx.update.callback_query.message!.message_id);
+    ctx.deleteMessage(ctx.update.callback_query.message.message_id);
     ctx.replyWithHTML(
       [
         '<b>✅ Approved signature request</b> from @alerdenisov',

@@ -1,6 +1,6 @@
 import { SceneContext } from 'telegraf/typings/scenes';
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { TelegramSessionRepository } from '@tookey/database';
 
 import { TelegrafMiddleware, TookeyContext } from '../bot.types';
@@ -9,6 +9,8 @@ const EMPTY_SESSION: SceneContext['session'] = { __scenes: {} };
 
 @Injectable()
 export class TelegramSessionMiddleware implements TelegrafMiddleware {
+  private readonly logger = new Logger(TelegramSessionMiddleware.name);
+
   private getSessionKey(ctx: TookeyContext) {
     let fromId = 0;
     let chatId = 0;

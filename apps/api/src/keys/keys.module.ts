@@ -1,16 +1,16 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
+import { AccessModule } from '@tookey/access';
 import { AmqpModule } from '@tookey/amqp';
 import {
   KeyParticipantRepository,
   KeyRepository,
   SignRepository,
   TypeOrmExModule,
-  UserRepository,
 } from '@tookey/database';
 
-import { AccessModule } from '../../../../libs/access/src';
 import { ApiKeyStrategy } from '../strategies/apikey.strategy';
+import { UserModule } from '../user/user.module';
 import { KeyController } from './keys.controller';
 import { KeyService } from './keys.service';
 
@@ -20,11 +20,11 @@ import { KeyService } from './keys.service';
       KeyRepository,
       KeyParticipantRepository,
       SignRepository,
-      UserRepository,
     ]),
     PassportModule,
     AmqpModule,
     AccessModule,
+    UserModule,
   ],
   controllers: [KeyController],
   providers: [KeyService, ApiKeyStrategy],

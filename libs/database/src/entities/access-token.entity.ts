@@ -17,6 +17,9 @@ export class AccessToken extends MetaEntity {
   @ManyToOne(() => User)
   user: User;
 
+  @Column()
+  userId: number;
+
   @Index({ unique: true })
   @Column({ type: 'varchar', length: 64, unique: true })
   token: string;

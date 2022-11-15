@@ -3,7 +3,7 @@ import { addMilliseconds, compareAsc } from 'date-fns';
 
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AccessTokenRepository, User } from '@tookey/database';
+import { AccessToken, AccessTokenRepository, User } from '@tookey/database';
 
 import { AccessConfig } from './access.types';
 
@@ -14,7 +14,7 @@ export class AccessService {
     private readonly accessTokens: AccessTokenRepository,
   ) {}
 
-  async getAccessToken(user: User) {
+  async getAccessToken(user: User): Promise<AccessToken> {
     const found = await this.accessTokens.getByUserId(user.id);
     if (found && compareAsc(found.validUntil, new Date())) return found;
 
@@ -30,6 +30,15 @@ export class AccessService {
     await this.accessTokens.createOrUpdateOne(accessToken);
 
     return accessToken;
+  }
+
+  async getTokenUser(token: string): Promise<User | null> {
+    const accessToken = await this.accessTokens.findOne({
+      where: { token },
+      relations: { user: true },
+    });
+    if (!accessToken) return null;
+    return accessToken.user;
   }
 
   async isValidToken(token: string): Promise<boolean> {

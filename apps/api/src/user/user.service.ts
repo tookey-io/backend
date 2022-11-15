@@ -1,15 +1,21 @@
+import { InjectBot } from 'nestjs-telegraf';
+import { Telegraf } from 'telegraf';
+
 import { Injectable } from '@nestjs/common';
-import { UserRepository } from '@tookey/database';
+import { UserRepository, UserTelegramRepository } from '@tookey/database';
+
+import { UserDto, UserRequestDto } from './user.dto';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly users: UserRepository) {}
+  constructor(
+    @InjectBot() private readonly bot: Telegraf,
+    private readonly users: UserRepository,
+    private readonly telegramUsers: UserTelegramRepository,
+  ) {}
 
-  getOne(params) {
-    return this.users.findOne(params);
-  }
-
-  updateOne(id, params) {
-    return this.users.findOneBy(params);
+  async getUser(dto: UserRequestDto): Promise<UserDto> {
+    const user = await this.users.findOne({ where: dto });
+    return new UserDto(user);
   }
 }
