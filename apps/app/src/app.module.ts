@@ -9,6 +9,7 @@ import { AccessModule } from '@tookey/access';
 import { DatabaseModule, DatabaseService } from '@tookey/database';
 
 import { configuration } from './app.config';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -23,7 +24,7 @@ import { configuration } from './app.config';
     ApiModule,
     AccessModule,
   ],
-  controllers: [],
+  controllers: [AppController],
   providers: [],
 })
 export class AppModule {}

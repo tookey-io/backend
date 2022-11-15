@@ -20,6 +20,7 @@ export interface TelegrafMiddleware<C extends Context = Context> {
 export interface TookeySceneSession extends Scenes.SceneSessionData {
   // custom scene session props
   state: {
+    appAuth: boolean;
     messages: number[];
   };
 }
@@ -37,4 +38,8 @@ export type TookeyContext<
     | tg.Update.CallbackQueryUpdate
     | tg.Update.InlineQueryUpdate
     | tg.Update.MessageUpdate,
-> = Scenes.SceneContext<TookeySceneSession> & { update: U };
+> = Scenes.SceneContext<TookeySceneSession> & {
+  scene: TookeySceneSession;
+  update: U;
+  startPayload: string;
+};

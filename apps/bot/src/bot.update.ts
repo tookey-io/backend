@@ -25,21 +25,24 @@ export class BotUpdate extends BaseScene {
     super();
   }
 
-  // @Action(/activate/)
-  // async onActivate(@Ctx() ctx: TookeyContext) {
-  //   this.logger.log('onActivate');
-  //   this.logger.log(JSON.stringify(ctx.scene.state), 'onActivate');
-  //   ctx.replyWithHTML(['test'].join('\n'));
-  // }
-
   @Start()
   async onStart(@Ctx() ctx: TookeyContext, @Sender() sender: tg.User) {
     this.logger.log('onStart');
-    this.logger.log(ctx.scene.state);
-    this.logger.log(ctx.session);
 
     if (ctx.chat.id != sender.id) {
       return `Hi, ${sender.first_name}! Go to @tookey_bot to manage your keys`;
+    }
+
+    const initialState: Record<string, any> = {};
+
+    // https://t.me/tookey_bot?start=YXBwPWF1dGg
+    if (ctx.startPayload) {
+      const encoded = Buffer.from(ctx.startPayload, 'base64')
+        .toString('ascii')
+        .split('=');
+      if (encoded[0] === 'app' && encoded[1] === 'auth') {
+        initialState.appAuth = true;
+      }
     }
 
     if (ctx.session.__scenes.current) {
@@ -84,27 +87,8 @@ export class BotUpdate extends BaseScene {
     //     ],
     //   ]),
     // );
-    await ctx.scene.enter(MenuScene.name);
+    await ctx.scene.enter(MenuScene.name, initialState);
   }
-
-  // @Action(/approve/)
-  // onApprove(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
-  //   ctx.deleteMessage(ctx.update.callback_query.message.message_id);
-  //   ctx.replyWithHTML(
-  //     [
-  //       '<b>✅ Approved signature request</b> from @alerdenisov',
-  //       'Ethereum Signed Message',
-  //       'request on <i>Planet IX</i> (planetix.com)',
-  //       '',
-  //       'Content:',
-  //       '<code>URI: https://planetix.com/connect</code>',
-  //       '<code>Web3 Token Version: 2</code>',
-  //       '<code>Nonce: 40293536</code>',
-  //       '<code>Issued At: 2022-08-22T19:28:25.431Z</code>',
-  //       '<code>Expiration Time: 2022-08-23T19:28:25.000Z</code>',
-  //     ].join('\n'),
-  //   );
-  // }
 
   @Action(/keySign:(.*)/)
   async onKeyCreate(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {

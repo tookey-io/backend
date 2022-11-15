@@ -18,6 +18,7 @@ export class AppConfiguration
   defaultTtl: number;
   telegramToken: string;
   appName: string;
+  appUrl: string;
   port: number;
   isProduction: boolean;
   db: DatabaseConnection;
@@ -30,6 +31,7 @@ export function configuration(): AppConfiguration {
     defaultTtl: parseInt(process.env.ACCESS_TOKEN_TTL) || 1000 * 60 * 60 * 24, // 1 day by default
     telegramToken: process.env.TELEGRAM_TOKEN,
     appName: process.env.APP_NAME || 'tookey',
+    appUrl: process.env.APP_URL,
     port: parseInt(process.env.PORT, 10),
     isProduction: process.env.NODE_ENV === 'production',
     db: {
