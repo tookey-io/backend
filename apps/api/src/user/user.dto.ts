@@ -34,7 +34,7 @@ export class UserDto {
   @Expose()
   @IsString()
   @Transform(({ value }) => formatDistanceToNow(new Date(value)))
-  lastInteraction: '2022-11-14T19:44:08.419Z';
+  lastInteraction: string;
 
   @ApiProperty()
   @Expose()
