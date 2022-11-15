@@ -22,6 +22,7 @@ export class Key extends MetaEntity {
   @JoinColumn()
   user: User;
 
+  @Index()
   @Column()
   userId: number;
 
@@ -41,7 +42,8 @@ export class Key extends MetaEntity {
   @Column({ type: 'int', unsigned: true, nullable: true })
   timeoutSeconds: number;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Index()
+  @Column({ type: 'varchar', length: 66, nullable: true })
   publicKey: string;
 
   @Column({ type: 'varchar', nullable: true })

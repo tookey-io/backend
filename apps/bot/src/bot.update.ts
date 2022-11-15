@@ -1,30 +1,36 @@
-import { Action, Ctx, Sender, Start, Update } from 'nestjs-telegraf';
+import { addSeconds } from 'date-fns';
+import { Action, Ctx, InjectBot, Sender, Start, Update } from 'nestjs-telegraf';
+import { Telegraf } from 'telegraf';
 import * as tg from 'telegraf/types';
 
 import { Logger } from '@nestjs/common';
-import { UserRepository, UserTelegramRepository } from '@tookey/database';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { UserTelegramRepository } from '@tookey/database';
 
+import { KeySignEventRequestDto } from '../../api/src/keys/keys.dto';
+import { KeyEvent } from '../../api/src/keys/keys.types';
 import { TookeyContext } from './bot.types';
+import { BaseScene } from './scenes/base.scene';
 import { MenuScene } from './scenes/menu.scene';
 
 @Update()
-export class BotUpdate {
+export class BotUpdate extends BaseScene {
   private readonly logger = new Logger(BotUpdate.name);
 
   constructor(
-    private readonly users: UserRepository,
-    private readonly usersTelegram: UserTelegramRepository,
-  ) {}
-
-  @Action(/activate/)
-  async onActivate(
-    @Ctx() ctx: TookeyContext,
-    // @Sender() sender: tg.User,
+    @InjectBot() private readonly bot: Telegraf<TookeyContext>,
+    private readonly eventEmitter: EventEmitter2,
+    private readonly telegramUsers: UserTelegramRepository,
   ) {
-    this.logger.log('onActivate');
-    this.logger.log(JSON.stringify(ctx.scene.state), 'onActivate');
-    ctx.replyWithHTML(['test'].join('\n'));
+    super();
   }
+
+  // @Action(/activate/)
+  // async onActivate(@Ctx() ctx: TookeyContext) {
+  //   this.logger.log('onActivate');
+  //   this.logger.log(JSON.stringify(ctx.scene.state), 'onActivate');
+  //   ctx.replyWithHTML(['test'].join('\n'));
+  // }
 
   @Start()
   async onStart(@Ctx() ctx: TookeyContext, @Sender() sender: tg.User) {
@@ -81,22 +87,77 @@ export class BotUpdate {
     await ctx.scene.enter(MenuScene.name);
   }
 
-  @Action(/approve/)
-  onApprove(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
-    ctx.deleteMessage(ctx.update.callback_query.message.message_id);
-    ctx.replyWithHTML(
-      [
-        '<b>✅ Approved signature request</b> from @alerdenisov',
-        'Ethereum Signed Message',
-        'request on <i>Planet IX</i> (planetix.com)',
-        '',
-        'Content:',
-        '<code>URI: https://planetix.com/connect</code>',
-        '<code>Web3 Token Version: 2</code>',
-        '<code>Nonce: 40293536</code>',
-        '<code>Issued At: 2022-08-22T19:28:25.431Z</code>',
-        '<code>Expiration Time: 2022-08-23T19:28:25.000Z</code>',
-      ].join('\n'),
+  // @Action(/approve/)
+  // onApprove(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
+  //   ctx.deleteMessage(ctx.update.callback_query.message.message_id);
+  //   ctx.replyWithHTML(
+  //     [
+  //       '<b>✅ Approved signature request</b> from @alerdenisov',
+  //       'Ethereum Signed Message',
+  //       'request on <i>Planet IX</i> (planetix.com)',
+  //       '',
+  //       'Content:',
+  //       '<code>URI: https://planetix.com/connect</code>',
+  //       '<code>Web3 Token Version: 2</code>',
+  //       '<code>Nonce: 40293536</code>',
+  //       '<code>Issued At: 2022-08-22T19:28:25.431Z</code>',
+  //       '<code>Expiration Time: 2022-08-23T19:28:25.000Z</code>',
+  //     ].join('\n'),
+  //   );
+  // }
+
+  @Action(/keySign:(.*)/)
+  async onKeyCreate(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
+    const telegramUser = ctx.user;
+    const { user } = telegramUser;
+    await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+
+    const decision = this.getCallbackPayload(ctx, 'keySign:');
+
+    this.eventEmitter.emit(KeyEvent.SIGN_RESPONSE, {
+      isApproved: decision === 'approve',
+      userId: user.id,
+    });
+
+    if (decision === 'approve') {
+      ctx.replyWithHTML(
+        ['<b>✅ Approved signature request</b> from @'].join('\n'),
+      );
+    }
+    if (decision === 'reject') {
+      ctx.replyWithHTML(['<b>⛔ Rejected</b>'].join('\n'));
+    }
+  }
+
+  @OnEvent(KeyEvent.SIGN_REQUEST)
+  async onKeySignRequest(dto: KeySignEventRequestDto, userId: number) {
+    const telegramUser = await this.telegramUsers.findOneBy({ userId });
+    if (!telegramUser) return;
+
+    const message = [
+      '<b>Signature request</b> from @',
+      '',
+      `<code>DATA: ${dto.data}</code>`,
+      `<code>Expiration Time: ${addSeconds(
+        new Date(),
+        dto.timeoutSeconds,
+      )}</code>`,
+    ];
+
+    await this.bot.telegram.sendMessage(
+      telegramUser.chatId,
+      message.join('\n'),
+      {
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '✅ Approve', callback_data: 'keySign:approve' },
+              { text: '⛔ Reject', callback_data: 'keySign:reject' },
+            ],
+          ],
+        },
+      },
     );
   }
 }

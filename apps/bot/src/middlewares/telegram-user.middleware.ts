@@ -19,7 +19,10 @@ export class TelegramUserMiddleware implements TelegrafMiddleware {
 
   async use(ctx: TookeyContext, next: () => Promise<void>) {
     const telegramId = this.getTelegramId(ctx);
-    const userTelegram = await this.telegramUsers.findOneBy({ telegramId });
+    const userTelegram = await this.telegramUsers.findOne({
+      where: { telegramId },
+      relations: { user: true },
+    });
 
     if (userTelegram) {
       this.logger.debug('telegram user exists');

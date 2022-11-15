@@ -1,8 +1,8 @@
 import { Exclude, Expose, Transform } from 'class-transformer';
-import { IsBoolean, IsEnum, IsNumber, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsString } from 'class-validator';
 import { formatDistanceToNow } from 'date-fns';
 
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 
 import { KeyDto } from '../keys/keys.dto';
 

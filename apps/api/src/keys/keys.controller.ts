@@ -55,7 +55,7 @@ export class KeyController {
     @Body() dto: KeyCreateRequestDto,
     @CurrentUser() user: UserContextDto,
   ): Promise<KeyDto> {
-    return this.keysService.sendCreateApprove(dto, user.id);
+    return this.keysService.createKey(dto, user.id);
   }
 
   @ApiOperation({ description: 'Get a Key' })
@@ -73,8 +73,8 @@ export class KeyController {
   @ApiOkResponse({ type: KeyDto })
   @ApiNotFoundResponse()
   @Get()
-  getKeys(@CurrentUser('id') userId: number): Promise<KeyDto[]> {
-    return this.keysService.getKeys(userId);
+  getKeys(@CurrentUser() user: UserContextDto): Promise<KeyDto[]> {
+    return this.keysService.getKeys(user.id);
   }
 
   @ApiOperation({ description: 'Delete a Key' })
@@ -91,11 +91,11 @@ export class KeyController {
   @ApiOkResponse({ type: SignDto })
   @ApiNotFoundResponse()
   @Post('sign')
-  sign(
+  signKey(
     @Body() dto: KeySignRequestDto,
     @CurrentUser() user: UserContextDto,
   ): Promise<SignDto> {
-    return this.keysService.sign(dto, user.id);
+    return this.keysService.signKey(dto, user.id);
   }
 
   @AmqpSubscribe({

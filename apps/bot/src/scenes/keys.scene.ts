@@ -23,10 +23,7 @@ import {
 } from '@tookey/database';
 
 import { KeyCreateRequestDto } from '../../../api/src/keys/keys.dto';
-import {
-  KeyCreateResponseType,
-  KeyEvent,
-} from '../../../api/src/keys/keys.types';
+import { KeyEvent } from '../../../api/src/keys/keys.types';
 import { TookeyContext } from '../bot.types';
 import { getPagination } from '../bot.utils';
 import { BaseScene } from './base.scene';
@@ -171,11 +168,11 @@ export class KeysScene extends BaseScene {
   async authCode(@Ctx() ctx: TookeyContext<tg.Update.MessageUpdate>) {
     const userTelegram = ctx.user;
     const { user } = userTelegram;
-    const { token } = await this.accessService.getAccessToken(user);
+    const { token } = await this.accessService.getAccessToken(user.id);
     const encoded = `tookey://access/${token}`;
     const qr = await QR.toBuffer(encoded);
 
-    this.logger.log(token, 'token');
+    this.logger.debug(token, 'token');
 
     await ctx.replyWithHTML(
       ['Scan QR code in <b>Tookey Signer</b> to authenticate'].join('\n'),
@@ -295,12 +292,11 @@ export class KeysScene extends BaseScene {
 
     const decision = this.getCallbackPayload(ctx, 'keyCreate:');
 
-    if (decision === 'approve' || decision === 'reject') {
-      this.eventEmitter.emit(KeyEvent.CREATE_RESPONSE, {
-        decision,
-        userId: user.id,
-      });
-    }
+    this.eventEmitter.emit(KeyEvent.CREATE_RESPONSE, {
+      isApproved: decision === 'approve',
+      userId: user.id,
+    });
+
     if (decision === 'approve') {
       ctx.replyWithHTML(['<b>✅ Key generation approved</b>'].join('\n'));
     }

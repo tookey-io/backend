@@ -15,8 +15,12 @@ import { Key } from './key.entity';
 
 @Entity()
 export class Sign extends MetaEntity {
-  @ManyToOne(() => Key, { eager: true })
+  @ManyToOne(() => Key)
   key: Key;
+
+  @Index()
+  @Column()
+  keyId: number;
 
   @Index()
   @Column({ type: 'varchar' })
@@ -32,7 +36,7 @@ export class Sign extends MetaEntity {
   data: string;
 
   @Column({ type: 'jsonb' })
-  metadata: any;
+  metadata: Record<string, any>;
 
   @Index()
   @Column({ type: 'enum', enum: TaskStatus, default: TaskStatus.Created })

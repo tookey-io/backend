@@ -14,12 +14,12 @@ export class AccessService {
     private readonly accessTokens: AccessTokenRepository,
   ) {}
 
-  async getAccessToken(user: User): Promise<AccessToken> {
-    const found = await this.accessTokens.getByUserId(user.id);
+  async getAccessToken(userId: number): Promise<AccessToken> {
+    const found = await this.accessTokens.findOneBy({ userId });
     if (found && compareAsc(found.validUntil, new Date())) return found;
 
     const accessToken = this.accessTokens.create({
-      user,
+      userId,
       token: crypto.randomBytes(32).toString('hex'),
       validUntil: addMilliseconds(
         new Date(),

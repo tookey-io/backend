@@ -1,19 +1,19 @@
 import { Exclude, Expose, Transform } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
   IsNumber,
   IsObject,
   IsOptional,
   IsString,
   IsUUID,
+  Length,
   MaxLength,
   ValidateIf,
 } from 'class-validator';
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TaskStatus } from '@tookey/database';
-
-import { CREATE_RESPONSE_TYPE, KeyCreateResponseType } from './keys.types';
 
 @Exclude()
 export class KeyDto {
@@ -107,7 +107,7 @@ export class SignDto {
   @ApiProperty()
   @Expose()
   @IsObject()
-  metadata: any;
+  metadata: Record<string, any>;
 
   constructor(partial: Partial<KeyDto>) {
     Object.assign(this, partial);
@@ -146,12 +146,12 @@ export class KeyCreateRequestDto {
   tags?: string[];
 }
 
-export class KeyCreateEventResponseDto {
+export class KeyEventResponseDto {
   @IsNumber()
   userId: number;
 
-  @IsEnum(CREATE_RESPONSE_TYPE)
-  decision: KeyCreateResponseType;
+  @IsBoolean()
+  isApproved: boolean;
 }
 
 export class KeyGetRequestDto {
@@ -174,12 +174,9 @@ export class KeyDeleteResponseDto {
 
 export class KeySignRequestDto {
   @ApiProperty()
-  @IsNumber()
-  keyId: number;
-
-  @ApiProperty()
-  @IsUUID()
-  roomId: string;
+  @IsString()
+  @Length(66, 66)
+  publicKey: string;
 
   @ApiProperty()
   @IsNumber({}, { each: true })
@@ -191,7 +188,18 @@ export class KeySignRequestDto {
 
   @ApiProperty()
   @IsObject()
-  metadata: any;
+  metadata: Record<string, any>;
+}
+
+export class KeySignEventRequestDto extends KeySignRequestDto {
+  @ApiProperty()
+  @IsNumber()
+  keyId: number;
+
+  @ApiProperty()
+  @Expose()
+  @IsNumber()
+  timeoutSeconds: number;
 }
 
 export const AMQP_ACTION = [

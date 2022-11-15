@@ -15,19 +15,20 @@ import { User } from './user.entity';
 
 @Entity()
 export class UserTelegram extends MetaEntity {
-  @OneToOne(() => User, { eager: true })
+  @OneToOne(() => User)
   @JoinColumn()
   user: User;
 
+  @Index()
   @Column()
   userId: number;
 
-  @Column({ type: 'bigint', unique: true })
   @Index({ unique: true })
+  @Column({ type: 'bigint', unique: true })
   telegramId: number;
 
-  @Column({ type: 'bigint', unique: true, nullable: true })
   @Index()
+  @Column({ type: 'bigint', unique: true, nullable: true })
   chatId: number;
 }
 

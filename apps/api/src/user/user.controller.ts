@@ -27,10 +27,7 @@ export class UserController {
   @ApiOkResponse({ type: UserDto })
   @ApiNotFoundResponse()
   @Get('me')
-  async getCurrentUser(
-    @CurrentUser() userContext: UserContextDto,
-  ): Promise<UserDto> {
-    const user = await this.userService.getUser(userContext);
-    return user;
+  async getCurrentUser(@CurrentUser() user: UserContextDto): Promise<UserDto> {
+    return this.userService.getUser(user);
   }
 }

@@ -3,6 +3,7 @@ import {
   DeepPartial,
   Entity,
   EntityManager,
+  Index,
   ManyToOne,
   Repository,
 } from 'typeorm';
@@ -17,12 +18,14 @@ export class KeyParticipant extends MetaEntity {
   @ManyToOne(() => Key, (key) => key.participants, { onDelete: 'CASCADE' })
   key: Key;
 
+  @Index()
   @Column()
   keyId: number;
 
   @ManyToOne(() => User, (user) => user.id)
   user: User;
 
+  @Index()
   @Column()
   userId: number;
 

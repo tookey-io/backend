@@ -18,11 +18,11 @@ import { Key } from './key.entity';
 @Entity()
 @Tree('nested-set')
 export class User extends MetaEntity {
-  @Column({ default: true })
   @Index()
+  @Column({ default: true })
   fresh: boolean;
 
-  @Column({ default: new Date() })
+  @Column({ default: () => 'now()' })
   lastInteraction: Date;
 
   @TreeChildren()
