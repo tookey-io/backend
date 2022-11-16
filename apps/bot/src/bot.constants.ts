@@ -17,3 +17,7 @@ export enum BotAction {
   KEY_CREATE_REQUEST = 'key:create:request:',
   KEY_SIGN_REQUEST = 'key:sign:request:',
 }
+
+export enum BotMenu {
+  KEYS = '🔑 Keys',
+}

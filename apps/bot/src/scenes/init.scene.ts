@@ -8,7 +8,7 @@ import * as tg from 'telegraf/types';
 import { ConfigService } from '@nestjs/config';
 import { AccessService } from '@tookey/access';
 
-import { BotScene } from '../bot.constants';
+import { BotAction, BotMenu, BotScene } from '../bot.constants';
 import { TookeyContext } from '../bot.types';
 
 @Scene(BotScene.INIT)
@@ -26,11 +26,10 @@ export class InitScene {
 
     const userTelegram = ctx.user;
 
-    if (userTelegram.user.fresh) {
+    if (!userTelegram.user.fresh) {
+      await ctx.replyWithHTML([`<b>Hi, ${from.first_name}!</b>`].join('\n'), Markup.keyboard([[BotMenu.KEYS]]));
       await ctx.replyWithHTML(
         [
-          `<b>Hi, ${from.first_name}!</b>`,
-          ``,
           `<b>Tookey</b> (2K in short) is security protocol designed to protect DeFi and Web3 from private key disclosure threats, inducting distributed key management and signing system`,
         ].join('\n'),
         Markup.inlineKeyboard([
@@ -41,17 +40,7 @@ export class InitScene {
 
       await this.unfresh(ctx);
     } else {
-      await ctx.replyWithHTML(
-        `Hi, ${from.first_name}!`,
-        !userTelegram.user.fresh
-          ? undefined
-          : Markup.inlineKeyboard([
-              [
-                Markup.button.url('🔗 Official Website', 'tookey.io'),
-                Markup.button.url('🔗 Documentation', 'tookey.io/docs'),
-              ],
-            ]),
-      );
+      await ctx.replyWithHTML(`Hi, ${from.first_name}!`, Markup.keyboard([[BotMenu.KEYS]]));
     }
 
     if (ctx.scene.state.appAuth) {
@@ -65,9 +54,9 @@ export class InitScene {
         'Authenticate in <b>Tookey Signer</b>',
         Markup.inlineKeyboard([[Markup.button.url('✅ Sign with Telegram', link)]]),
       );
-    } else {
-      await ctx.scene.enter(BotScene.KEYS, ctx.scene.state);
     }
+
+    ctx.scene.leave();
   }
 
   private async unfresh(ctx: TookeyContext): Promise<void> {
