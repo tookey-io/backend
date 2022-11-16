@@ -1,14 +1,14 @@
+import { KeyParticipationDto } from 'apps/api/src/keys/keys.dto';
+import { TelegramUserDto } from 'apps/api/src/user/user-telegram.dto';
 import { Context, MiddlewareFn, Scenes } from 'telegraf';
 import * as tg from 'telegraf/types';
-
-import { UserTelegram } from '@tookey/database';
 
 export type BotConfig = {
   telegramToken: string;
 };
 
 export interface UserSession {
-  user: UserTelegram;
+  user: TelegramUserDto;
 }
 
 export interface TelegrafMiddleware<C extends Context = Context> {
@@ -22,7 +22,7 @@ export interface TookeySceneSession extends Scenes.SceneSessionData {
   state: {
     appAuth?: boolean;
     authCode?: tg.Message.PhotoMessage;
-    keys?: { id: number; name: string }[];
+    keys?: KeyParticipationDto[];
     messages?: number[];
   };
 }

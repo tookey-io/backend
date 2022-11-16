@@ -11,6 +11,7 @@ import {
   MaxLength,
   ValidateIf,
 } from 'class-validator';
+import { formatISO } from 'date-fns';
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TaskStatus } from '@tookey/database';
@@ -66,6 +67,19 @@ export class KeyDto {
   @Transform(({ value }) => value || '')
   publicKey: string;
 
+  @ApiProperty()
+  @IsEnum(TaskStatus)
+  status: TaskStatus;
+
+  @ApiProperty({ default: 3 })
+  @IsNumber()
+  participantsCount: number;
+
+  @ApiProperty()
+  @IsString()
+  @Transform(({ value }) => formatISO(new Date(value)))
+  createdAt: Date;
+
   constructor(partial: Partial<KeyDto>) {
     Object.assign(this, partial);
   }
@@ -94,9 +108,9 @@ export class SignDto {
   participantsConfirmations: number[];
 
   @ApiProperty()
-  @Expose()
   @IsString()
-  timeoutAt: string;
+  @Transform(({ value }) => formatISO(new Date(value)))
+  timeoutAt: Date;
 
   @ApiProperty()
   @Expose()
@@ -109,7 +123,7 @@ export class SignDto {
   @IsObject()
   metadata: Record<string, any>;
 
-  constructor(partial: Partial<KeyDto>) {
+  constructor(partial: Partial<SignDto>) {
     Object.assign(this, partial);
   }
 }
@@ -200,6 +214,28 @@ export class KeySignEventRequestDto extends KeySignRequestDto {
   @Expose()
   @IsNumber()
   timeoutSeconds: number;
+}
+
+export class KeyParticipationDto {
+  @ApiProperty()
+  @IsNumber()
+  keyId: number;
+
+  @ApiProperty()
+  @IsString()
+  keyName: string;
+
+  @ApiProperty()
+  @IsNumber()
+  userId: number;
+
+  @ApiProperty()
+  @IsNumber()
+  userIndex: number;
+
+  @ApiProperty()
+  @IsBoolean()
+  isOwner: boolean;
 }
 
 export const AMQP_ACTION = ['keygen_status', 'sign_status', 'keygen_join', 'sign_approve'] as const;

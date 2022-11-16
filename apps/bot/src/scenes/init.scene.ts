@@ -1,3 +1,4 @@
+import { UserService } from 'apps/api/src/user/user.service';
 import { AppConfiguration } from 'apps/app/src/app.config';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Ctx, Scene, SceneEnter, Sender } from 'nestjs-telegraf';
@@ -6,7 +7,6 @@ import * as tg from 'telegraf/types';
 
 import { ConfigService } from '@nestjs/config';
 import { AccessService } from '@tookey/access';
-import { UserRepository } from '@tookey/database';
 
 import { BotScene } from '../bot.constants';
 import { TookeyContext } from '../bot.types';
@@ -15,7 +15,7 @@ import { TookeyContext } from '../bot.types';
 export class InitScene {
   constructor(
     @InjectPinoLogger(InitScene.name) private readonly logger: PinoLogger,
-    private readonly users: UserRepository,
+    private readonly userService: UserService,
     private readonly accessService: AccessService,
     private readonly configService: ConfigService<AppConfiguration>,
   ) {}
@@ -70,10 +70,10 @@ export class InitScene {
     }
   }
 
-  private async unfresh(ctx: TookeyContext) {
+  private async unfresh(ctx: TookeyContext): Promise<void> {
     const userTelegram = ctx.user;
     const { user } = userTelegram;
     user.fresh = false;
-    await this.users.save(user);
+    await this.userService.updateUser(user.id, { fresh: false });
   }
 }

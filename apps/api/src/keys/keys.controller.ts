@@ -34,16 +34,16 @@ import {
   KeySignRequestDto,
   SignDto,
 } from './keys.dto';
-import { KeyService } from './keys.service';
+import { KeysService } from './keys.service';
 
 @Controller('api/keys')
 @ApiTags('keys')
 @Auth()
 @UseInterceptors(ClassSerializerInterceptor)
-export class KeyController {
+export class KeysController {
   constructor(
-    @InjectPinoLogger(KeyController.name) private readonly logger: PinoLogger,
-    private readonly keysService: KeyService,
+    @InjectPinoLogger(KeysController.name) private readonly logger: PinoLogger,
+    private readonly keysService: KeysService,
   ) {}
 
   @ApiOperation({ description: 'Create a Key' })

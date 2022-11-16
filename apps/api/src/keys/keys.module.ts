@@ -6,18 +6,15 @@ import { KeyParticipantRepository, KeyRepository, SignRepository, TypeOrmExModul
 
 import { ApiKeyStrategy } from '../strategies/apikey.strategy';
 import { UserModule } from '../user/user.module';
-import { KeyController } from './keys.controller';
-import { KeyService } from './keys.service';
+import { KeysController } from './keys.controller';
+import { KeysService } from './keys.service';
+
+const KeysRepositories = TypeOrmExModule.forCustomRepository([KeyRepository, KeyParticipantRepository, SignRepository]);
 
 @Module({
-  imports: [
-    TypeOrmExModule.forCustomRepository([KeyRepository, KeyParticipantRepository, SignRepository]),
-    PassportModule,
-    AmqpModule,
-    AccessModule,
-    UserModule,
-  ],
-  controllers: [KeyController],
-  providers: [KeyService, ApiKeyStrategy],
+  imports: [KeysRepositories, PassportModule, AmqpModule, AccessModule, UserModule],
+  controllers: [KeysController],
+  providers: [KeysService, ApiKeyStrategy],
+  exports: [KeysRepositories, KeysService],
 })
 export class KeyModule {}

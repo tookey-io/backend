@@ -1,13 +1,13 @@
+import { KeyParticipationDto } from 'apps/api/src/keys/keys.dto';
+import { KeysService } from 'apps/api/src/keys/keys.service';
 import { KeyEvent } from 'apps/api/src/keys/keys.types';
 import { formatDistanceToNow } from 'date-fns';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Action, Ctx, InjectBot, Scene, SceneEnter } from 'nestjs-telegraf';
 import { Markup, Telegraf } from 'telegraf';
 import * as tg from 'telegraf/types';
-import { In, Not } from 'typeorm';
 
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { KeyParticipantRepository, KeyRepository, TaskStatus } from '@tookey/database';
 
 import { BotAction, BotScene } from '../bot.constants';
 import { TookeyContext } from '../bot.types';
@@ -16,13 +16,13 @@ import { BaseScene } from './base.scene';
 
 @Scene(BotScene.KEYS)
 export class KeysScene extends BaseScene {
-  private readonly manageKeysKeyboard = (keys: { id: number; name: string }[], currentPage = 1, pageSize = 5) => {
+  private readonly manageKeysKeyboard = (keys: KeyParticipationDto[], currentPage = 1, pageSize = 5) => {
     const totalPages = Math.ceil(keys.length / pageSize);
 
     const items = keys.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     return Markup.inlineKeyboard([
-      ...items.map((key) => [Markup.button.callback(`🔑 ${key.name}`, `${BotAction.KEY_MANAGE}${key.id}`)]),
+      ...items.map((key) => [Markup.button.callback(`🔑 ${key.keyName}`, `${BotAction.KEY_MANAGE}${key.keyId}`)]),
       getPagination(currentPage, totalPages).map(({ text, data }) =>
         Markup.button.callback(text, `${BotAction.KEY_PAGE}${data}`),
       ),
@@ -33,19 +33,14 @@ export class KeysScene extends BaseScene {
     const userTelegram = ctx.user;
     const { user } = userTelegram;
 
-    const keys = await this.participants.find({
-      where: { userId: user.id, key: { status: Not(In([TaskStatus.Timeout, TaskStatus.Error])) } },
-      relations: { key: true },
-    });
-
-    ctx.scene.state.keys = keys.map((participant) => ({ id: participant.keyId, name: participant.key.name }));
+    ctx.scene.state.keys = await this.keysService.getKeyParticipationsByUser(user.id);
   }
 
   constructor(
     @InjectBot() private readonly bot: Telegraf<TookeyContext>,
     @InjectPinoLogger(KeysScene.name) private readonly logger: PinoLogger,
-    private readonly keys: KeyRepository,
-    private readonly participants: KeyParticipantRepository,
+    private readonly keysService: KeysService,
+    // private readonly participants: KeyParticipantRepository,
     private readonly eventEmitter: EventEmitter2,
   ) {
     super();
@@ -117,7 +112,7 @@ export class KeysScene extends BaseScene {
 
     if (!ctx.scene.state.keys) await this.updateParticipationKeys(ctx);
 
-    const key = await this.keys.findOneBy({ id: keyId });
+    const key = await this.keysService.getKey({ id: keyId });
     const message: string[] = [`<b>${key.name}</b>`];
 
     if (key.description) message.push(key.description);
@@ -129,7 +124,7 @@ export class KeysScene extends BaseScene {
     message.push('');
     message.push(`Participants count: ${key.participantsCount}`);
     message.push(`Participants threshold: ${key.participantsThreshold}`);
-    message.push(`Age: ${formatDistanceToNow(key.createdAt)}`);
+    message.push(`Age: ${formatDistanceToNow(new Date(key.createdAt))}`);
 
     await ctx.replyWithHTML(message.join('\n'));
   }

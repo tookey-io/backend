@@ -25,6 +25,7 @@ import {
   KeyDto,
   KeyEventResponseDto,
   KeyGetRequestDto,
+  KeyParticipationDto,
   KeySignEventRequestDto,
   KeySignRequestDto,
   SignDto,
@@ -32,9 +33,9 @@ import {
 import { KeyEvent } from './keys.types';
 
 @Injectable()
-export class KeyService {
+export class KeysService {
   constructor(
-    @InjectPinoLogger(KeyService.name) private readonly logger: PinoLogger,
+    @InjectPinoLogger(KeysService.name) private readonly logger: PinoLogger,
     private readonly dataSource: DataSource,
     private readonly amqp: AmqpService,
     private readonly keys: KeyRepository,
@@ -169,6 +170,21 @@ export class KeyService {
         participants: participants.map((participant) => participant.index),
       });
     });
+  }
+
+  async getKeyParticipationsByUser(userId: number): Promise<KeyParticipationDto[]> {
+    const participations = await this.participants.find({
+      where: { userId, key: { status: Not(In([TaskStatus.Timeout, TaskStatus.Error])) } },
+      relations: { key: true },
+    });
+
+    return participations.map((participation) => ({
+      keyId: participation.keyId,
+      keyName: participation.key.name,
+      userId: participation.userId,
+      userIndex: participation.index,
+      isOwner: userId === participation.key.userId,
+    }));
   }
 
   async delete(dto: KeyDeleteRequestDto, userId?: number): Promise<KeyDeleteResponseDto> {

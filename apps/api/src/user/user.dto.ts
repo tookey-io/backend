@@ -1,18 +1,12 @@
 import { Exclude, Expose, Transform } from 'class-transformer';
-import { IsBoolean, IsNumber, IsString } from 'class-validator';
-import { formatDistanceToNow } from 'date-fns';
+import { IsBoolean, IsDate, IsNumber, IsString } from 'class-validator';
+import { formatISO } from 'date-fns';
 
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 
 import { KeyDto } from '../keys/keys.dto';
 
 export class UserContextDto {
-  @ApiProperty()
-  @IsNumber()
-  id: number;
-}
-
-export class UserRequestDto {
   @ApiProperty()
   @IsNumber()
   id: number;
@@ -33,15 +27,30 @@ export class UserDto {
   @ApiProperty()
   @Expose()
   @IsString()
-  @Transform(({ value }) => formatDistanceToNow(new Date(value)))
-  lastInteraction: string;
+  @Transform(({ value }) => formatISO(new Date(value)))
+  lastInteraction: Date;
 
   @ApiProperty()
   @Expose()
   @IsNumber()
   keyLimit: number;
 
-  constructor(partial: Partial<KeyDto>) {
+  constructor(partial: Partial<UserDto>) {
     Object.assign(this, partial);
   }
+}
+
+export class UserRequestDto {
+  @ApiPropertyOptional()
+  @IsNumber()
+  id?: number;
+}
+
+export class CreateUserDto {}
+
+export class UpdateUserDto extends OmitType(PartialType(UserDto), ['id', 'lastInteraction'] as const) {
+  @ApiProperty()
+  @Expose()
+  @IsDate()
+  lastInteraction?: Date;
 }

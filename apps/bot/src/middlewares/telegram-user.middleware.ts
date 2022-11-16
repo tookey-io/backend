@@ -1,11 +1,11 @@
+import { TelegramUserDto } from 'apps/api/src/user/user-telegram.dto';
+import { UserService } from 'apps/api/src/user/user.service';
 import { differenceInSeconds } from 'date-fns';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Context } from 'telegraf';
 import * as tg from 'telegraf/types';
-import { DataSource } from 'typeorm';
 
 import { Injectable } from '@nestjs/common';
-import { UserRepository, UserTelegram, UserTelegramRepository } from '@tookey/database';
 
 import { TelegrafMiddleware, TookeyContext } from '../bot.types';
 
@@ -13,30 +13,24 @@ import { TelegrafMiddleware, TookeyContext } from '../bot.types';
 export class TelegramUserMiddleware implements TelegrafMiddleware {
   constructor(
     @InjectPinoLogger(TelegramUserMiddleware.name) private readonly logger: PinoLogger,
-    private readonly dataSource: DataSource,
-    private readonly users: UserRepository,
-    private readonly telegramUsers: UserTelegramRepository,
+    private readonly userService: UserService,
   ) {}
 
   async use(ctx: TookeyContext, next: () => Promise<void>) {
     const sender = this.getSender(ctx);
-    const userTelegram = await this.telegramUsers.findOne({
-      where: { telegramId: sender.id },
-      relations: { user: true },
-    });
+    const userTelegram = await this.userService.getTelegramUser({ telegramId: sender.id }, ['user']);
 
     if (userTelegram) {
       ctx.user = userTelegram;
       const { user } = userTelegram;
 
-      if (differenceInSeconds(user.lastInteraction, new Date()) > 10) user.fresh = true;
-      user.lastInteraction = new Date();
-
-      this.users.createOrUpdateOne(user);
+      this.userService.updateUser(user.id, {
+        lastInteraction: new Date(),
+        fresh: differenceInSeconds(new Date(user.lastInteraction), new Date()) > 10,
+      });
 
       if (this.isProfileUpdated(userTelegram, sender)) {
-        this.telegramUsers.createOrUpdateOne({
-          id: userTelegram.id,
+        this.userService.updateUserTelegram(userTelegram.id, {
           userId: user.id,
           telegramId: sender.id,
           chatId: ctx.chat.id,
@@ -49,38 +43,16 @@ export class TelegramUserMiddleware implements TelegrafMiddleware {
     } else {
       this.logger.info('New Telegram User');
 
-      const queryRunner = this.dataSource.createQueryRunner();
+      const userTelegram = await this.userService.createTelegramUser({
+        telegramId: sender.id,
+        chatId: ctx.chat.id,
+        firstName: sender.first_name,
+        lastName: sender.last_name,
+        username: sender.username,
+        languageCode: sender.language_code,
+      });
 
-      await queryRunner.connect();
-      await queryRunner.startTransaction();
-
-      const entityManager = queryRunner.manager;
-
-      try {
-        const parent = await this.users.findRoot();
-        const user = await this.users.createOrUpdateOne({ parent }, entityManager);
-        const userTelegram = await this.telegramUsers.createOrUpdateOne(
-          {
-            userId: user.id,
-            telegramId: sender.id,
-            chatId: ctx.chat.id,
-            firstName: sender.first_name,
-            lastName: sender.last_name,
-            username: sender.username,
-            languageCode: sender.language_code,
-          },
-          entityManager,
-        );
-
-        await queryRunner.commitTransaction();
-
-        ctx.user = userTelegram;
-      } catch (error) {
-        queryRunner.isTransactionActive && (await queryRunner.rollbackTransaction());
-        this.logger.error('Create Telegram User transaction', error);
-      } finally {
-        await queryRunner.release();
-      }
+      ctx.user = userTelegram;
     }
 
     await next();
@@ -103,7 +75,7 @@ export class TelegramUserMiddleware implements TelegrafMiddleware {
     throw new Error("Can't find sender");
   }
 
-  private isProfileUpdated(telegramUser: UserTelegram, sender: tg.User): boolean {
+  private isProfileUpdated(telegramUser: TelegramUserDto, sender: tg.User): boolean {
     const { username, lastName, firstName } = telegramUser;
     if (
       (sender.username && sender.username !== username) ||

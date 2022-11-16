@@ -1,16 +1,11 @@
+import { UserModule } from 'apps/api/src/user/user.module';
 import { TelegrafModule } from 'nestjs-telegraf';
 
 import { Module } from '@nestjs/common';
 import { AccessModule } from '@tookey/access';
-import {
-  KeyParticipantRepository,
-  KeyRepository,
-  TelegramSessionRepository,
-  TypeOrmExModule,
-  UserRepository,
-  UserTelegramRepository,
-} from '@tookey/database';
+import { TelegramSessionRepository, TypeOrmExModule } from '@tookey/database';
 
+import { KeyModule } from '../../api/src/keys/keys.module';
 import { BotService } from './bot.service';
 import { BotUpdate } from './bot.update';
 import { DefaultStateMiddleware } from './middlewares/default-state.middleware';
@@ -20,22 +15,13 @@ import { AuthScene } from './scenes/auth.scene';
 import { InitScene } from './scenes/init.scene';
 import { KeysScene } from './scenes/keys.scene';
 
-const Repositories = TypeOrmExModule.forCustomRepository([
-  UserRepository,
-  UserTelegramRepository,
-  KeyRepository,
-  KeyParticipantRepository,
-  TelegramSessionRepository,
-]);
-
 @Module({
   imports: [
-    TelegrafModule.forRootAsync({
-      useClass: BotService,
-      imports: [BotModule],
-    }),
-    Repositories,
+    TelegrafModule.forRootAsync({ useClass: BotService, imports: [BotModule] }),
+    TypeOrmExModule.forCustomRepository([TelegramSessionRepository]),
     AccessModule,
+    UserModule,
+    KeyModule,
   ],
   providers: [
     TelegramUserMiddleware,

@@ -1,5 +1,6 @@
 import { KeyCreateRequestDto, KeySignEventRequestDto } from 'apps/api/src/keys/keys.dto';
 import { KeyEvent } from 'apps/api/src/keys/keys.types';
+import { UserService } from 'apps/api/src/user/user.service';
 import { addSeconds } from 'date-fns';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Action, Command, Ctx, InjectBot, Sender, Start, Update } from 'nestjs-telegraf';
@@ -7,7 +8,6 @@ import { Telegraf } from 'telegraf';
 import * as tg from 'telegraf/types';
 
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { UserTelegramRepository } from '@tookey/database';
 
 import { BotAction, BotCommand, BotScene } from './bot.constants';
 import { TookeyContext } from './bot.types';
@@ -19,7 +19,7 @@ export class BotUpdate extends BaseScene {
     @InjectBot() private readonly bot: Telegraf<TookeyContext>,
     @InjectPinoLogger(BotUpdate.name) private readonly logger: PinoLogger,
     private readonly eventEmitter: EventEmitter2,
-    private readonly telegramUsers: UserTelegramRepository,
+    private readonly userService: UserService,
   ) {
     super();
     this.handleError();
@@ -65,7 +65,7 @@ export class BotUpdate extends BaseScene {
 
   @OnEvent(KeyEvent.SIGN_REQUEST)
   async onKeySignRequest(dto: KeySignEventRequestDto, userId: number) {
-    const telegramUser = await this.telegramUsers.findOneBy({ userId });
+    const telegramUser = await this.userService.getTelegramUser({ userId });
     if (!telegramUser) return;
 
     const message = [
@@ -96,7 +96,7 @@ export class BotUpdate extends BaseScene {
 
   @OnEvent(KeyEvent.CREATE_REQUEST)
   async onKeyCreateRequest(dto: KeyCreateRequestDto, userId: number) {
-    const telegramUser = await this.telegramUsers.findOneBy({ userId });
+    const telegramUser = await this.userService.getTelegramUser({ userId });
     if (!telegramUser) return;
 
     const message = ['We are ready to start the key generation process. Do you approve this action?', ''];
@@ -126,7 +126,7 @@ export class BotUpdate extends BaseScene {
 
   @OnEvent(KeyEvent.SIGN_FINISHED)
   async onKeySignFinished(keyName: string, userId: number) {
-    const telegramUser = await this.telegramUsers.findOneBy({ userId });
+    const telegramUser = await this.userService.getTelegramUser({ userId });
     if (!telegramUser) return;
 
     const message = [`✅ Transaction signed with <b>${keyName}</b>`];
@@ -135,7 +135,7 @@ export class BotUpdate extends BaseScene {
 
   @OnEvent(KeyEvent.CREATE_FINISHED)
   async onKeyCreateFinished(publicKey: string, userId: number) {
-    const telegramUser = await this.telegramUsers.findOneBy({ userId });
+    const telegramUser = await this.userService.getTelegramUser({ userId });
     if (!telegramUser) return;
 
     const message = [`✅ <code>${publicKey}</code>`, '', 'Key has been generated!'];
