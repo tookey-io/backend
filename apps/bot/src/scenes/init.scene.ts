@@ -26,7 +26,7 @@ export class InitScene {
 
     const userTelegram = ctx.user;
 
-    if (!userTelegram.user.fresh) {
+    if (userTelegram.user.fresh) {
       await ctx.replyWithHTML(
         [`<b>Hi, ${from.first_name}!</b>`].join('\n'),
         Markup.keyboard([[BotMenu.KEYS]]).resize(),
