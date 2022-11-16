@@ -1,12 +1,4 @@
-import {
-  Column,
-  DeepPartial,
-  Entity,
-  EntityManager,
-  Index,
-  ManyToOne,
-  Repository,
-} from 'typeorm';
+import { Column, DeepPartial, Entity, EntityManager, Index, ManyToOne, Repository } from 'typeorm';
 
 import { CustomRepository } from '../typeorm-ex.decorator';
 import { MetaEntity } from './base';
@@ -31,10 +23,7 @@ export class AccessToken extends MetaEntity {
 
 @CustomRepository(AccessToken)
 export class AccessTokenRepository extends Repository<AccessToken> {
-  createOrUpdateOne(
-    entityLike: DeepPartial<AccessToken>,
-    entityManager?: EntityManager,
-  ): Promise<AccessToken> {
+  createOrUpdateOne(entityLike: DeepPartial<AccessToken>, entityManager?: EntityManager): Promise<AccessToken> {
     const entity = this.create(entityLike);
     return entityManager ? entityManager.save(entity) : this.save(entity);
   }

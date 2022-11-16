@@ -1,10 +1,11 @@
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+
 import {
   Body,
   ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
-  Logger,
   Param,
   ParseIntPipe,
   Post,
@@ -40,9 +41,10 @@ import { KeyService } from './keys.service';
 @Auth()
 @UseInterceptors(ClassSerializerInterceptor)
 export class KeyController {
-  private readonly logger = new Logger(KeyController.name);
-
-  constructor(private readonly keysService: KeyService) {}
+  constructor(
+    @InjectPinoLogger(KeyController.name) private readonly logger: PinoLogger,
+    private readonly keysService: KeyService,
+  ) {}
 
   @ApiOperation({ description: 'Create a Key' })
   @ApiOkResponse({ type: KeyDto })
@@ -51,10 +53,7 @@ export class KeyController {
   @ApiRequestTimeoutResponse()
   @ApiInternalServerErrorResponse()
   @Post()
-  createKey(
-    @Body() dto: KeyCreateRequestDto,
-    @CurrentUser() user: UserContextDto,
-  ): Promise<KeyDto> {
+  createKey(@Body() dto: KeyCreateRequestDto, @CurrentUser() user: UserContextDto): Promise<KeyDto> {
     return this.keysService.createKey(dto, user.id);
   }
 
@@ -62,10 +61,7 @@ export class KeyController {
   @ApiOkResponse({ type: KeyDto })
   @ApiNotFoundResponse()
   @Get(':id')
-  getKey(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: UserContextDto,
-  ): Promise<KeyDto> {
+  getKey(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: UserContextDto): Promise<KeyDto> {
     return this.keysService.getKey({ id }, user.id);
   }
 
@@ -80,10 +76,7 @@ export class KeyController {
   @ApiOperation({ description: 'Delete a Key' })
   @ApiOkResponse({ type: KeyDeleteResponseDto })
   @Delete()
-  deleteKey(
-    @Body() dto: KeyDeleteRequestDto,
-    @CurrentUser() user: UserContextDto,
-  ): Promise<KeyDeleteResponseDto> {
+  deleteKey(@Body() dto: KeyDeleteRequestDto, @CurrentUser() user: UserContextDto): Promise<KeyDeleteResponseDto> {
     return this.keysService.delete(dto, user.id);
   }
 
@@ -91,10 +84,7 @@ export class KeyController {
   @ApiOkResponse({ type: SignDto })
   @ApiNotFoundResponse()
   @Post('sign')
-  signKey(
-    @Body() dto: KeySignRequestDto,
-    @CurrentUser() user: UserContextDto,
-  ): Promise<SignDto> {
+  signKey(@Body() dto: KeySignRequestDto, @CurrentUser() user: UserContextDto): Promise<SignDto> {
     return this.keysService.signKey(dto, user.id);
   }
 
@@ -112,6 +102,6 @@ export class KeyController {
       return this.keysService.handleSignStatusUpdate(payload);
     }
 
-    this.logger.log('Unknown action', payload);
+    this.logger.warn('Unknown action', payload);
   }
 }

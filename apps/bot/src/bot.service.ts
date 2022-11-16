@@ -1,6 +1,6 @@
 import { TelegrafModuleOptions, TelegrafOptionsFactory } from 'nestjs-telegraf';
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DatabaseConfig } from '@tookey/database';
 
@@ -11,8 +11,6 @@ import { TelegramUserMiddleware } from './middlewares/telegram-user.middleware';
 
 @Injectable()
 export class BotService implements TelegrafOptionsFactory {
-  private readonly logger = new Logger(BotService.name);
-
   constructor(
     private readonly configService: ConfigService<BotConfig & DatabaseConfig>,
     private readonly telegramSession: TelegramSessionMiddleware,

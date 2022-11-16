@@ -25,6 +25,7 @@ import { AppController } from './app.controller';
         const isProduction = config.get('isProduction', { infer: true });
         return {
           pinoHttp: {
+            level: !isProduction ? 'debug' : 'info',
             transport: !isProduction ? { target: 'pino-pretty' } : undefined,
             useLevelLabels: true,
           },

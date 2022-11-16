@@ -1,11 +1,4 @@
-import {
-  Column,
-  DeepPartial,
-  Entity,
-  EntityManager,
-  PrimaryColumn,
-  Repository,
-} from 'typeorm';
+import { Column, DeepPartial, Entity, EntityManager, PrimaryColumn, Repository } from 'typeorm';
 
 import { CustomRepository } from '../typeorm-ex.decorator';
 
@@ -30,10 +23,7 @@ export class TelegramSession {
 
 @CustomRepository(TelegramSession)
 export class TelegramSessionRepository extends Repository<TelegramSession> {
-  createOrUpdateOne(
-    entityLike: DeepPartial<TelegramSession>,
-    entityManager?: EntityManager,
-  ): Promise<TelegramSession> {
+  createOrUpdateOne(entityLike: DeepPartial<TelegramSession>, entityManager?: EntityManager): Promise<TelegramSession> {
     const entity = this.create(entityLike);
     return entityManager ? entityManager.save(entity) : this.save(entity);
   }

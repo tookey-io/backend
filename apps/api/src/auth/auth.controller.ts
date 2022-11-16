@@ -1,15 +1,5 @@
-import {
-  ClassSerializerInterceptor,
-  Controller,
-  Get,
-  UseInterceptors,
-} from '@nestjs/common';
-import {
-  ApiNotFoundResponse,
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ClassSerializerInterceptor, Controller, Get, UseInterceptors } from '@nestjs/common';
+import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Auth } from '../decorators/auth.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
@@ -28,9 +18,7 @@ export class AuthController {
   @ApiOkResponse({ type: AccessTokenResponseDto })
   @ApiNotFoundResponse()
   @Get('token')
-  async getAuthToken(
-    @CurrentUser() user: UserContextDto,
-  ): Promise<AccessTokenResponseDto> {
+  async getAuthToken(@CurrentUser() user: UserContextDto): Promise<AccessTokenResponseDto> {
     return this.authService.getAccessToken(user.id);
   }
 }

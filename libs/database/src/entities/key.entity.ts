@@ -73,10 +73,7 @@ export class Key extends MetaEntity {
 
 @CustomRepository(Key)
 export class KeyRepository extends Repository<Key> {
-  createOrUpdateOne(
-    entityLike: DeepPartial<Key>,
-    entityManager?: EntityManager,
-  ): Promise<Key> {
+  createOrUpdateOne(entityLike: DeepPartial<Key>, entityManager?: EntityManager): Promise<Key> {
     const entity = this.create(entityLike);
     return entityManager ? entityManager.save(entity) : this.save(entity);
   }

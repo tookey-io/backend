@@ -16,28 +16,26 @@ import { BotUpdate } from './bot.update';
 import { DefaultStateMiddleware } from './middlewares/default-state.middleware';
 import { TelegramSessionMiddleware } from './middlewares/telegram-session.middleware';
 import { TelegramUserMiddleware } from './middlewares/telegram-user.middleware';
+import { AuthScene } from './scenes/auth.scene';
+import { InitScene } from './scenes/init.scene';
 import { KeysScene } from './scenes/keys.scene';
-import { MenuScene } from './scenes/menu.scene';
+
+const Repositories = TypeOrmExModule.forCustomRepository([
+  UserRepository,
+  UserTelegramRepository,
+  KeyRepository,
+  KeyParticipantRepository,
+  TelegramSessionRepository,
+]);
 
 @Module({
   imports: [
-    AccessModule,
-    TypeOrmExModule.forCustomRepository([
-      UserRepository,
-      UserTelegramRepository,
-      KeyRepository,
-      KeyParticipantRepository,
-      TelegramSessionRepository,
-    ]),
     TelegrafModule.forRootAsync({
       useClass: BotService,
       imports: [BotModule],
     }),
-  ],
-  exports: [
-    TelegramUserMiddleware,
-    DefaultStateMiddleware,
-    TelegramSessionMiddleware,
+    Repositories,
+    AccessModule,
   ],
   providers: [
     TelegramUserMiddleware,
@@ -45,8 +43,10 @@ import { MenuScene } from './scenes/menu.scene';
     TelegramSessionMiddleware,
     BotService,
     BotUpdate,
-    MenuScene,
+    InitScene,
+    AuthScene,
     KeysScene,
   ],
+  exports: [TelegramUserMiddleware, DefaultStateMiddleware, TelegramSessionMiddleware],
 })
 export class BotModule {}

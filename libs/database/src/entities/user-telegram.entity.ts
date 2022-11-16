@@ -1,13 +1,4 @@
-import {
-  Column,
-  DeepPartial,
-  Entity,
-  EntityManager,
-  Index,
-  JoinColumn,
-  OneToOne,
-  Repository,
-} from 'typeorm';
+import { Column, DeepPartial, Entity, EntityManager, Index, JoinColumn, OneToOne, Repository } from 'typeorm';
 
 import { CustomRepository } from '../typeorm-ex.decorator';
 import { MetaEntity } from './base';
@@ -46,10 +37,7 @@ export class UserTelegram extends MetaEntity {
 
 @CustomRepository(UserTelegram)
 export class UserTelegramRepository extends Repository<UserTelegram> {
-  createOrUpdateOne(
-    entityLike: DeepPartial<UserTelegram>,
-    entityManager?: EntityManager,
-  ): Promise<UserTelegram> {
+  createOrUpdateOne(entityLike: DeepPartial<UserTelegram>, entityManager?: EntityManager): Promise<UserTelegram> {
     const entity = this.create(entityLike);
     return entityManager ? entityManager.save(entity) : this.save(entity);
   }

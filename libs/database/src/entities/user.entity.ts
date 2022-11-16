@@ -45,10 +45,7 @@ export class UserRepository extends TreeRepository<User> {
     return users[0];
   }
 
-  createOrUpdateOne(
-    entityLike: DeepPartial<User>,
-    entityManager?: EntityManager,
-  ): Promise<User> {
+  createOrUpdateOne(entityLike: DeepPartial<User>, entityManager?: EntityManager): Promise<User> {
     const entity = this.create(entityLike);
     return entityManager ? entityManager.save(entity) : this.save(entity);
   }

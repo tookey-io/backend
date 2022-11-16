@@ -1,21 +1,20 @@
 import { AppConfiguration } from 'apps/app/src/app.config';
-import { Ctx, Scene, SceneEnter, SceneLeave, Sender } from 'nestjs-telegraf';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { Ctx, Scene, SceneEnter, Sender } from 'nestjs-telegraf';
 import { Markup } from 'telegraf';
 import * as tg from 'telegraf/types';
 
-import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AccessService } from '@tookey/access';
 import { UserRepository } from '@tookey/database';
 
+import { BotScene } from '../bot.constants';
 import { TookeyContext } from '../bot.types';
-import { KeysScene } from './keys.scene';
 
-@Scene(MenuScene.name)
-export class MenuScene {
-  private readonly logger = new Logger(MenuScene.name);
-
+@Scene(BotScene.INIT)
+export class InitScene {
   constructor(
+    @InjectPinoLogger(InitScene.name) private readonly logger: PinoLogger,
     private readonly users: UserRepository,
     private readonly accessService: AccessService,
     private readonly configService: ConfigService<AppConfiguration>,
@@ -23,8 +22,7 @@ export class MenuScene {
 
   @SceneEnter()
   async onSceneEnter(@Ctx() ctx: TookeyContext, @Sender() from: tg.User) {
-    this.logger.log('onSceneEnter');
-    this.logger.log(ctx.scene.state);
+    this.logger.debug(ctx.scene.state);
 
     const userTelegram = ctx.user;
 
@@ -65,19 +63,11 @@ export class MenuScene {
 
       await ctx.replyWithHTML(
         'Authenticate in <b>Tookey Signer</b>',
-        Markup.inlineKeyboard([
-          [Markup.button.url('✅ Sign with Telegram', link)],
-        ]),
+        Markup.inlineKeyboard([[Markup.button.url('✅ Sign with Telegram', link)]]),
       );
     } else {
-      await ctx.scene.enter(KeysScene.name, ctx.scene.state);
+      await ctx.scene.enter(BotScene.KEYS, ctx.scene.state);
     }
-  }
-
-  @SceneLeave()
-  async onSceneLeave(@Ctx() ctx: TookeyContext) {
-    this.logger.log('onSceneLeave');
-    this.logger.log(ctx.scene.state);
   }
 
   private async unfresh(ctx: TookeyContext) {

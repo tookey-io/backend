@@ -202,12 +202,7 @@ export class KeySignEventRequestDto extends KeySignRequestDto {
   timeoutSeconds: number;
 }
 
-export const AMQP_ACTION = [
-  'keygen_status',
-  'sign_status',
-  'keygen_join',
-  'sign_approve',
-] as const;
+export const AMQP_ACTION = ['keygen_status', 'sign_status', 'keygen_join', 'sign_approve'] as const;
 export type ActionStatus = typeof AMQP_ACTION[number];
 
 export class AmqpPayloadDto {

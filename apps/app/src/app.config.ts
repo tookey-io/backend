@@ -12,9 +12,7 @@ export type AmpqConfig = {
   amqp: AmpqConnection;
 };
 
-export class AppConfiguration
-  implements BotConfig, DatabaseConfig, AccessConfig, AmpqConfig
-{
+export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig, AmpqConfig {
   defaultTtl: number;
   telegramToken: string;
   appName: string;
@@ -46,9 +44,6 @@ export function configuration(): AppConfiguration {
       uri: process.env.AMQP_URI,
       topics: process.env.AMQP_TOPICS ? process.env.AMQP_TOPICS.split(',') : [],
     },
-    healthTimeout:
-      (process.env.HEALTH_TIMEOUT
-        ? parseInt(process.env.HEALTH_TIMEOUT, 10)
-        : 120) * 1_000,
+    healthTimeout: (process.env.HEALTH_TIMEOUT ? parseInt(process.env.HEALTH_TIMEOUT, 10) : 120) * 1_000,
   };
 }

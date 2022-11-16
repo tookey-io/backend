@@ -3,9 +3,7 @@ import { AccessTokenRepository, TypeOrmExModule } from '@tookey/database';
 
 import { AccessService } from './access.service';
 
-const AccessRepositories = TypeOrmExModule.forCustomRepository([
-  AccessTokenRepository,
-]);
+const AccessRepositories = TypeOrmExModule.forCustomRepository([AccessTokenRepository]);
 
 @Module({
   imports: [AccessRepositories],

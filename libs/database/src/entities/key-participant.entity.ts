@@ -1,12 +1,4 @@
-import {
-  Column,
-  DeepPartial,
-  Entity,
-  EntityManager,
-  Index,
-  ManyToOne,
-  Repository,
-} from 'typeorm';
+import { Column, DeepPartial, Entity, EntityManager, Index, ManyToOne, Repository } from 'typeorm';
 
 import { CustomRepository } from '../typeorm-ex.decorator';
 import { MetaEntity } from './base';
@@ -40,10 +32,7 @@ export class KeyParticipant extends MetaEntity {
 
 @CustomRepository(KeyParticipant)
 export class KeyParticipantRepository extends Repository<KeyParticipant> {
-  createOrUpdateOne(
-    entityLike: DeepPartial<KeyParticipant>,
-    entityManager?: EntityManager,
-  ): Promise<KeyParticipant> {
+  createOrUpdateOne(entityLike: DeepPartial<KeyParticipant>, entityManager?: EntityManager): Promise<KeyParticipant> {
     const entity = this.create(entityLike);
     return entityManager ? entityManager.save(entity) : this.save(entity);
   }

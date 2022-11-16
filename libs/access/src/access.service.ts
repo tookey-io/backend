@@ -21,10 +21,7 @@ export class AccessService {
     const accessToken = this.accessTokens.create({
       userId,
       token: crypto.randomBytes(32).toString('hex'),
-      validUntil: addMilliseconds(
-        new Date(),
-        this.config.get('defaultTtl', { infer: true }),
-      ),
+      validUntil: addMilliseconds(new Date(), this.config.get('defaultTtl', { infer: true })),
     });
 
     await this.accessTokens.createOrUpdateOne(accessToken);
@@ -33,10 +30,7 @@ export class AccessService {
   }
 
   async getTokenUser(token: string): Promise<User | null> {
-    const accessToken = await this.accessTokens.findOne({
-      where: { token },
-      relations: { user: true },
-    });
+    const accessToken = await this.accessTokens.findOne({ where: { token }, relations: { user: true } });
     if (!accessToken) return null;
     return accessToken.user;
   }

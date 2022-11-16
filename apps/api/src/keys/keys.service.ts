@@ -1,25 +1,19 @@
 import { randomUUID } from 'crypto';
 import { addSeconds } from 'date-fns';
-import { DataSource, Not } from 'typeorm';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { DataSource, In, Not } from 'typeorm';
 
 import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
-  Logger,
   NotFoundException,
   RequestTimeoutException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AmqpService } from '@tookey/amqp';
-import {
-  KeyParticipantRepository,
-  KeyRepository,
-  SignRepository,
-  TaskStatus,
-} from '@tookey/database';
+import { KeyParticipantRepository, KeyRepository, SignRepository, TaskStatus } from '@tookey/database';
 
-import { UserDto } from '../user/user.dto';
 import { UserService } from '../user/user.service';
 import {
   AmqpKeygenJoinDto,
@@ -39,9 +33,8 @@ import { KeyEvent } from './keys.types';
 
 @Injectable()
 export class KeyService {
-  private readonly logger = new Logger(KeyService.name);
-
   constructor(
+    @InjectPinoLogger(KeyService.name) private readonly logger: PinoLogger,
     private readonly dataSource: DataSource,
     private readonly amqp: AmqpService,
     private readonly keys: KeyRepository,
@@ -55,7 +48,11 @@ export class KeyService {
     const user = await this.users.getUser({ id: userId });
     if (!user) throw new NotFoundException('User not found');
 
-    await this.checkUserLimits(user);
+    const keysCount = await this.keys.countBy({
+      userId: user.id,
+      status: Not(In([TaskStatus.Timeout, TaskStatus.Error])),
+    });
+    if (keysCount >= user.keyLimit) throw new ForbiddenException('Keys limit reached');
 
     this.eventEmitter.emit(KeyEvent.CREATE_REQUEST, dto, userId);
 
@@ -68,22 +65,18 @@ export class KeyService {
         overload: false,
       })
       .then(([{ isApproved }]: [KeyEventResponseDto]) => {
-        if (isApproved) return this.saveKey(dto, userId);
+        if (isApproved) return this.saveKey(dto, userId, keysCount);
         throw new Error('reject');
       })
       .catch((error) => {
-        if (error.message === 'reject') {
-          throw new ForbiddenException('Rejected by user');
-        }
-        if (error.message === 'timeout') {
-          throw new RequestTimeoutException('Rejected by user');
-        }
+        if (error.message === 'reject') throw new ForbiddenException('Rejected by user');
+        if (error.message === 'timeout') throw new RequestTimeoutException('Timeout');
         this.logger.error(error);
         throw new InternalServerErrorException(error.message);
       });
   }
 
-  async saveKey(dto: KeyCreateRequestDto, userId: number): Promise<KeyDto> {
+  async saveKey(dto: KeyCreateRequestDto, userId: number, keysCount: number): Promise<KeyDto> {
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
@@ -99,7 +92,7 @@ export class KeyService {
           participantsCount: dto.participantsCount,
           participantsThreshold: dto.participantsThreshold,
           timeoutSeconds: dto.timeoutSeconds,
-          name: dto.name,
+          name: dto.name || `Key #${keysCount + 1}`,
           description: dto.description,
           tags: dto.tags,
         },
@@ -138,22 +131,11 @@ export class KeyService {
         participants: participants.map((participant) => participant.index),
       });
     } catch (error) {
-      queryRunner.isTransactionActive &&
-        (await queryRunner.rollbackTransaction());
-      this.logger.error('create key transaction', error);
+      queryRunner.isTransactionActive && (await queryRunner.rollbackTransaction());
+      this.logger.error('Create key transaction', error);
       throw new InternalServerErrorException();
     } finally {
       await queryRunner.release();
-    }
-  }
-
-  async checkUserLimits(user: UserDto): Promise<void> {
-    const userKeysCount = await this.keys.countBy({
-      userId: user.id,
-      status: Not(TaskStatus.Timeout),
-    });
-    if (userKeysCount >= user.keyLimit) {
-      throw new ForbiddenException('Keys limit reached');
     }
   }
 
@@ -174,7 +156,7 @@ export class KeyService {
 
   async getKeys(userId?: number): Promise<KeyDto[]> {
     const keys = await this.keys.find({
-      where: { userId, status: Not(TaskStatus.Timeout) },
+      where: { userId, status: Not(In([TaskStatus.Timeout, TaskStatus.Error])) },
       relations: { participants: true },
     });
     if (!keys.length) throw new NotFoundException('Keys not found');
@@ -189,10 +171,7 @@ export class KeyService {
     });
   }
 
-  async delete(
-    dto: KeyDeleteRequestDto,
-    userId?: number,
-  ): Promise<KeyDeleteResponseDto> {
+  async delete(dto: KeyDeleteRequestDto, userId?: number): Promise<KeyDeleteResponseDto> {
     const { affected } = await this.keys.delete({ id: dto.id, userId });
     return { affected };
   }
@@ -222,21 +201,14 @@ export class KeyService {
         throw new Error('reject');
       })
       .catch((error) => {
-        if (error.message === 'reject') {
-          throw new ForbiddenException('Rejected by user');
-        }
-        if (error.message === 'timeout') {
-          throw new RequestTimeoutException('Rejected by user');
-        }
+        if (error.message === 'reject') throw new ForbiddenException('Rejected by user');
+        if (error.message === 'timeout') throw new RequestTimeoutException('Timeout');
         this.logger.error(error);
         throw new InternalServerErrorException(error.message);
       });
   }
 
-  async saveSign(
-    dto: KeySignEventRequestDto,
-    userId?: number,
-  ): Promise<SignDto> {
+  async saveSign(dto: KeySignEventRequestDto, userId?: number): Promise<SignDto> {
     const { id } = await this.signs.createOrUpdateOne({
       keyId: dto.keyId,
       roomId: randomUUID(),
@@ -274,11 +246,13 @@ export class KeyService {
       if (key.status === TaskStatus.Finished) {
         key.participantsActive = payload.active_indexes;
         key.publicKey = payload.public_key;
+
+        this.eventEmitter.emit(KeyEvent.CREATE_FINISHED, key.publicKey, key.userId);
       }
 
       await this.keys.createOrUpdateOne(key);
 
-      this.logger.log('Keygen status update', key.status);
+      this.logger.info('Keygen status update', key.status);
     } catch (error) {
       this.logger.error('Keygen status update fail', error);
     }
@@ -286,7 +260,7 @@ export class KeyService {
 
   async handleSignStatusUpdate(payload: AmqpPayloadDto): Promise<void> {
     try {
-      const sign = await this.signs.findOneBy({ roomId: payload.room_id });
+      const sign = await this.signs.findOne({ where: { roomId: payload.room_id }, relations: { key: true } });
 
       sign.status = payload.status;
 
@@ -297,11 +271,13 @@ export class KeyService {
       if (sign.status === TaskStatus.Finished) {
         sign.participantsConfirmations = payload.active_indexes;
         sign.result = payload.result;
+
+        this.eventEmitter.emit(KeyEvent.SIGN_FINISHED, sign.key.name, sign.key.userId);
       }
 
       await this.signs.createOrUpdateOne(sign);
 
-      this.logger.log('Sign status update', sign.status);
+      this.logger.info('Sign status update', sign.status);
     } catch (error) {
       this.logger.error('Sign status update fail', error);
     }

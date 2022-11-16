@@ -1,22 +1,18 @@
 import { differenceInSeconds } from 'date-fns';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Context } from 'telegraf';
 import * as tg from 'telegraf/types';
 import { DataSource } from 'typeorm';
 
-import { Injectable, Logger } from '@nestjs/common';
-import {
-  UserRepository,
-  UserTelegram,
-  UserTelegramRepository,
-} from '@tookey/database';
+import { Injectable } from '@nestjs/common';
+import { UserRepository, UserTelegram, UserTelegramRepository } from '@tookey/database';
 
 import { TelegrafMiddleware, TookeyContext } from '../bot.types';
 
 @Injectable()
 export class TelegramUserMiddleware implements TelegrafMiddleware {
-  private readonly logger = new Logger(TelegramUserMiddleware.name);
-
   constructor(
+    @InjectPinoLogger(TelegramUserMiddleware.name) private readonly logger: PinoLogger,
     private readonly dataSource: DataSource,
     private readonly users: UserRepository,
     private readonly telegramUsers: UserTelegramRepository,
@@ -31,13 +27,13 @@ export class TelegramUserMiddleware implements TelegrafMiddleware {
 
     if (userTelegram) {
       ctx.user = userTelegram;
-
       const { user } = userTelegram;
-      if (differenceInSeconds(user.lastInteraction, new Date()) > 10) {
-        user.fresh = true;
-      }
+
+      if (differenceInSeconds(user.lastInteraction, new Date()) > 10) user.fresh = true;
       user.lastInteraction = new Date();
+
       this.users.createOrUpdateOne(user);
+
       if (this.isProfileUpdated(userTelegram, sender)) {
         this.telegramUsers.createOrUpdateOne({
           id: userTelegram.id,
@@ -51,7 +47,7 @@ export class TelegramUserMiddleware implements TelegrafMiddleware {
         });
       }
     } else {
-      this.logger.log('New User Telegram');
+      this.logger.info('New Telegram User');
 
       const queryRunner = this.dataSource.createQueryRunner();
 
@@ -62,10 +58,7 @@ export class TelegramUserMiddleware implements TelegrafMiddleware {
 
       try {
         const parent = await this.users.findRoot();
-        const user = await this.users.createOrUpdateOne(
-          { parent },
-          entityManager,
-        );
+        const user = await this.users.createOrUpdateOne({ parent }, entityManager);
         const userTelegram = await this.telegramUsers.createOrUpdateOne(
           {
             userId: user.id,
@@ -83,9 +76,8 @@ export class TelegramUserMiddleware implements TelegrafMiddleware {
 
         ctx.user = userTelegram;
       } catch (error) {
-        queryRunner.isTransactionActive &&
-          (await queryRunner.rollbackTransaction());
-        this.logger.error('new telegram user transaction', error);
+        queryRunner.isTransactionActive && (await queryRunner.rollbackTransaction());
+        this.logger.error('Create Telegram User transaction', error);
       } finally {
         await queryRunner.release();
       }
@@ -111,10 +103,7 @@ export class TelegramUserMiddleware implements TelegrafMiddleware {
     throw new Error("Can't find sender");
   }
 
-  private isProfileUpdated(
-    telegramUser: UserTelegram,
-    sender: tg.User,
-  ): boolean {
+  private isProfileUpdated(telegramUser: UserTelegram, sender: tg.User): boolean {
     const { username, lastName, firstName } = telegramUser;
     if (
       (sender.username && sender.username !== username) ||

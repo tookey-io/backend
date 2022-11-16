@@ -64,10 +64,7 @@ export class TelegramSessionMiddleware implements TelegrafMiddleware {
     return telegramSession.session;
   }
 
-  async saveSession(
-    id: string,
-    session: SceneContext['session'],
-  ): Promise<void> {
+  async saveSession(id: string, session: SceneContext['session']): Promise<void> {
     if (!session || Object.keys(session).length === 0) {
       await this.telegramSession.delete({ id });
       return;

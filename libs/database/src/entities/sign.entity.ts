@@ -1,12 +1,4 @@
-import {
-  Column,
-  DeepPartial,
-  Entity,
-  EntityManager,
-  Index,
-  ManyToOne,
-  Repository,
-} from 'typeorm';
+import { Column, DeepPartial, Entity, EntityManager, Index, ManyToOne, Repository } from 'typeorm';
 
 import { TaskStatus } from '../database.types';
 import { CustomRepository } from '../typeorm-ex.decorator';
@@ -53,10 +45,7 @@ export class Sign extends MetaEntity {
 
 @CustomRepository(Sign)
 export class SignRepository extends Repository<Sign> {
-  createOrUpdateOne(
-    entityLike: DeepPartial<Sign>,
-    entityManager?: EntityManager,
-  ): Promise<Sign> {
+  createOrUpdateOne(entityLike: DeepPartial<Sign>, entityManager?: EntityManager): Promise<Sign> {
     const entity = this.create(entityLike);
     return entityManager ? entityManager.save(entity) : this.save(entity);
   }
