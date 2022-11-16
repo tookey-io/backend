@@ -112,6 +112,6 @@ export class KeyController {
       return this.keysService.handleSignStatusUpdate(payload);
     }
 
-    this.logger.log('Unknown action', JSON.stringify(payload, undefined, 2));
+    this.logger.log('Unknown action', payload);
   }
 }

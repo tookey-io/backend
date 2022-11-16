@@ -1,3 +1,5 @@
+import { KeySignEventRequestDto } from 'apps/api/src/keys/keys.dto';
+import { KeyEvent } from 'apps/api/src/keys/keys.types';
 import { addSeconds } from 'date-fns';
 import { Action, Ctx, InjectBot, Sender, Start, Update } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
@@ -7,8 +9,6 @@ import { Logger } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { UserTelegramRepository } from '@tookey/database';
 
-import { KeySignEventRequestDto } from '../../api/src/keys/keys.dto';
-import { KeyEvent } from '../../api/src/keys/keys.types';
 import { TookeyContext } from './bot.types';
 import { BaseScene } from './scenes/base.scene';
 import { MenuScene } from './scenes/menu.scene';

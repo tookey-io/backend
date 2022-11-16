@@ -1,3 +1,5 @@
+import { KeyCreateRequestDto } from 'apps/api/src/keys/keys.dto';
+import { KeyEvent } from 'apps/api/src/keys/keys.types';
 import { formatDistanceToNow } from 'date-fns';
 import {
   Action,
@@ -24,8 +26,6 @@ import {
   UserTelegramRepository,
 } from '@tookey/database';
 
-import { KeyCreateRequestDto } from '../../../api/src/keys/keys.dto';
-import { KeyEvent } from '../../../api/src/keys/keys.types';
 import { TookeyContext } from '../bot.types';
 import { getPagination } from '../bot.utils';
 import { BaseScene } from './base.scene';

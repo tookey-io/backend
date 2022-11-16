@@ -1,3 +1,4 @@
+import { AppConfiguration } from 'apps/app/src/app.config';
 import { Ctx, Scene, SceneEnter, SceneLeave, Sender } from 'nestjs-telegraf';
 import { Markup } from 'telegraf';
 import * as tg from 'telegraf/types';
@@ -7,7 +8,6 @@ import { ConfigService } from '@nestjs/config';
 import { AccessService } from '@tookey/access';
 import { UserRepository } from '@tookey/database';
 
-import { AppConfiguration } from '../../../app/src/app.config';
 import { TookeyContext } from '../bot.types';
 import { KeysScene } from './keys.scene';
 
