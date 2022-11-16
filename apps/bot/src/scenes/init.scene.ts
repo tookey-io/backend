@@ -27,7 +27,10 @@ export class InitScene {
     const userTelegram = ctx.user;
 
     if (!userTelegram.user.fresh) {
-      await ctx.replyWithHTML([`<b>Hi, ${from.first_name}!</b>`].join('\n'), Markup.keyboard([[BotMenu.KEYS]]));
+      await ctx.replyWithHTML(
+        [`<b>Hi, ${from.first_name}!</b>`].join('\n'),
+        Markup.keyboard([[BotMenu.KEYS]]).resize(),
+      );
       await ctx.replyWithHTML(
         [
           `<b>Tookey</b> (2K in short) is security protocol designed to protect DeFi and Web3 from private key disclosure threats, inducting distributed key management and signing system`,
@@ -40,7 +43,7 @@ export class InitScene {
 
       await this.unfresh(ctx);
     } else {
-      await ctx.replyWithHTML(`Hi, ${from.first_name}!`, Markup.keyboard([[BotMenu.KEYS]]));
+      await ctx.replyWithHTML(`Hi, ${from.first_name}!`, Markup.keyboard([[BotMenu.KEYS]]).resize());
     }
 
     if (ctx.scene.state.appAuth) {
