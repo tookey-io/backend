@@ -11,7 +11,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - run: echo '${{ toJSON(github.event) }}'
 
       - name: Install doctl and Authorize to Digital Ocean
         uses: digitalocean/action-doctl@v2
@@ -27,6 +26,6 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: registry.digitalocean.com/tookey/${{ github.event.repository.name }}:${{ github.event.tag.name }}-${{ github.sha }}
+          tags: registry.digitalocean.com/tookey/${{ github.event.repository.name }}:${{ github.event.release.tag_name }}-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
