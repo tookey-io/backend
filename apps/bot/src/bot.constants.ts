@@ -24,5 +24,5 @@ export enum BotMenu {
 
 export const CALLBACK_ACTION = {
   KEY_CREATE_REQUEST: new RegExp(`^${BotAction.KEY_CREATE_REQUEST}(.{36})(approve|reject)$`),
-  KEY_SIGN_REQUEST: new RegExp(`^${BotAction.KEY_SIGN_REQUEST}(approve|reject)$`),
+  KEY_SIGN_REQUEST: new RegExp(`^${BotAction.KEY_SIGN_REQUEST}(.{36})(approve|reject)$`),
 };
