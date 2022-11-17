@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/tookey-io/backend/compare/v1.2.1...v1.3.0) (2022-11-17)
+
+
+### Features
+
+* **key share:** key sharing with telegram users flow, referral start link ([6077010](https://github.com/tookey-io/backend/commit/60770109027b665b4018ad4a3254e6f0bb318008))
+
+
+### Bug Fixes
+
+* **sign:** wrong regexp ([f316377](https://github.com/tookey-io/backend/commit/f3163779579d6afa510c4cb1064ba3fb6434a990))
+
 ### [1.2.1](https://github.com/tookey-io/backend/compare/v1.2.0...v1.2.1) (2022-11-17)
 
 
