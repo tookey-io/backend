@@ -13,11 +13,9 @@ export class ApiKeyStrategy extends PassportStrategy(HeaderAPIKeyStrategy) {
       { header: 'apiKey', prefix: '' },
       true,
       async (apikey: string, done: (err: Error | null, user?: UserContextDto) => void) => {
-        const user = await accessService.getTokenUser(apikey);
-        if (!user) {
-          return done(new UnauthorizedException('Token is not valid'));
-        }
-        return done(null, { id: user.id });
+        const userId = await accessService.getTokenUserId(apikey);
+        if (!userId) return done(new UnauthorizedException('Token is not valid'));
+        return done(null, { id: userId });
       },
     );
   }

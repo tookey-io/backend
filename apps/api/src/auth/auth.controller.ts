@@ -1,24 +1,47 @@
 import { ClassSerializerInterceptor, Controller, Get, UseInterceptors } from '@nestjs/common';
-import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { Auth } from '../decorators/auth.decorator';
+import { AccessService } from '../../../../libs/access/src';
+import { ApiKeyAuth } from '../decorators/apikey-auth.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
+import { JwtRefreshAuth } from '../decorators/jwt-refresh-auth.decorator';
 import { UserContextDto } from '../user/user.dto';
-import { AccessTokenResponseDto } from './auth.dto';
+import { UserService } from '../user/user.service';
+import { AuthTokenResponseDto } from './auth.dto';
 import { AuthService } from './auth.service';
+import { AuthEvent } from './auth.types';
 
 @Controller('api/auth')
 @ApiTags('auth')
-@Auth()
 @UseInterceptors(ClassSerializerInterceptor)
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly userService: UserService,
+    private readonly accessService: AccessService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
-  @ApiOperation({ description: 'Show auth token' })
-  @ApiOkResponse({ type: AccessTokenResponseDto })
-  @ApiNotFoundResponse()
-  @Get('token')
-  async getAuthToken(@CurrentUser() user: UserContextDto): Promise<AccessTokenResponseDto> {
-    return this.authService.getAccessToken(user.id);
+  @ApiKeyAuth()
+  @ApiOperation({ description: 'Show access and refresh tokens' })
+  @ApiOkResponse({ type: [AuthTokenResponseDto] })
+  @Get('signin')
+  async signin(@CurrentUser() user: UserContextDto): Promise<AuthTokenResponseDto[]> {
+    const accessToken = this.authService.getJwtAccessToken(user.id);
+    const refreshToken = this.authService.getJwtRefreshToken(user.id);
+
+    await this.userService.setCurrentRefreshToken(refreshToken.token, user.id);
+
+    await this.accessService.refreshToken(user.id);
+    this.eventEmitter.emit(AuthEvent.SIGNIN, user.id);
+
+    return [accessToken, refreshToken];
+  }
+
+  @JwtRefreshAuth()
+  @Get('refresh')
+  refresh(@CurrentUser() user: UserContextDto): AuthTokenResponseDto {
+    return this.authService.getJwtAccessToken(user.id);
   }
 }

@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import {
   Column,
   DeepPartial,
@@ -36,6 +37,10 @@ export class User extends MetaEntity {
 
   @OneToMany(() => Key, (key) => key.id)
   keys: Key[];
+
+  @Column({ nullable: true })
+  @Exclude()
+  refreshToken?: string;
 }
 
 @CustomRepository(User)

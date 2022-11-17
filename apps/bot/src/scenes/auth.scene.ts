@@ -1,9 +1,12 @@
+import { AuthEvent } from 'apps/api/src/auth/auth.types';
+import { UserService } from 'apps/api/src/user/user.service';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Ctx, InjectBot, Scene, SceneEnter } from 'nestjs-telegraf';
 import * as QR from 'qrcode';
 import { Telegraf } from 'telegraf';
 import * as tg from 'telegraf/types';
 
+import { OnEvent } from '@nestjs/event-emitter';
 import { AccessService } from '@tookey/access';
 
 import { BotScene } from '../bot.constants';
@@ -15,6 +18,7 @@ export class AuthScene {
     @InjectBot() private readonly bot: Telegraf<TookeyContext>,
     @InjectPinoLogger(AuthScene.name) private readonly logger: PinoLogger,
     private readonly accessService: AccessService,
+    private readonly userService: UserService,
   ) {}
 
   @SceneEnter()
@@ -37,6 +41,15 @@ export class AuthScene {
     }
 
     ctx.scene.leave();
+  }
+
+  @OnEvent(AuthEvent.SIGNIN)
+  async onKeyCreateFinished(userId: number) {
+    const telegramUser = await this.userService.getTelegramUser({ userId });
+    if (!telegramUser) return;
+
+    const message = ['✅ Successfully authenticated in <b>Tookey Signer</b>!'];
+    await this.bot.telegram.sendMessage(telegramUser.chatId, message.join('\n'), { parse_mode: 'HTML' });
   }
 
   private async updateAuthCode(@Ctx() ctx: TookeyContext<tg.Update.MessageUpdate>, timeLeft: number): Promise<void> {

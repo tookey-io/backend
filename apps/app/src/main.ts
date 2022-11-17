@@ -19,7 +19,9 @@ async function bootstrap() {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Tookey API')
-    .addApiKey({ type: 'apiKey', in: 'header' }, 'apiKey');
+    .addApiKey({ type: 'apiKey', in: 'header' }, 'apiKey')
+    .addBearerAuth()
+    .addBearerAuth(undefined, 'refresh');
 
   const document = SwaggerModule.createDocument(app, swaggerConfig.build());
   SwaggerModule.setup('swagger', app, document);

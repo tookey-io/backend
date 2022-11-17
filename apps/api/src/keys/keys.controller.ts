@@ -22,8 +22,8 @@ import {
 } from '@nestjs/swagger';
 import { AmqpPayload, AmqpSubscribe } from '@tookey/amqp';
 
-import { Auth } from '../decorators/auth.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
+import { JwtAuth } from '../decorators/jwt-auth.decorator';
 import { UserContextDto } from '../user/user.dto';
 import {
   AmqpPayloadDto,
@@ -38,7 +38,7 @@ import { KeysService } from './keys.service';
 
 @Controller('api/keys')
 @ApiTags('keys')
-@Auth()
+@JwtAuth()
 @UseInterceptors(ClassSerializerInterceptor)
 export class KeysController {
   constructor(

@@ -12,6 +12,13 @@ export type AmpqConfig = {
   amqp: AmpqConnection;
 };
 
+export type JWTConfig = {
+  accessTokenSecret: string;
+  refreshTokenSecret: string;
+  accessTokenTTL: number;
+  refreshTokenTTL: number;
+};
+
 export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig, AmpqConfig {
   defaultTtl: number;
   telegramToken: string;
@@ -19,6 +26,7 @@ export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig
   appUrl: string;
   port: number;
   isProduction: boolean;
+  jwt: JWTConfig;
   db: DatabaseConnection;
   amqp: AmpqConnection;
   healthTimeout: number;
@@ -26,12 +34,18 @@ export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig
 
 export function configuration(): AppConfiguration {
   return {
-    defaultTtl: parseInt(process.env.ACCESS_TOKEN_TTL) || 1000 * 60 * 60 * 24, // 1 day by default
+    defaultTtl: parseInt(process.env.ACCESS_TOKEN_TTL) || 1000 * 60, // 1 min
     telegramToken: process.env.TELEGRAM_TOKEN,
     appName: process.env.APP_NAME || 'tookey',
     appUrl: process.env.APP_URL,
     port: parseInt(process.env.PORT, 10),
     isProduction: process.env.NODE_ENV === 'production',
+    jwt: {
+      accessTokenSecret: process.env.JWT_ACCESS_TOKEN_SECRET || 'secret_access',
+      accessTokenTTL: parseInt(process.env.JWT_ACCESS_TOKEN_TTL) || 1000 * 60 * 15, // 15 min
+      refreshTokenSecret: process.env.JWT_REFRESH_TOKEN_SECRET || 'secret_refresh',
+      refreshTokenTTL: parseInt(process.env.JWT_REFRESH_TOKEN_TTL) || 7 * 1000 * 60 * 60 * 24, // 7 days
+    },
     db: {
       host: process.env.PG_HOST,
       port: parseInt(process.env.PG_PORT, 10),

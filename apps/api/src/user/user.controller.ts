@@ -1,14 +1,14 @@
 import { ClassSerializerInterceptor, Controller, Get, UseInterceptors } from '@nestjs/common';
 import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { Auth } from '../decorators/auth.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
+import { JwtAuth } from '../decorators/jwt-auth.decorator';
 import { UserContextDto, UserDto } from './user.dto';
 import { UserService } from './user.service';
 
 @Controller('api/users')
 @ApiTags('users')
-@Auth()
+@JwtAuth()
 @UseInterceptors(ClassSerializerInterceptor)
 export class UserController {
   constructor(private readonly userService: UserService) {}

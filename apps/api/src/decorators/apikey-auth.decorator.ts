@@ -3,7 +3,7 @@ import { ApiSecurity, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
 import { ApiKeyGuard } from '../guards/apikey.guard';
 
-export function Auth() {
+export function ApiKeyAuth() {
   return applyDecorators(
     UseGuards(ApiKeyGuard),
     ApiSecurity('apiKey'),

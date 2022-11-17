@@ -1,3 +1,4 @@
+import * as bcrypt from 'bcrypt';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { DataSource } from 'typeorm';
 
@@ -78,5 +79,25 @@ export class UserService {
     const telegramUser = await this.telegramUsers.createOrUpdateOne({ ...dto, id });
     if (!telegramUser) return null;
     return this.getTelegramUser({ id: telegramUser.id }, relations);
+  }
+
+  async setCurrentRefreshToken(token: string, userId: number) {
+    const refreshToken = await bcrypt.hash(token, 10);
+    await this.users.createOrUpdateOne({ id: userId, refreshToken });
+  }
+
+  async removeRefreshToken(userId: number) {
+    return this.users.createOrUpdateOne({
+      id: userId,
+      refreshToken: null,
+    });
+  }
+
+  async getUserIfRefreshTokenMatches(refreshToken: string, userId: number) {
+    const user = await this.users.findOneBy({ id: userId });
+    if (!user) return null;
+
+    const isRefreshTokenMatching = await bcrypt.compare(refreshToken, user.refreshToken);
+    if (isRefreshTokenMatching) return new UserDto(user);
   }
 }
