@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.1](https://github.com/tookey-io/backend/compare/v1.1.0...v1.1.1) (2022-11-17)
+
+
+### Bug Fixes
+
+* **migration:** fix initial migration ([38bb977](https://github.com/tookey-io/backend/commit/38bb9777b562bbde690dd0c0f73e7bf9f9f5c1bc))
+
 ## 1.1.0 (2022-11-17)
 
 
