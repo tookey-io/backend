@@ -10,7 +10,7 @@ import * as tg from 'telegraf/types';
 
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 
-import { BotAction, BotCommand, BotMenu, BotScene } from './bot.constants';
+import { BotAction, BotCommand, BotMenu, BotScene, CALLBACK_ACTION } from './bot.constants';
 import { TookeyContext } from './bot.types';
 import { getPagination } from './bot.utils';
 import { BaseScene } from './scenes/base.scene';
@@ -155,36 +155,36 @@ export class BotUpdate extends BaseScene {
     }
   }
 
-  @Action(new RegExp(`^${BotAction.KEY_CREATE_REQUEST}(approve|reject)$`))
+  @Action(CALLBACK_ACTION.KEY_CREATE_REQUEST)
   async onKeyCreate(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
     const telegramUser = ctx.user;
     const { user } = telegramUser;
     await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
 
-    const answer = this.getCallbackPayload(ctx, BotAction.KEY_CREATE_REQUEST);
+    const [, uuid, answer] = ctx.callbackQuery.data.match(CALLBACK_ACTION.KEY_CREATE_REQUEST);
 
-    this.eventEmitter.emit(KeyEvent.CREATE_RESPONSE, { isApproved: answer === 'approve', userId: user.id });
+    this.eventEmitter.emit(KeyEvent.CREATE_RESPONSE, { uuid, isApproved: answer === 'approve', userId: user.id });
 
     if (answer === 'approve') ctx.replyWithHTML(['<b>✅ Key generation approved</b>'].join('\n'));
     if (answer === 'reject') ctx.replyWithHTML(['<b>⛔ Key generation rejected</b>'].join('\n'));
   }
 
-  @Action(new RegExp(`^${BotAction.KEY_SIGN_REQUEST}(approve|reject)$`))
+  @Action(CALLBACK_ACTION.KEY_SIGN_REQUEST)
   async onKeySign(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
     const telegramUser = ctx.user;
     const { user } = telegramUser;
     await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
 
-    const answer = this.getCallbackPayload(ctx, BotAction.KEY_SIGN_REQUEST);
+    const [, uuid, answer] = ctx.callbackQuery.data.match(CALLBACK_ACTION.KEY_SIGN_REQUEST);
 
-    this.eventEmitter.emit(KeyEvent.SIGN_RESPONSE, { isApproved: answer === 'approve', userId: user.id });
+    this.eventEmitter.emit(KeyEvent.SIGN_RESPONSE, { uuid, isApproved: answer === 'approve', userId: user.id });
 
     if (answer === 'approve') ctx.replyWithHTML(['<b>✅ Approved signature request</b> from @'].join('\n'));
     if (answer === 'reject') ctx.replyWithHTML(['<b>⛔ Rejected</b>'].join('\n'));
   }
 
   @OnEvent(KeyEvent.CREATE_REQUEST)
-  async onKeyCreateRequest(dto: KeyCreateRequestDto, userId: number) {
+  async onKeyCreateRequest(uuid: string, dto: KeyCreateRequestDto, userId: number) {
     const telegramUser = await this.userService.getTelegramUser({ userId });
     if (!telegramUser) return;
 
@@ -205,8 +205,8 @@ export class BotUpdate extends BaseScene {
       reply_markup: {
         inline_keyboard: [
           [
-            { text: '✅ Approve', callback_data: `${BotAction.KEY_CREATE_REQUEST}approve` },
-            { text: '⛔ Reject', callback_data: `${BotAction.KEY_CREATE_REQUEST}reject` },
+            { text: '✅ Approve', callback_data: `${BotAction.KEY_CREATE_REQUEST}${uuid}approve` },
+            { text: '⛔ Reject', callback_data: `${BotAction.KEY_CREATE_REQUEST}${uuid}reject` },
           ],
         ],
       },
@@ -214,7 +214,7 @@ export class BotUpdate extends BaseScene {
   }
 
   @OnEvent(KeyEvent.SIGN_REQUEST)
-  async onKeySignRequest(dto: KeySignEventRequestDto, userId: number) {
+  async onKeySignRequest(uuid: string, dto: KeySignEventRequestDto, userId: number) {
     const telegramUser = await this.userService.getTelegramUser({ userId });
     if (!telegramUser) return;
 
@@ -230,14 +230,8 @@ export class BotUpdate extends BaseScene {
       reply_markup: {
         inline_keyboard: [
           [
-            {
-              text: '✅ Approve',
-              callback_data: `${BotAction.KEY_SIGN_REQUEST}approve`,
-            },
-            {
-              text: '⛔ Reject',
-              callback_data: `${BotAction.KEY_SIGN_REQUEST}reject`,
-            },
+            { text: '✅ Approve', callback_data: `${BotAction.KEY_SIGN_REQUEST}${uuid}approve` },
+            { text: '⛔ Reject', callback_data: `${BotAction.KEY_SIGN_REQUEST}${uuid}reject` },
           ],
         ],
       },

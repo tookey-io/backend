@@ -161,6 +161,9 @@ export class KeyCreateRequestDto {
 }
 
 export class KeyEventResponseDto {
+  @IsUUID()
+  uuid: string;
+
   @IsNumber()
   userId: number;
 

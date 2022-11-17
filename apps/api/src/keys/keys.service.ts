@@ -55,13 +55,14 @@ export class KeysService {
     });
     if (keysCount >= user.keyLimit) throw new ForbiddenException('Keys limit reached');
 
-    this.eventEmitter.emit(KeyEvent.CREATE_REQUEST, dto, userId);
+    const uuid = randomUUID();
+    this.eventEmitter.emit(KeyEvent.CREATE_REQUEST, uuid, dto, userId);
 
     return await this.eventEmitter
       .waitFor(KeyEvent.CREATE_RESPONSE, {
         handleError: false,
         timeout: dto.timeoutSeconds * 1000,
-        filter: (data: KeyEventResponseDto) => data.userId === userId,
+        filter: (data: KeyEventResponseDto) => data.uuid === uuid,
         Promise,
         overload: false,
       })
@@ -202,13 +203,14 @@ export class KeysService {
       timeoutSeconds: key.timeoutSeconds,
     };
 
-    this.eventEmitter.emit(KeyEvent.SIGN_REQUEST, signEventDto, userId);
+    const uuid = randomUUID();
+    this.eventEmitter.emit(KeyEvent.SIGN_REQUEST, uuid, signEventDto, userId);
 
     return await this.eventEmitter
       .waitFor(KeyEvent.SIGN_RESPONSE, {
         handleError: false,
         timeout: key.timeoutSeconds * 1000,
-        filter: (data: KeyEventResponseDto) => data.userId === userId,
+        filter: (data: KeyEventResponseDto) => data.uuid === uuid,
         Promise,
         overload: false,
       })
