@@ -4,7 +4,16 @@ export class init1668452144063 implements MigrationInterface {
   name = 'init1668452144063';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP SCHEMA public CASCADE; CREATE SCHEMA public;`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "migrations" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "user_telegram" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "sign" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "telegram_session" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "access_token" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "key_participant" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "key" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "user" CASCADE`);
+    await queryRunner.query(`DROP TYPE IF EXISTS "public"."key_status_enum" CASCADE`);
+    await queryRunner.query(`DROP TYPE IF EXISTS "public"."sign_status_enum" CASCADE`);
     await queryRunner.query(`CREATE TABLE "migrations" ("id" SERIAL NOT NULL, "timestamp" bigint NOT NULL, "name" character varying NOT NULL)`);
     await queryRunner.query(`CREATE TABLE "user" ("id" SERIAL NOT NULL, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), "deletedAt" TIMESTAMP, "revision" integer NOT NULL, "fresh" boolean NOT NULL DEFAULT true, "lastInteraction" TIMESTAMP NOT NULL DEFAULT '"2022-11-14T18:55:47.844Z"', "keyLimit" integer NOT NULL DEFAULT '2', "nsleft" integer NOT NULL DEFAULT '1', "nsright" integer NOT NULL DEFAULT '2', "parentId" integer, CONSTRAINT "PK_cace4a159ff9f2512dd42373760" PRIMARY KEY ("id"))`);
     await queryRunner.query(`CREATE INDEX "IDX_8aee4a9c192e1a35e2bddb32ab" ON "user" ("fresh") `);
@@ -33,29 +42,6 @@ export class init1668452144063 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "user_telegram" DROP CONSTRAINT "FK_0ef335d54b22816cd28285c9fdd"`);
-    await queryRunner.query(`ALTER TABLE "sign" DROP CONSTRAINT "FK_fa585755ef3aac394647918548f"`);
-    await queryRunner.query(`ALTER TABLE "access_token" DROP CONSTRAINT "FK_9949557d0e1b2c19e5344c171e9"`);
-    await queryRunner.query(`ALTER TABLE "key" DROP CONSTRAINT "FK_69572a81a9c722651ca1b44651b"`);
-    await queryRunner.query(`ALTER TABLE "key_participant" DROP CONSTRAINT "FK_ceda8e1e7312aef4c5d6e2b0408"`);
-    await queryRunner.query(`ALTER TABLE "key_participant" DROP CONSTRAINT "FK_63802aab34ca40e531797ae4bb3"`);
-    await queryRunner.query(`ALTER TABLE "user" DROP CONSTRAINT "FK_c86f56da7bb30c073e3cbed4e50"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_6b7c6c2d044c44a9f107f561b4"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_e23e294a123c172552da320a00"`);
-    await queryRunner.query(`DROP TABLE "user_telegram"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_265009d6131bd819b2e0230e4c"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_7c0e903c97e0ac0bff390fee68"`);
-    await queryRunner.query(`DROP TABLE "sign"`);
-    await queryRunner.query(`DROP TYPE "public"."sign_status_enum"`);
-    await queryRunner.query(`DROP TABLE "telegram_session"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_70ba8f6af34bc924fc9e12adb8"`);
-    await queryRunner.query(`DROP TABLE "access_token"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_678d1e7a4fdc304db6a8d5600f"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_82db6e778bbb7509afefe1b5b9"`);
-    await queryRunner.query(`DROP TABLE "key"`);
-    await queryRunner.query(`DROP TYPE "public"."key_status_enum"`);
-    await queryRunner.query(`DROP TABLE "key_participant"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_8aee4a9c192e1a35e2bddb32ab"`);
-    await queryRunner.query(`DROP TABLE "user"`);
+    //
   }
 }
