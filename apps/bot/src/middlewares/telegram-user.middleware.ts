@@ -50,6 +50,7 @@ export class TelegramUserMiddleware implements TelegrafMiddleware {
         lastName: sender.last_name,
         username: sender.username,
         languageCode: sender.language_code,
+        invitedBy: this.getInvitedBy(ctx),
       });
 
       ctx.user = userTelegram;
@@ -73,6 +74,14 @@ export class TelegramUserMiddleware implements TelegrafMiddleware {
     if (sender) return sender;
 
     throw new Error("Can't find sender");
+  }
+
+  private getInvitedBy(ctx: TookeyContext): string {
+    if (ctx.startPayload) {
+      const encoded = Buffer.from(ctx.startPayload, 'base64').toString('ascii').split('=');
+      if (encoded[0] === 'invite' && encoded[1]) return encoded[1];
+    }
+    return '';
   }
 
   private isProfileUpdated(telegramUser: TelegramUserDto, sender: tg.User): boolean {

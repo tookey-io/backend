@@ -22,6 +22,7 @@ export type JWTConfig = {
 export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig, AmpqConfig {
   defaultTtl: number;
   telegramToken: string;
+  telegramBotName: string;
   appName: string;
   appUrl: string;
   port: number;
@@ -36,6 +37,7 @@ export function configuration(): AppConfiguration {
   return {
     defaultTtl: parseInt(process.env.ACCESS_TOKEN_TTL) || 1000 * 60, // 1 min
     telegramToken: process.env.TELEGRAM_TOKEN,
+    telegramBotName: process.env.TELEGRAM_BOT_NAME || 'tookey_bot',
     appName: process.env.APP_NAME || 'tookey',
     appUrl: process.env.APP_URL,
     port: parseInt(process.env.PORT, 10),

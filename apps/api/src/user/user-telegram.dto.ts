@@ -75,6 +75,10 @@ export class TelegramUserRequestDto {
   @ApiPropertyOptional()
   @IsNumber()
   telegramId?: number;
+
+  @ApiPropertyOptional()
+  @IsString()
+  username?: string;
 }
 
 export class CreateTelegramUserDto {
@@ -99,6 +103,10 @@ export class CreateTelegramUserDto {
   @IsOptional()
   @IsString()
   languageCode?: string;
+
+  @IsOptional()
+  @IsString()
+  invitedBy?: string;
 }
 
 export class UpdateTelegramUserDto extends OmitType(PartialType(TelegramUserDto), ['id', 'user'] as const) {}

@@ -26,6 +26,7 @@ import {
   KeyEventResponseDto,
   KeyGetRequestDto,
   KeyParticipationDto,
+  KeyShareDto,
   KeySignEventRequestDto,
   KeySignRequestDto,
   SignDto,
@@ -142,23 +143,27 @@ export class KeysService {
   }
 
   async getKey(dto: KeyGetRequestDto, userId?: number): Promise<KeyDto> {
-    const key = await this.keys.findOne({
-      where: { ...dto, userId },
-      relations: { participants: true },
-    });
+    const participants = await this.participants.findBy({ keyId: dto.id });
+    const participation = participants.findIndex((participant) => participant.userId === userId);
+    if (userId && participation < 0) throw new NotFoundException('Key not found');
+
+    const key = await this.keys.findOneBy({ ...dto, status: Not(In([TaskStatus.Timeout, TaskStatus.Error])) });
     if (!key) throw new NotFoundException('Key not found');
 
-    const { participants, ...keyProps } = key;
-
     return new KeyDto({
-      ...keyProps,
+      ...key,
       participants: participants.map((participant) => participant.index),
     });
   }
 
   async getKeys(userId?: number): Promise<KeyDto[]> {
+    const participations = await this.participants.findBy({ userId });
+    const keyIds = participations.reduce<number[]>((acc, { keyId }) => {
+      if (acc.findIndex((i) => i === keyId) < 0) acc.push(keyId);
+      return acc;
+    }, []);
     const keys = await this.keys.find({
-      where: { userId, status: Not(In([TaskStatus.Timeout, TaskStatus.Error])) },
+      where: { id: In(keyIds), status: Not(In([TaskStatus.Timeout, TaskStatus.Error])) },
       relations: { participants: true },
     });
     if (!keys.length) throw new NotFoundException('Keys not found');
@@ -194,7 +199,10 @@ export class KeysService {
   }
 
   async signKey(dto: KeySignRequestDto, userId?: number): Promise<SignDto> {
-    const key = await this.keys.findOneBy({ publicKey: dto.publicKey, userId });
+    const key = await this.keys.findOne({
+      where: { publicKey: dto.publicKey, participants: { userId } },
+      relations: { participants: true },
+    });
     if (!key) throw new NotFoundException('Key not found');
 
     const signEventDto: KeySignEventRequestDto = {
@@ -298,6 +306,23 @@ export class KeysService {
       this.logger.info('Sign status update', sign.status);
     } catch (error) {
       this.logger.error('Sign status update fail', error);
+    }
+  }
+
+  async shareKey(dto: KeyShareDto): Promise<void> {
+    const participations = await this.participants.find({
+      where: { key: { id: dto.keyId, status: Not(In([TaskStatus.Timeout, TaskStatus.Error])) } },
+    });
+    const key = await this.getKey({ id: dto.keyId });
+    const owner = await this.users.getTelegramUser({ userId: key.userId });
+
+    const ownerParticipation = participations.find((participation) => participation.userId === owner.userId);
+    const userParticipation = participations.find((participation) => participation.userId === dto.userId);
+
+    if (!userParticipation) {
+      await this.participants.createOrUpdateOne({ ...dto, index: ownerParticipation.index });
+
+      this.eventEmitter.emit(KeyEvent.SHARE_RESPONSE, key, owner.username, dto.userId);
     }
   }
 }

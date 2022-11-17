@@ -1,4 +1,4 @@
-import { KeyCreateRequestDto, KeyParticipationDto, KeySignEventRequestDto } from 'apps/api/src/keys/keys.dto';
+import { KeyCreateRequestDto, KeyDto, KeyParticipationDto, KeySignEventRequestDto } from 'apps/api/src/keys/keys.dto';
 import { KeysService } from 'apps/api/src/keys/keys.service';
 import { KeyEvent } from 'apps/api/src/keys/keys.types';
 import { UserService } from 'apps/api/src/user/user.service';
@@ -43,17 +43,17 @@ export class BotUpdate extends BaseScene {
   }
 
   @Command(BotCommand.AUTH)
-  async authCode(@Ctx() ctx: TookeyContext<tg.Update.MessageUpdate>) {
+  async authCode(@Ctx() ctx: TookeyContext) {
     await ctx.scene.enter(BotScene.AUTH);
   }
 
   @Command(BotCommand.KEYS)
   async keysList(@Ctx() ctx: TookeyContext) {
-    await ctx.scene.enter(BotScene.KEYS);
+    await this.onMenuKeys(ctx);
   }
 
   @Hears(new RegExp(`^${BotMenu.KEYS}$`))
-  async onMenuKeys(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
+  async onMenuKeys(@Ctx() ctx: TookeyContext) {
     this.logger.debug(ctx.scene.state);
 
     await this.updateParticipationKeys(ctx);
@@ -131,8 +131,22 @@ export class BotUpdate extends BaseScene {
     message.push(`Participants count: ${key.participantsCount}`);
     message.push(`Participants threshold: ${key.participantsThreshold}`);
     message.push(`Age: ${formatDistanceToNow(new Date(key.createdAt))}`);
+    message.push(`Shared with: nobody`);
 
-    await ctx.replyWithHTML(message.join('\n'));
+    const isOwner = ctx.user.userId === key.userId;
+
+    await ctx.replyWithHTML(
+      message.join('\n'),
+      isOwner
+        ? Markup.inlineKeyboard([Markup.button.callback('➕ Share with thirdparty', `${BotAction.KEY_SHARE}${keyId}`)])
+        : undefined,
+    );
+  }
+
+  @Action(new RegExp(`^${BotAction.KEY_SHARE}\\d+$`))
+  async onKeyShare(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
+    const keyId = +this.getCallbackPayload(ctx, BotAction.KEY_SHARE);
+    ctx.scene.enter(BotScene.KEY_SHARE, { keyShare: { keyId } });
   }
 
   @Action(new RegExp(`^${BotAction.KEY_PAGE}\\d+$`))
@@ -161,7 +175,7 @@ export class BotUpdate extends BaseScene {
     const { user } = telegramUser;
     await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
 
-    const [, uuid, answer] = ctx.callbackQuery.data.match(CALLBACK_ACTION.KEY_CREATE_REQUEST);
+    const [, uuid, answer] = this.getCallbackData(ctx).match(CALLBACK_ACTION.KEY_CREATE_REQUEST);
 
     this.eventEmitter.emit(KeyEvent.CREATE_RESPONSE, { uuid, isApproved: answer === 'approve', userId: user.id });
 
@@ -175,7 +189,7 @@ export class BotUpdate extends BaseScene {
     const { user } = telegramUser;
     await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
 
-    const [, uuid, answer] = ctx.callbackQuery.data.match(CALLBACK_ACTION.KEY_SIGN_REQUEST);
+    const [, uuid, answer] = this.getCallbackData(ctx).match(CALLBACK_ACTION.KEY_SIGN_REQUEST);
 
     this.eventEmitter.emit(KeyEvent.SIGN_RESPONSE, { uuid, isApproved: answer === 'approve', userId: user.id });
 
@@ -261,13 +275,34 @@ export class BotUpdate extends BaseScene {
     await this.bot.telegram.sendMessage(telegramUser.chatId, message.join('\n'), { parse_mode: 'HTML' });
   }
 
+  @OnEvent(KeyEvent.SHARE_RESPONSE)
+  async onKeyShared(key: KeyDto, username: string, userId: number) {
+    const telegramUser = await this.userService.getTelegramUser({ userId });
+    if (!telegramUser) return;
+
+    const message = [
+      `🔑 @${username} shared the key <b>${key.name}</b> with you:`,
+      '',
+      `<code>${key.publicKey}</code>`,
+      '',
+      `If you haven't received any keys from @${username}, please consider to contact with user and ask for a key.`,
+    ];
+
+    await this.bot.telegram.sendMessage(telegramUser.chatId, message.join('\n'), { parse_mode: 'HTML' });
+  }
+
   private readonly manageKeysKeyboard = (keys: KeyParticipationDto[], currentPage = 1, pageSize = 5) => {
     const totalPages = Math.ceil(keys.length / pageSize);
 
     const items = keys.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     return Markup.inlineKeyboard([
-      ...items.map((key) => [Markup.button.callback(`🔑 ${key.keyName}`, `${BotAction.KEY_MANAGE}${key.keyId}`)]),
+      ...items.map((key) => [
+        Markup.button.callback(
+          `🔑 ${key.keyName}${!key.isOwner ? ' (shared)' : ''}`,
+          `${BotAction.KEY_MANAGE}${key.keyId}`,
+        ),
+      ]),
       getPagination(currentPage, totalPages).map(({ text, data }) =>
         Markup.button.callback(text, `${BotAction.KEY_PAGE}${data}`),
       ),

@@ -13,6 +13,7 @@ import { TelegramSessionMiddleware } from './middlewares/telegram-session.middle
 import { TelegramUserMiddleware } from './middlewares/telegram-user.middleware';
 import { AuthScene } from './scenes/auth.scene';
 import { InitScene } from './scenes/init.scene';
+import { KeyShareScene } from './scenes/key-share.scene';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { InitScene } from './scenes/init.scene';
     BotUpdate,
     InitScene,
     AuthScene,
+    KeyShareScene,
   ],
   exports: [TelegramUserMiddleware, DefaultStateMiddleware, TelegramSessionMiddleware],
 })

@@ -22,8 +22,12 @@ export interface TookeySceneSession extends Scenes.SceneSessionData {
   state: {
     appAuth?: boolean;
     authCode?: tg.Message.PhotoMessage;
+    invitedBy?: string;
     keys?: KeyParticipationDto[];
-    messages?: number[];
+    keyShare?: {
+      keyId?: number;
+      username?: string;
+    };
   };
 }
 
@@ -41,4 +45,5 @@ export type TookeyContext<
   scene: TookeySceneSession;
   update: U;
   startPayload: string;
+  match?: string[];
 };

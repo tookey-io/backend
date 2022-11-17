@@ -3,7 +3,7 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { DataSource } from 'typeorm';
 
 import { Injectable } from '@nestjs/common';
-import { UserRepository, UserTelegramRepository } from '@tookey/database';
+import { User, UserRepository, UserTelegramRepository } from '@tookey/database';
 
 import {
   CreateTelegramUserDto,
@@ -60,7 +60,7 @@ export class UserService {
     const entityManager = queryRunner.manager;
 
     try {
-      const parent = await this.users.findRoot();
+      const parent = await this.getParentUser(dto.invitedBy);
       const user = await this.users.createOrUpdateOne({ parent }, entityManager);
       const userTelegram = await this.telegramUsers.createOrUpdateOne({ ...dto, userId: user.id }, entityManager);
 
@@ -73,6 +73,13 @@ export class UserService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async getParentUser(username?: string): Promise<User> {
+    if (!username) return await this.users.findRoot();
+    const userTelegram = await this.telegramUsers.findOne({ where: { username }, relations: { user: true } });
+    if (!userTelegram) return await this.users.findRoot();
+    return userTelegram.user;
   }
 
   async updateUserTelegram(id: number, dto: UpdateTelegramUserDto, relations?: ['user']): Promise<TelegramUserDto> {

@@ -25,6 +25,11 @@ export class KeyDto {
 
   @ApiProperty()
   @Expose()
+  @IsNumber()
+  userId: number;
+
+  @ApiProperty()
+  @Expose()
   @IsUUID()
   roomId: string;
 
@@ -326,4 +331,9 @@ export class AmqpSignApproveDto extends AmpqMessageDto {
   @ApiProperty()
   @IsNumber()
   timeout_seconds: number;
+}
+
+export class KeyShareDto {
+  keyId: number;
+  userId: number;
 }
