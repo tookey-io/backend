@@ -4,6 +4,7 @@ import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from '@nestjs/typeorm';
 
 import { DatabaseConfig } from './database.types';
 import * as entities from './entities';
+import * as migrations from './migrations';
 
 @Injectable()
 export class DatabaseService implements TypeOrmOptionsFactory {
@@ -15,10 +16,11 @@ export class DatabaseService implements TypeOrmOptionsFactory {
     return {
       type: 'postgres',
       ...db,
+      ssl: db.ssl ? { rejectUnauthorized: false } : false,
       entities,
-      synchronize: true,
-      migrations: [],
-      migrationsTableName: 'typeorm_migrations',
+      migrations,
+      synchronize: false,
+      migrationsTableName: 'migrations',
       migrationsRun: true,
     };
   }

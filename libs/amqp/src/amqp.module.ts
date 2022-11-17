@@ -1,8 +1,9 @@
+import { AmpqConfig } from 'apps/app/src/app.config';
+
 import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { AmpqConfig } from '../../../apps/app/src/app.config';
 import { AmqpService } from './amqp.service';
 
 @Module({

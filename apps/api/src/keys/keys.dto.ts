@@ -1,15 +1,20 @@
 import { Exclude, Expose, Transform } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
   IsNumber,
   IsObject,
   IsOptional,
   IsString,
+  IsUUID,
+  Length,
+  MaxLength,
   ValidateIf,
 } from 'class-validator';
+import { formatISO } from 'date-fns';
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Status } from '@tookey/database';
+import { TaskStatus } from '@tookey/database';
 
 @Exclude()
 export class KeyDto {
@@ -20,7 +25,7 @@ export class KeyDto {
 
   @ApiProperty()
   @Expose()
-  @IsString()
+  @IsUUID()
   roomId: string;
 
   @ApiProperty()
@@ -47,7 +52,7 @@ export class KeyDto {
 
   @ApiProperty()
   @Expose()
-  @IsString()
+  @IsString({ each: true })
   @Transform(({ value }) => value || [])
   tags: string[];
 
@@ -61,6 +66,19 @@ export class KeyDto {
   @IsString()
   @Transform(({ value }) => value || '')
   publicKey: string;
+
+  @ApiProperty()
+  @IsEnum(TaskStatus)
+  status: TaskStatus;
+
+  @ApiProperty({ default: 3 })
+  @IsNumber()
+  participantsCount: number;
+
+  @ApiProperty()
+  @IsString()
+  @Transform(({ value }) => formatISO(new Date(value)))
+  createdAt: Date;
 
   constructor(partial: Partial<KeyDto>) {
     Object.assign(this, partial);
@@ -76,7 +94,7 @@ export class SignDto {
 
   @ApiProperty()
   @Expose()
-  @IsString()
+  @IsUUID()
   roomId: string;
 
   @ApiProperty()
@@ -90,9 +108,9 @@ export class SignDto {
   participantsConfirmations: number[];
 
   @ApiProperty()
-  @Expose()
   @IsString()
-  timeoutAt: string;
+  @Transform(({ value }) => formatISO(new Date(value)))
+  timeoutAt: Date;
 
   @ApiProperty()
   @Expose()
@@ -103,40 +121,51 @@ export class SignDto {
   @ApiProperty()
   @Expose()
   @IsObject()
-  metadata: any;
+  metadata: Record<string, any>;
 
-  constructor(partial: Partial<KeyDto>) {
+  constructor(partial: Partial<SignDto>) {
     Object.assign(this, partial);
   }
 }
 
 export class KeyCreateRequestDto {
-  @ApiProperty()
-  @IsNumber()
-  userId: number;
-
-  @ApiProperty()
+  @ApiProperty({ default: 2 })
   @IsNumber()
   participantsThreshold: number;
 
-  @ApiPropertyOptional()
+  @ApiProperty({ default: 3 })
+  @IsNumber()
+  participantsCount: number;
+
+  @ApiPropertyOptional({ default: 60 })
   @IsNumber()
   timeoutSeconds?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @MaxLength(40)
   @IsString()
   name?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @MaxLength(200)
   @IsString()
   description?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @MaxLength(40, { each: true })
   @IsString({ each: true })
   tags?: string[];
+}
+
+export class KeyEventResponseDto {
+  @IsNumber()
+  userId: number;
+
+  @IsBoolean()
+  isApproved: boolean;
 }
 
 export class KeyGetRequestDto {
@@ -159,12 +188,13 @@ export class KeyDeleteResponseDto {
 
 export class KeySignRequestDto {
   @ApiProperty()
-  @IsNumber()
-  keyId: number;
+  @IsString()
+  @Length(66, 66)
+  publicKey: string;
 
   @ApiProperty()
-  @IsString()
-  roomId: string;
+  @IsNumber({}, { each: true })
+  participantsConfirmations: number[];
 
   @ApiProperty()
   @IsString()
@@ -172,15 +202,43 @@ export class KeySignRequestDto {
 
   @ApiProperty()
   @IsObject()
-  metadata: any;
+  metadata: Record<string, any>;
 }
 
-export const AMQP_ACTION = [
-  'keygen_status',
-  'sign_status',
-  'keygen_join',
-  'sign_approve',
-] as const;
+export class KeySignEventRequestDto extends KeySignRequestDto {
+  @ApiProperty()
+  @IsNumber()
+  keyId: number;
+
+  @ApiProperty()
+  @Expose()
+  @IsNumber()
+  timeoutSeconds: number;
+}
+
+export class KeyParticipationDto {
+  @ApiProperty()
+  @IsNumber()
+  keyId: number;
+
+  @ApiProperty()
+  @IsString()
+  keyName: string;
+
+  @ApiProperty()
+  @IsNumber()
+  userId: number;
+
+  @ApiProperty()
+  @IsNumber()
+  userIndex: number;
+
+  @ApiProperty()
+  @IsBoolean()
+  isOwner: boolean;
+}
+
+export const AMQP_ACTION = ['keygen_status', 'sign_status', 'keygen_join', 'sign_approve'] as const;
 export type ActionStatus = typeof AMQP_ACTION[number];
 
 export class AmqpPayloadDto {
@@ -198,8 +256,8 @@ export class AmqpPayloadDto {
   active_indexes: number[];
 
   @ApiProperty()
-  @IsEnum(Status)
-  status: Status;
+  @IsEnum(TaskStatus)
+  status: TaskStatus;
 
   @ApiPropertyOptional()
   @ValidateIf(({ action }: AmqpPayloadDto) => action === 'keygen_status')

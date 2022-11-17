@@ -1,75 +1,91 @@
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+
 import {
   Body,
   ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
+  Param,
+  ParseIntPipe,
   Post,
-  Query,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import {
+  ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiSecurity,
+  ApiRequestTimeoutResponse,
   ApiTags,
-  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { AmqpPayload, AmqpSubscribe } from '@tookey/amqp';
 
-import { ApiKeyGuard } from '../guards/apikey.guard';
+import { Auth } from '../decorators/auth.decorator';
+import { CurrentUser } from '../decorators/current-user.decorator';
+import { UserContextDto } from '../user/user.dto';
 import {
   AmqpPayloadDto,
   KeyCreateRequestDto,
   KeyDeleteRequestDto,
   KeyDeleteResponseDto,
   KeyDto,
-  KeyGetRequestDto,
   KeySignRequestDto,
   SignDto,
 } from './keys.dto';
-import { KeyService } from './keys.service';
+import { KeysService } from './keys.service';
 
 @Controller('api/keys')
 @ApiTags('keys')
-// @UseGuards(ApiKeyGuard)
-// @ApiSecurity('apiKey')
-// @ApiUnauthorizedResponse()
+@Auth()
 @UseInterceptors(ClassSerializerInterceptor)
-export class KeyController {
-  constructor(private readonly keysService: KeyService) {}
+export class KeysController {
+  constructor(
+    @InjectPinoLogger(KeysController.name) private readonly logger: PinoLogger,
+    private readonly keysService: KeysService,
+  ) {}
 
-  @ApiOperation({ description: 'Create Key' })
+  @ApiOperation({ description: 'Create a Key' })
   @ApiOkResponse({ type: KeyDto })
   @ApiNotFoundResponse()
+  @ApiForbiddenResponse()
+  @ApiRequestTimeoutResponse()
+  @ApiInternalServerErrorResponse()
   @Post()
-  createKey(@Body() dto: KeyCreateRequestDto): Promise<KeyDto> {
-    return this.keysService.create(dto);
+  createKey(@Body() dto: KeyCreateRequestDto, @CurrentUser() user: UserContextDto): Promise<KeyDto> {
+    return this.keysService.createKey(dto, user.id);
   }
 
-  @ApiOperation({ description: 'Get Key' })
+  @ApiOperation({ description: 'Get a Key' })
+  @ApiOkResponse({ type: KeyDto })
+  @ApiNotFoundResponse()
+  @Get(':id')
+  getKey(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: UserContextDto): Promise<KeyDto> {
+    return this.keysService.getKey({ id }, user.id);
+  }
+
+  @ApiOperation({ description: 'Get Keys' })
   @ApiOkResponse({ type: KeyDto })
   @ApiNotFoundResponse()
   @Get()
-  getKey(@Query() dto: KeyGetRequestDto): Promise<KeyDto> {
-    return this.keysService.get(dto);
+  getKeys(@CurrentUser() user: UserContextDto): Promise<KeyDto[]> {
+    return this.keysService.getKeys(user.id);
   }
 
-  @ApiOperation({ description: 'Delete Key' })
+  @ApiOperation({ description: 'Delete a Key' })
   @ApiOkResponse({ type: KeyDeleteResponseDto })
   @Delete()
-  deleteKey(@Body() dto: KeyDeleteRequestDto): Promise<KeyDeleteResponseDto> {
-    return this.keysService.delete(dto);
+  deleteKey(@Body() dto: KeyDeleteRequestDto, @CurrentUser() user: UserContextDto): Promise<KeyDeleteResponseDto> {
+    return this.keysService.delete(dto, user.id);
   }
 
-  @ApiOperation({ description: 'Sign Key' })
+  @ApiOperation({ description: 'Sign a Key' })
   @ApiOkResponse({ type: SignDto })
   @ApiNotFoundResponse()
   @Post('sign')
-  sign(@Body() dto: KeySignRequestDto): Promise<SignDto> {
-    return this.keysService.sign(dto);
+  signKey(@Body() dto: KeySignRequestDto, @CurrentUser() user: UserContextDto): Promise<SignDto> {
+    return this.keysService.signKey(dto, user.id);
   }
 
   @AmqpSubscribe({
@@ -77,7 +93,15 @@ export class KeyController {
     routingKey: 'backend',
     queue: 'backend',
   })
-  amqpSubscribe(@AmqpPayload() payload: AmqpPayloadDto): void {
-    this.keysService.amqpSubscribe(payload);
+  amqpSubscribe(@AmqpPayload() payload: AmqpPayloadDto): Promise<void> {
+    if (payload.action === 'keygen_status') {
+      return this.keysService.handleKeygenStatusUpdate(payload);
+    }
+
+    if (payload.action === 'sign_status') {
+      return this.keysService.handleSignStatusUpdate(payload);
+    }
+
+    this.logger.warn('Unknown action', payload);
   }
 }

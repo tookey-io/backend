@@ -1,15 +1,20 @@
 import { randomUUID } from 'crypto';
+import { addSeconds } from 'date-fns';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { DataSource, In, Not } from 'typeorm';
 
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { AmqpService } from '@tookey/amqp';
 import {
-  KeyParticipantRepository,
-  KeyRepository,
-  SignRepository,
-  Status,
-  UserRepository,
-} from '@tookey/database';
+  ForbiddenException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  RequestTimeoutException,
+} from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AmqpService } from '@tookey/amqp';
+import { KeyParticipantRepository, KeyRepository, SignRepository, TaskStatus } from '@tookey/database';
 
+import { UserService } from '../user/user.service';
 import {
   AmqpKeygenJoinDto,
   AmqpPayloadDto,
@@ -18,146 +23,279 @@ import {
   KeyDeleteRequestDto,
   KeyDeleteResponseDto,
   KeyDto,
+  KeyEventResponseDto,
   KeyGetRequestDto,
+  KeyParticipationDto,
+  KeySignEventRequestDto,
   KeySignRequestDto,
   SignDto,
 } from './keys.dto';
+import { KeyEvent } from './keys.types';
 
 @Injectable()
-export class KeyService {
-  private readonly logger = new Logger(KeyService.name);
-
+export class KeysService {
   constructor(
+    @InjectPinoLogger(KeysService.name) private readonly logger: PinoLogger,
+    private readonly dataSource: DataSource,
     private readonly amqp: AmqpService,
     private readonly keys: KeyRepository,
     private readonly participants: KeyParticipantRepository,
     private readonly signs: SignRepository,
-    private readonly users: UserRepository,
+    private readonly users: UserService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async create(dto: KeyCreateRequestDto): Promise<KeyDto> {
-    const user = await this.users.findOneBy({ id: dto.userId });
+  async createKey(dto: KeyCreateRequestDto, userId: number): Promise<KeyDto> {
+    const user = await this.users.getUser({ id: userId });
     if (!user) throw new NotFoundException('User not found');
 
-    const { id, participantIndex } = await this.keys.createOrUpdateOne({
-      user,
-      roomId: randomUUID(),
-      participantsThreshold: dto.participantsThreshold,
-      timeoutSeconds: dto.timeoutSeconds,
-      name: dto.name,
-      description: dto.description,
-      tags: dto.tags,
-    });
-
-    await this.participants.createOrUpdateOne({
-      keyId: id,
+    const keysCount = await this.keys.countBy({
       userId: user.id,
-      index: participantIndex,
+      status: Not(In([TaskStatus.Timeout, TaskStatus.Error])),
     });
+    if (keysCount >= user.keyLimit) throw new ForbiddenException('Keys limit reached');
 
-    const { participants, ...key } = await this.keys.findOneBy({ id });
+    this.eventEmitter.emit(KeyEvent.CREATE_REQUEST, dto, userId);
 
-    this.amqp.publish<AmqpKeygenJoinDto>('amq.topic', 'manager', {
-      action: 'keygen_join',
-      user_id: `${user.id}`,
-      room_id: key.roomId,
-      key_id: `${key.id}`,
-      participant_index: key.participantIndex,
-      participants_count: key.participantsCount,
-      participants_threshold: key.participantsThreshold - 1,
-      timeout_seconds: key.timeoutSeconds,
+    return await this.eventEmitter
+      .waitFor(KeyEvent.CREATE_RESPONSE, {
+        handleError: false,
+        timeout: dto.timeoutSeconds * 1000,
+        filter: (data: KeyEventResponseDto) => data.userId === userId,
+        Promise,
+        overload: false,
+      })
+      .then(([{ isApproved }]: [KeyEventResponseDto]) => {
+        if (isApproved) return this.saveKey(dto, userId, keysCount);
+        throw new Error('reject');
+      })
+      .catch((error) => {
+        if (error.message === 'reject') throw new ForbiddenException('Rejected by user');
+        if (error.message === 'timeout') throw new RequestTimeoutException('Timeout');
+        this.logger.error(error);
+        throw new InternalServerErrorException(error.message);
+      });
+  }
+
+  async saveKey(dto: KeyCreateRequestDto, userId: number, keysCount: number): Promise<KeyDto> {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    const entityManager = queryRunner.manager;
+
+    try {
+      const { id, participantIndex } = await this.keys.createOrUpdateOne(
+        {
+          userId,
+          roomId: randomUUID(),
+          participantsCount: dto.participantsCount,
+          participantsThreshold: dto.participantsThreshold,
+          timeoutSeconds: dto.timeoutSeconds,
+          name: dto.name || `Key #${keysCount + 1}`,
+          description: dto.description,
+          tags: dto.tags,
+        },
+        entityManager,
+      );
+
+      await this.participants.createOrUpdateOne(
+        {
+          keyId: id,
+          userId,
+          index: participantIndex,
+        },
+        entityManager,
+      );
+
+      await queryRunner.commitTransaction();
+
+      const { participants, ...key } = await this.keys.findOne({
+        where: { id },
+        relations: { participants: true },
+      });
+
+      this.amqp.publish<AmqpKeygenJoinDto>('amq.topic', 'manager', {
+        action: 'keygen_join',
+        user_id: `${userId}`,
+        room_id: key.roomId,
+        key_id: `${key.id}`,
+        participant_index: key.participantIndex,
+        participants_count: key.participantsCount,
+        participants_threshold: key.participantsThreshold - 1,
+        timeout_seconds: key.timeoutSeconds,
+      });
+
+      return new KeyDto({
+        ...key,
+        participants: participants.map((participant) => participant.index),
+      });
+    } catch (error) {
+      queryRunner.isTransactionActive && (await queryRunner.rollbackTransaction());
+      this.logger.error('Create key transaction', error);
+      throw new InternalServerErrorException();
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async getKey(dto: KeyGetRequestDto, userId?: number): Promise<KeyDto> {
+    const key = await this.keys.findOne({
+      where: { ...dto, userId },
+      relations: { participants: true },
     });
+    if (!key) throw new NotFoundException('Key not found');
+
+    const { participants, ...keyProps } = key;
 
     return new KeyDto({
-      ...key,
+      ...keyProps,
       participants: participants.map((participant) => participant.index),
     });
   }
 
-  async get(dto: KeyGetRequestDto): Promise<KeyDto> {
-    const data = await this.keys.findOneBy(dto);
-    if (!data) throw new NotFoundException('Key not found');
+  async getKeys(userId?: number): Promise<KeyDto[]> {
+    const keys = await this.keys.find({
+      where: { userId, status: Not(In([TaskStatus.Timeout, TaskStatus.Error])) },
+      relations: { participants: true },
+    });
+    if (!keys.length) throw new NotFoundException('Keys not found');
 
-    const { participants, ...key } = data;
+    return keys.map((key) => {
+      const { participants, ...keyProps } = key;
 
-    return new KeyDto({
-      ...key,
-      participants: participants.map((participant) => participant.index),
+      return new KeyDto({
+        ...keyProps,
+        participants: participants.map((participant) => participant.index),
+      });
     });
   }
 
-  async delete(dto: KeyDeleteRequestDto): Promise<KeyDeleteResponseDto> {
-    const { affected } = await this.keys.delete({ id: dto.id });
+  async getKeyParticipationsByUser(userId: number): Promise<KeyParticipationDto[]> {
+    const participations = await this.participants.find({
+      where: { userId, key: { status: Not(In([TaskStatus.Timeout, TaskStatus.Error])) } },
+      relations: { key: true },
+    });
+
+    return participations.map((participation) => ({
+      keyId: participation.keyId,
+      keyName: participation.key.name,
+      userId: participation.userId,
+      userIndex: participation.index,
+      isOwner: userId === participation.key.userId,
+    }));
+  }
+
+  async delete(dto: KeyDeleteRequestDto, userId?: number): Promise<KeyDeleteResponseDto> {
+    const { affected } = await this.keys.delete({ id: dto.id, userId });
     return { affected };
   }
 
-  async sign(dto: KeySignRequestDto): Promise<SignDto> {
-    const key = await this.keys.findOneBy({ id: dto.keyId });
+  async signKey(dto: KeySignRequestDto, userId?: number): Promise<SignDto> {
+    const key = await this.keys.findOneBy({ publicKey: dto.publicKey, userId });
     if (!key) throw new NotFoundException('Key not found');
 
+    const signEventDto: KeySignEventRequestDto = {
+      ...dto,
+      keyId: key.id,
+      timeoutSeconds: key.timeoutSeconds,
+    };
+
+    this.eventEmitter.emit(KeyEvent.SIGN_REQUEST, signEventDto, userId);
+
+    return await this.eventEmitter
+      .waitFor(KeyEvent.SIGN_RESPONSE, {
+        handleError: false,
+        timeout: key.timeoutSeconds * 1000,
+        filter: (data: KeyEventResponseDto) => data.userId === userId,
+        Promise,
+        overload: false,
+      })
+      .then(([{ isApproved }]: [KeyEventResponseDto]) => {
+        if (isApproved) return this.saveSign(signEventDto, userId);
+        throw new Error('reject');
+      })
+      .catch((error) => {
+        if (error.message === 'reject') throw new ForbiddenException('Rejected by user');
+        if (error.message === 'timeout') throw new RequestTimeoutException('Timeout');
+        this.logger.error(error);
+        throw new InternalServerErrorException(error.message);
+      });
+  }
+
+  async saveSign(dto: KeySignEventRequestDto, userId?: number): Promise<SignDto> {
     const { id } = await this.signs.createOrUpdateOne({
-      key,
-      roomId: dto.roomId,
+      keyId: dto.keyId,
+      roomId: randomUUID(),
       data: dto.data,
       metadata: dto.metadata,
-      participantsConfirmations: [],
-      timeoutAt: new Date(),
+      participantsConfirmations: dto.participantsConfirmations,
+      timeoutAt: addSeconds(new Date(), dto.timeoutSeconds),
     });
 
     const sign = await this.signs.findOneBy({ id });
 
     this.amqp.publish<AmqpSignApproveDto>('amq.topic', 'manager', {
       action: 'sign_approve',
-      user_id: `${sign.key.user}`,
+      user_id: `${userId}`,
       room_id: sign.roomId,
-      key_id: `${sign.key.id}`,
+      key_id: `${dto.keyId}`,
       participants_indexes: sign.participantsConfirmations,
       data: sign.data,
-      timeout_seconds: sign.key.timeoutSeconds,
+      timeout_seconds: dto.timeoutSeconds,
     });
 
     return new SignDto(sign);
   }
 
-  async amqpSubscribe(payload: AmqpPayloadDto): Promise<void> {
-    this.logger.log('Amqp message', JSON.stringify(payload, undefined, 2));
-
-    if (payload.action === 'keygen_status') {
+  async handleKeygenStatusUpdate(payload: AmqpPayloadDto): Promise<void> {
+    try {
       const key = await this.keys.findOneBy({ roomId: payload.room_id });
 
       key.status = payload.status;
 
-      if (key.status === Status.Started) {
+      if (key.status === TaskStatus.Started) {
         key.participantsActive = payload.active_indexes;
       }
 
-      if (key.status === Status.Finished) {
+      if (key.status === TaskStatus.Finished) {
         key.participantsActive = payload.active_indexes;
         key.publicKey = payload.public_key;
+
+        this.eventEmitter.emit(KeyEvent.CREATE_FINISHED, key.publicKey, key.userId);
       }
 
-      this.logger.log('Status', key.status);
-
       await this.keys.createOrUpdateOne(key);
-    }
 
-    if (payload.action === 'sign_status') {
-      const sign = await this.signs.findOneBy({ roomId: payload.room_id });
+      this.logger.info('Keygen status update', key.status);
+    } catch (error) {
+      this.logger.error('Keygen status update fail', error);
+    }
+  }
+
+  async handleSignStatusUpdate(payload: AmqpPayloadDto): Promise<void> {
+    try {
+      const sign = await this.signs.findOne({ where: { roomId: payload.room_id }, relations: { key: true } });
 
       sign.status = payload.status;
 
-      if (sign.status === Status.Started) {
+      if (sign.status === TaskStatus.Started) {
         sign.participantsConfirmations = payload.active_indexes;
       }
 
-      if (sign.status === Status.Finished) {
+      if (sign.status === TaskStatus.Finished) {
         sign.participantsConfirmations = payload.active_indexes;
         sign.result = payload.result;
+
+        this.eventEmitter.emit(KeyEvent.SIGN_FINISHED, sign.key.name, sign.key.userId);
       }
 
-      this.logger.log('Status', sign.status);
-
       await this.signs.createOrUpdateOne(sign);
+
+      this.logger.info('Sign status update', sign.status);
+    } catch (error) {
+      this.logger.error('Sign status update fail', error);
     }
   }
 }

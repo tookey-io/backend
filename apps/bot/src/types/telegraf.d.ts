@@ -1,8 +1,8 @@
-import { UserTelegram } from '@tookey/database';
+import { TelegramUserDto } from 'apps/api/src/user/user-telegram.dto';
 
 declare module 'telegraf' {
   export interface Context {
-    user: UserTelegram;
+    user: TelegramUserDto;
     // i18n: I18N
   }
 }

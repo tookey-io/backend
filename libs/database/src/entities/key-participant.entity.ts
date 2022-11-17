@@ -1,11 +1,4 @@
-import {
-  Column,
-  DeepPartial,
-  Entity,
-  EntityManager,
-  ManyToOne,
-  Repository,
-} from 'typeorm';
+import { Column, DeepPartial, Entity, EntityManager, Index, ManyToOne, Repository } from 'typeorm';
 
 import { CustomRepository } from '../typeorm-ex.decorator';
 import { MetaEntity } from './base';
@@ -14,15 +7,17 @@ import { User } from './user.entity';
 
 @Entity()
 export class KeyParticipant extends MetaEntity {
-  @ManyToOne(() => Key, (key) => key.participants)
+  @ManyToOne(() => Key, (key) => key.participants, { onDelete: 'CASCADE' })
   key: Key;
 
+  @Index()
   @Column()
   keyId: number;
 
   @ManyToOne(() => User, (user) => user.id)
   user: User;
 
+  @Index()
   @Column()
   userId: number;
 
@@ -37,10 +32,7 @@ export class KeyParticipant extends MetaEntity {
 
 @CustomRepository(KeyParticipant)
 export class KeyParticipantRepository extends Repository<KeyParticipant> {
-  createOrUpdateOne(
-    entityLike: DeepPartial<KeyParticipant>,
-    entityManager?: EntityManager,
-  ): Promise<KeyParticipant> {
+  createOrUpdateOne(entityLike: DeepPartial<KeyParticipant>, entityManager?: EntityManager): Promise<KeyParticipant> {
     const entity = this.create(entityLike);
     return entityManager ? entityManager.save(entity) : this.save(entity);
   }

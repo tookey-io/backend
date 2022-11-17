@@ -4,6 +4,7 @@ export type DatabaseConnection = {
   username: string;
   password: string;
   database: string;
+  ssl: boolean;
 };
 
 export type DatabaseConfig = {
@@ -11,7 +12,7 @@ export type DatabaseConfig = {
   isProduction: boolean;
 };
 
-export enum Status {
+export enum TaskStatus {
   Created = 'created',
   Started = 'started',
   Finished = 'finished',

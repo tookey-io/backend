@@ -10,7 +10,7 @@ import {
   Repository,
 } from 'typeorm';
 
-import { Status } from '../database.types';
+import { TaskStatus } from '../database.types';
 import { CustomRepository } from '../typeorm-ex.decorator';
 import { MetaEntity } from './base';
 import { KeyParticipant } from './key-participant.entity';
@@ -21,6 +21,10 @@ export class Key extends MetaEntity {
   @ManyToOne(() => User)
   @JoinColumn()
   user: User;
+
+  @Index()
+  @Column()
+  userId: number;
 
   @Index()
   @Column({ type: 'varchar' })
@@ -38,7 +42,8 @@ export class Key extends MetaEntity {
   @Column({ type: 'int', unsigned: true, nullable: true })
   timeoutSeconds: number;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Index()
+  @Column({ type: 'varchar', length: 66, nullable: true })
   publicKey: string;
 
   @Column({ type: 'varchar', nullable: true })
@@ -50,14 +55,12 @@ export class Key extends MetaEntity {
   @Column({ type: 'varchar', nullable: true, array: true })
   tags: string[];
 
-  @OneToMany(() => KeyParticipant, (participant) => participant.key, {
-    eager: true,
-  })
+  @OneToMany(() => KeyParticipant, (participant) => participant.key)
   participants: KeyParticipant[];
 
   @Index()
-  @Column({ type: 'enum', enum: Status, default: Status.Created })
-  status: Status;
+  @Column({ type: 'enum', enum: TaskStatus, default: TaskStatus.Created })
+  status: TaskStatus;
 
   @Column({ type: 'int', unsigned: true, array: true, default: [] })
   participantsActive: number[];
@@ -70,10 +73,7 @@ export class Key extends MetaEntity {
 
 @CustomRepository(Key)
 export class KeyRepository extends Repository<Key> {
-  createOrUpdateOne(
-    entityLike: DeepPartial<Key>,
-    entityManager?: EntityManager,
-  ): Promise<Key> {
+  createOrUpdateOne(entityLike: DeepPartial<Key>, entityManager?: EntityManager): Promise<Key> {
     const entity = this.create(entityLike);
     return entityManager ? entityManager.save(entity) : this.save(entity);
   }

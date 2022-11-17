@@ -18,11 +18,11 @@ import { Key } from './key.entity';
 @Entity()
 @Tree('nested-set')
 export class User extends MetaEntity {
-  @Column({ default: true })
   @Index()
+  @Column({ default: true })
   fresh: boolean;
 
-  @Column({ default: new Date() })
+  @Column({ default: () => 'now()' })
   lastInteraction: Date;
 
   @TreeChildren()
@@ -36,18 +36,16 @@ export class User extends MetaEntity {
 
   @OneToMany(() => Key, (key) => key.id)
   keys: Key[];
-
-  get isFresh() {
-    return this.fresh;
-  }
 }
 
 @CustomRepository(User)
 export class UserRepository extends TreeRepository<User> {
-  createOrUpdateOne(
-    entityLike: DeepPartial<User>,
-    entityManager?: EntityManager,
-  ): Promise<User> {
+  async findRoot(): Promise<User> {
+    const users = await this.findRoots();
+    return users[0];
+  }
+
+  createOrUpdateOne(entityLike: DeepPartial<User>, entityManager?: EntityManager): Promise<User> {
     const entity = this.create(entityLike);
     return entityManager ? entityManager.save(entity) : this.save(entity);
   }

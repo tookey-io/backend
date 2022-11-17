@@ -1,13 +1,16 @@
 import { ApiModule } from 'apps/api/src/api.module';
 import { BotModule } from 'apps/bot/src/bot.module';
+import { LoggerModule } from 'nestjs-pino';
 
 import { CacheModule, Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AccessModule } from '@tookey/access';
 import { DatabaseModule, DatabaseService } from '@tookey/database';
 
-import { configuration } from './app.config';
+import { AppConfiguration, configuration } from './app.config';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -16,12 +19,26 @@ import { configuration } from './app.config';
       imports: [DatabaseModule],
       useExisting: DatabaseService,
     }),
+    LoggerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<AppConfiguration>) => {
+        const isProduction = config.get('isProduction', { infer: true });
+        return {
+          pinoHttp: {
+            level: !isProduction ? 'debug' : 'info',
+            transport: !isProduction ? { target: 'pino-pretty' } : undefined,
+            useLevelLabels: true,
+          },
+        };
+      },
+    }),
     CacheModule.register({ isGlobal: true }),
+    EventEmitterModule.forRoot({ global: true }),
     BotModule,
     ApiModule,
     AccessModule,
   ],
-  controllers: [],
+  controllers: [AppController],
   providers: [],
 })
 export class AppModule {}
