@@ -35,7 +35,7 @@ export class Sign extends MetaEntity {
   status: TaskStatus;
 
   @Column({ type: 'varchar', nullable: true })
-  result: string;
+  result: string | null;
 
   constructor(partial: Partial<Sign>) {
     super();

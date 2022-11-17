@@ -40,20 +40,20 @@ export class Key extends MetaEntity {
   participantIndex: number;
 
   @Column({ type: 'int', unsigned: true, nullable: true })
-  timeoutSeconds: number;
+  timeoutSeconds: number | null;
 
   @Index()
   @Column({ type: 'varchar', length: 66, nullable: true })
-  publicKey: string;
+  publicKey: string | null;
 
   @Column({ type: 'varchar', nullable: true })
-  name: string;
+  name: string | null;
 
   @Column({ type: 'varchar', nullable: true })
-  description: string;
+  description: string | null;
 
   @Column({ type: 'varchar', nullable: true, array: true })
-  tags: string[];
+  tags: string[] | null;
 
   @OneToMany(() => KeyParticipant, (participant) => participant.key)
   participants: KeyParticipant[];

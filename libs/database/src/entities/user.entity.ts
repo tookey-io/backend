@@ -40,7 +40,7 @@ export class User extends MetaEntity {
 
   @Column({ nullable: true })
   @Exclude()
-  refreshToken?: string;
+  refreshToken?: string | null;
 }
 
 @CustomRepository(User)
