@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.2.1](https://github.com/tookey-io/backend/compare/v1.2.0...v1.2.1) (2022-11-17)
+
+
+### Bug Fixes
+
+* **event emitter:** use event uuid when sending key create and key sign requests ([8191159](https://github.com/tookey-io/backend/commit/8191159ca5a0bdb029b483ef39f30f4c336f9898))
+* fix null types ([d72e965](https://github.com/tookey-io/backend/commit/d72e9655d52ea279cdf8b537aabdff619e077ef3))
+
 ## [1.2.0](https://github.com/tookey-io/backend/compare/v1.1.1...v1.2.0) (2022-11-17)
 
 
