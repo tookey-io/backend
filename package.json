@@ -8,6 +8,8 @@
     "prebuild": "rimraf dist",
     "build": "nest build",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
+    "commit": "cz",
+    "release": "standard-version",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
@@ -65,12 +67,15 @@
     "@types/supertest": "^2.0.12",
     "@typescript-eslint/eslint-plugin": "^5.30.5",
     "@typescript-eslint/parser": "^5.30.5",
+    "commitizen": "^4.2.5",
+    "cz-conventional-changelog": "^3.3.0",
     "eslint": "^8.19.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
     "jest": "^28.1.2",
     "prettier": "^2.7.1",
     "source-map-support": "^0.5.21",
+    "standard-version": "^9.5.0",
     "supertest": "^6.2.4",
     "ts-jest": "^28.0.5",
     "ts-loader": "^9.3.1",
@@ -102,6 +107,11 @@
       "^@tookey/database(|/.*)$": "<rootDir>/libs/database/src/$1",
       "^@tookey/access(|/.*)$": "<rootDir>/libs/access/src/$1",
       "^@tookey/amqp(|/.*)$": "<rootDir>/libs/amqp/src/$1"
+    }
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
     }
   }
 }
