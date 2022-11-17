@@ -20,15 +20,9 @@ export class indexes1668510330563 implements MigrationInterface {
     await queryRunner.query(`CREATE INDEX "IDX_9949557d0e1b2c19e5344c171e" ON "access_token" ("userId") `);
     await queryRunner.query(`CREATE INDEX "IDX_fa585755ef3aac394647918548" ON "sign" ("keyId") `);
     await queryRunner.query(`CREATE INDEX "IDX_0ef335d54b22816cd28285c9fd" ON "user_telegram" ("userId") `);
-    await queryRunner.query(
-      `ALTER TABLE "access_token" ADD CONSTRAINT "FK_9949557d0e1b2c19e5344c171e9" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "sign" ADD CONSTRAINT "FK_fa585755ef3aac394647918548f" FOREIGN KEY ("keyId") REFERENCES "key"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "user_telegram" ADD CONSTRAINT "FK_0ef335d54b22816cd28285c9fdd" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
-    );
+    await queryRunner.query(`ALTER TABLE "access_token" ADD CONSTRAINT "FK_9949557d0e1b2c19e5344c171e9" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+    await queryRunner.query(`ALTER TABLE "sign" ADD CONSTRAINT "FK_fa585755ef3aac394647918548f" FOREIGN KEY ("keyId") REFERENCES "key"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+    await queryRunner.query(`ALTER TABLE "user_telegram" ADD CONSTRAINT "FK_0ef335d54b22816cd28285c9fdd" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
@@ -43,17 +37,11 @@ export class indexes1668510330563 implements MigrationInterface {
     await queryRunner.query(`DROP INDEX "public"."IDX_ceda8e1e7312aef4c5d6e2b040"`);
     await queryRunner.query(`DROP INDEX "public"."IDX_63802aab34ca40e531797ae4bb"`);
     await queryRunner.query(`ALTER TABLE "user_telegram" ALTER COLUMN "userId" DROP NOT NULL`);
-    await queryRunner.query(
-      `ALTER TABLE "user_telegram" ADD CONSTRAINT "FK_0ef335d54b22816cd28285c9fdd" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
-    );
+    await queryRunner.query(`ALTER TABLE "user_telegram" ADD CONSTRAINT "FK_0ef335d54b22816cd28285c9fdd" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
     await queryRunner.query(`ALTER TABLE "sign" ALTER COLUMN "keyId" DROP NOT NULL`);
-    await queryRunner.query(
-      `ALTER TABLE "sign" ADD CONSTRAINT "FK_fa585755ef3aac394647918548f" FOREIGN KEY ("keyId") REFERENCES "key"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
-    );
+    await queryRunner.query(`ALTER TABLE "sign" ADD CONSTRAINT "FK_fa585755ef3aac394647918548f" FOREIGN KEY ("keyId") REFERENCES "key"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
     await queryRunner.query(`ALTER TABLE "access_token" ALTER COLUMN "userId" DROP NOT NULL`);
-    await queryRunner.query(
-      `ALTER TABLE "access_token" ADD CONSTRAINT "FK_9949557d0e1b2c19e5344c171e9" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
-    );
+    await queryRunner.query(`ALTER TABLE "access_token" ADD CONSTRAINT "FK_9949557d0e1b2c19e5344c171e9" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
     await queryRunner.query(`ALTER TABLE "user" ALTER COLUMN "lastInteraction" SET DEFAULT '2022-11-14 18:55:47.844'`);
     await queryRunner.query(`ALTER TABLE "key" DROP COLUMN "publicKey"`);
     await queryRunner.query(`ALTER TABLE "key" ADD "publicKey" character varying`);

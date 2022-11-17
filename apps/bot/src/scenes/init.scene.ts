@@ -8,7 +8,7 @@ import * as tg from 'telegraf/types';
 import { ConfigService } from '@nestjs/config';
 import { AccessService } from '@tookey/access';
 
-import { BotAction, BotMenu, BotScene } from '../bot.constants';
+import { BotMenu, BotScene } from '../bot.constants';
 import { TookeyContext } from '../bot.types';
 
 @Scene(BotScene.INIT)
