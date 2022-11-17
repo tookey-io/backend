@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/tookey-io/backend/compare/v1.1.1...v1.2.0) (2022-11-17)
+
+
+### Features
+
+* **auth:** update auth flow, add access & refresh jwt tokens, access token is otp now ([95944ad](https://github.com/tookey-io/backend/commit/95944ad5ef92a065297736ffd95eca973bb59602))
+
 ### [1.1.1](https://github.com/tookey-io/backend/compare/v1.1.0...v1.1.1) (2022-11-17)
 
 
