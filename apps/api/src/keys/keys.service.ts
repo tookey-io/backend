@@ -55,10 +55,18 @@ export class KeysService {
     });
     if (keysCount >= user.keyLimit) throw new ForbiddenException('Keys limit reached');
 
+    dto.name = dto.name || `Key #${keysCount + 1}`;
+
     const uuid = randomUUID();
     this.eventEmitter.emit(KeyEvent.CREATE_REQUEST, uuid, dto, userId);
 
-    return await this.eventEmitter
+    await this.waitForKeyCreateApprove(uuid, dto);
+
+    return this.saveKey(dto, userId);
+  }
+
+  async waitForKeyCreateApprove(uuid: string, dto: KeyCreateRequestDto): Promise<boolean> {
+    return this.eventEmitter
       .waitFor(KeyEvent.CREATE_RESPONSE, {
         handleError: false,
         timeout: dto.timeoutSeconds * 1000,
@@ -67,7 +75,7 @@ export class KeysService {
         overload: false,
       })
       .then(([{ isApproved }]: [KeyEventResponseDto]) => {
-        if (isApproved) return this.saveKey(dto, userId, keysCount);
+        if (isApproved) return true;
         throw new Error('reject');
       })
       .catch((error) => {
@@ -78,7 +86,7 @@ export class KeysService {
       });
   }
 
-  async saveKey(dto: KeyCreateRequestDto, userId: number, keysCount: number): Promise<KeyDto> {
+  async saveKey(dto: KeyCreateRequestDto, userId: number): Promise<KeyDto> {
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
@@ -94,7 +102,7 @@ export class KeysService {
           participantsCount: dto.participantsCount,
           participantsThreshold: dto.participantsThreshold,
           timeoutSeconds: dto.timeoutSeconds,
-          name: dto.name || `Key #${keysCount + 1}`,
+          name: dto.name,
           description: dto.description,
           tags: dto.tags,
         },
@@ -135,7 +143,7 @@ export class KeysService {
     } catch (error) {
       queryRunner.isTransactionActive && (await queryRunner.rollbackTransaction());
       this.logger.error('Create key transaction', error);
-      throw new InternalServerErrorException();
+      throw new InternalServerErrorException(error.message);
     } finally {
       await queryRunner.release();
     }
