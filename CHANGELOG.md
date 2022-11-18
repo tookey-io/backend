@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.0](https://github.com/tookey-io/backend/compare/v1.3.0...v1.4.0) (2022-11-18)
+
+
+### Features
+
+* **bot:** exception filter ([2f7cbaf](https://github.com/tookey-io/backend/commit/2f7cbaf21d392a5fbb8a1876665b8dd815c3ec9d))
+* **key manage:** display owner username or shared with usernames ([c9394f5](https://github.com/tookey-io/backend/commit/c9394f518cc0c0c2d699a6429f4c0c9bc821ce63))
+
 ## [1.3.0](https://github.com/tookey-io/backend/compare/v1.2.1...v1.3.0) (2022-11-17)
 
 
