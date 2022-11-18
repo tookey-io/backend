@@ -22,11 +22,11 @@ import {
 } from '@nestjs/swagger';
 import { AmqpPayload, AmqpSubscribe } from '@tookey/amqp';
 
+import { AmqpPayloadDto } from '../ampq.dto';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { JwtAuth } from '../decorators/jwt-auth.decorator';
 import { UserContextDto } from '../user/user.dto';
 import {
-  AmqpPayloadDto,
   KeyCreateRequestDto,
   KeyDeleteRequestDto,
   KeyDeleteResponseDto,

@@ -14,11 +14,10 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AmqpService } from '@tookey/amqp';
 import { KeyParticipantRepository, KeyRepository, SignRepository, TaskStatus } from '@tookey/database';
 
+import { AmqpKeygenJoinDto, AmqpPayloadDto, AmqpSignApproveDto } from '../ampq.dto';
+import { TelegramUserDto } from '../user/user-telegram.dto';
 import { UserService } from '../user/user.service';
 import {
-  AmqpKeygenJoinDto,
-  AmqpPayloadDto,
-  AmqpSignApproveDto,
   KeyCreateRequestDto,
   KeyDeleteRequestDto,
   KeyDeleteResponseDto,
@@ -191,6 +190,11 @@ export class KeysService {
       userIndex: participation.index,
       isOwner: userId === participation.key.userId,
     }));
+  }
+
+  async getTelegramUsersByKey(keyId: number): Promise<TelegramUserDto[]> {
+    const participants = await this.participants.findBy({ keyId });
+    return await Promise.all(participants.map(({ userId }) => this.users.getTelegramUser({ userId })));
   }
 
   async delete(dto: KeyDeleteRequestDto, userId?: number): Promise<KeyDeleteResponseDto> {

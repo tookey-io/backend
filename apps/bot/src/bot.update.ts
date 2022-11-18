@@ -131,14 +131,24 @@ export class BotUpdate extends BaseScene {
     message.push(`Participants count: ${key.participantsCount}`);
     message.push(`Participants threshold: ${key.participantsThreshold}`);
     message.push(`Age: ${formatDistanceToNow(new Date(key.createdAt))}`);
-    message.push(`Shared with: nobody`);
 
     const isOwner = ctx.user.userId === key.userId;
+    if (isOwner) {
+      const keyTelegramUsers = await this.keysService.getTelegramUsersByKey(keyId);
+      const shared = keyTelegramUsers
+        .filter(({ userId }) => userId !== key.userId)
+        .map(({ username }) => `@${username}`)
+        .join(' ');
+      message.push(`Shared with: ${shared ? shared : 'nobody'}`);
+    } else {
+      const owner = await this.userService.getTelegramUser({ userId: key.userId });
+      if (owner.username) message.push(`Key owner: @${owner.username}`);
+    }
 
     await ctx.replyWithHTML(
       message.join('\n'),
       isOwner
-        ? Markup.inlineKeyboard([Markup.button.callback('➕ Share with thirdparty', `${BotAction.KEY_SHARE}${keyId}`)])
+        ? Markup.inlineKeyboard([Markup.button.callback('🔁 Share with thirdparty', `${BotAction.KEY_SHARE}${keyId}`)])
         : undefined,
     );
   }

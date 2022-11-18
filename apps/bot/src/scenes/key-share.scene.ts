@@ -70,7 +70,7 @@ export class KeyShareScene extends BaseScene {
 
       await ctx.replyWithHTML(
         [`Nice. Now you can share this key with @${username}:`].join('\n'),
-        Markup.inlineKeyboard([Markup.button.callback('➡️ Share key', `${BotAction.KEY_SHARE_USER}${user.userId}`)]),
+        Markup.inlineKeyboard([Markup.button.callback('🔁 Share key', `${BotAction.KEY_SHARE_USER}${user.userId}`)]),
       );
     }
   }
