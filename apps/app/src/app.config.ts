@@ -23,6 +23,7 @@ export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig
   defaultTtl: number;
   telegramToken: string;
   telegramBotName: string;
+  telegramExceptionsChatId: number;
   appName: string;
   appUrl: string;
   port: number;
@@ -38,6 +39,7 @@ export function configuration(): AppConfiguration {
     defaultTtl: parseInt(process.env.ACCESS_TOKEN_TTL) || 1000 * 60, // 1 min
     telegramToken: process.env.TELEGRAM_TOKEN,
     telegramBotName: process.env.TELEGRAM_BOT_NAME || 'tookey_bot',
+    telegramExceptionsChatId: parseInt(process.env.TELEGRAM_EXCEPTIONS_CHAT_ID),
     appName: process.env.APP_NAME || 'tookey',
     appUrl: process.env.APP_URL,
     port: parseInt(process.env.PORT, 10),

@@ -2,20 +2,24 @@ import { KeyCreateRequestDto, KeyDto, KeyParticipationDto, KeySignEventRequestDt
 import { KeysService } from 'apps/api/src/keys/keys.service';
 import { KeyEvent } from 'apps/api/src/keys/keys.types';
 import { UserService } from 'apps/api/src/user/user.service';
+import { TelegrafExceptionFilter } from 'apps/app/src/filters/telegraf-exception.filter';
 import { addSeconds, formatDistanceToNow } from 'date-fns';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Action, Command, Ctx, Hears, InjectBot, Sender, Start, Update } from 'nestjs-telegraf';
 import { Markup, Telegraf } from 'telegraf';
 import * as tg from 'telegraf/types';
 
+import { UseFilters } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 
 import { BotAction, BotCommand, BotMenu, BotScene, CALLBACK_ACTION } from './bot.constants';
 import { TookeyContext } from './bot.types';
 import { getPagination } from './bot.utils';
+import { ValidationException } from './exceptions/validation.exception';
 import { BaseScene } from './scenes/base.scene';
 
 @Update()
+@UseFilters(TelegrafExceptionFilter)
 export class BotUpdate extends BaseScene {
   constructor(
     @InjectBot() private readonly bot: Telegraf<TookeyContext>,
@@ -30,7 +34,9 @@ export class BotUpdate extends BaseScene {
 
   @Start()
   async onStart(@Ctx() ctx: TookeyContext, @Sender() sender: tg.User) {
-    if (ctx.chat.id != sender.id) return `Hi, ${sender.first_name}! Go to @tookey_bot to manage your keys`;
+    if (ctx.chat.id != sender.id) {
+      throw new ValidationException(`Hi, ${sender.first_name}! Go to @tookey_bot to manage your keys`);
+    }
     if (ctx.session.__scenes.current) await ctx.scene.leave();
 
     // https://t.me/tookey_bot?start=YXBwPWF1dGg
@@ -189,8 +195,8 @@ export class BotUpdate extends BaseScene {
 
     this.eventEmitter.emit(KeyEvent.CREATE_RESPONSE, { uuid, isApproved: answer === 'approve', userId: user.id });
 
-    if (answer === 'approve') ctx.replyWithHTML(['<b>✅ Key generation approved</b>'].join('\n'));
-    if (answer === 'reject') ctx.replyWithHTML(['<b>⛔ Key generation rejected</b>'].join('\n'));
+    if (answer === 'approve') ctx.replyWithHTML('<b>✅ Key generation approved</b>');
+    if (answer === 'reject') ctx.replyWithHTML('<b>⛔ Key generation rejected</b>');
   }
 
   @Action(CALLBACK_ACTION.KEY_SIGN_REQUEST)
@@ -203,8 +209,8 @@ export class BotUpdate extends BaseScene {
 
     this.eventEmitter.emit(KeyEvent.SIGN_RESPONSE, { uuid, isApproved: answer === 'approve', userId: user.id });
 
-    if (answer === 'approve') ctx.replyWithHTML(['<b>✅ Approved signature request</b> from @'].join('\n'));
-    if (answer === 'reject') ctx.replyWithHTML(['<b>⛔ Rejected</b>'].join('\n'));
+    if (answer === 'approve') ctx.replyWithHTML('<b>✅ Approved signature request</b> from @');
+    if (answer === 'reject') ctx.replyWithHTML('<b>⛔ Rejected</b>');
   }
 
   @OnEvent(KeyEvent.CREATE_REQUEST)
@@ -281,8 +287,9 @@ export class BotUpdate extends BaseScene {
     const telegramUser = await this.userService.getTelegramUser({ userId });
     if (!telegramUser) return;
 
-    const message = [`✅ Transaction signed with <b>${keyName}</b>`];
-    await this.bot.telegram.sendMessage(telegramUser.chatId, message.join('\n'), { parse_mode: 'HTML' });
+    await this.bot.telegram.sendMessage(telegramUser.chatId, `✅ Transaction signed with <b>${keyName}</b>`, {
+      parse_mode: 'HTML',
+    });
   }
 
   @OnEvent(KeyEvent.SHARE_RESPONSE)

@@ -1,11 +1,13 @@
 import { AuthEvent } from 'apps/api/src/auth/auth.types';
 import { UserService } from 'apps/api/src/user/user.service';
+import { TelegrafExceptionFilter } from 'apps/app/src/filters/telegraf-exception.filter';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Ctx, InjectBot, Scene, SceneEnter } from 'nestjs-telegraf';
 import * as QR from 'qrcode';
 import { Telegraf } from 'telegraf';
 import * as tg from 'telegraf/types';
 
+import { UseFilters } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { AccessService } from '@tookey/access';
 
@@ -13,6 +15,7 @@ import { BotScene } from '../bot.constants';
 import { TookeyContext } from '../bot.types';
 
 @Scene(BotScene.AUTH)
+@UseFilters(TelegrafExceptionFilter)
 export class AuthScene {
   constructor(
     @InjectBot() private readonly bot: Telegraf<TookeyContext>,
@@ -35,10 +38,9 @@ export class AuthScene {
 
     await ctx.deleteMessage(ctx.message.message_id);
 
-    if (!ctx.scene.state.authCode) {
-      ctx.scene.state.authCode = await ctx.replyWithPhoto({ source: qr });
-      this.updateAuthCode(ctx, 60);
-    }
+    ctx.scene.state.authCode = await ctx.replyWithPhoto({ source: qr });
+
+    await this.updateAuthCode(ctx, 60);
 
     ctx.scene.leave();
   }
@@ -48,11 +50,13 @@ export class AuthScene {
     const telegramUser = await this.userService.getTelegramUser({ userId });
     if (!telegramUser) return;
 
-    const message = ['✅ Successfully authenticated in <b>Tookey Signer</b>!'];
-    await this.bot.telegram.sendMessage(telegramUser.chatId, message.join('\n'), { parse_mode: 'HTML' });
+    await this.bot.telegram.sendMessage(telegramUser.chatId, '✅ Successfully authenticated in <b>Tookey Signer</b>!', {
+      parse_mode: 'HTML',
+    });
   }
 
   private async updateAuthCode(@Ctx() ctx: TookeyContext<tg.Update.MessageUpdate>, timeLeft: number): Promise<void> {
+    this.logger.debug(timeLeft);
     if (ctx.scene.state.authCode && timeLeft === 0) {
       await ctx.deleteMessage(ctx.scene.state.authCode.message_id);
       delete ctx.scene.state.authCode;

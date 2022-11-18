@@ -8,6 +8,7 @@ import * as tg from 'telegraf/types';
 import { Injectable } from '@nestjs/common';
 
 import { TelegrafMiddleware, TookeyContext } from '../bot.types';
+import { ValidationException } from '../exceptions/validation.exception';
 
 @Injectable()
 export class TelegramUserMiddleware implements TelegrafMiddleware {
@@ -73,7 +74,7 @@ export class TelegramUserMiddleware implements TelegrafMiddleware {
 
     if (sender) return sender;
 
-    throw new Error("Can't find sender");
+    throw new ValidationException("Can't find sender");
   }
 
   private getInvitedBy(ctx: TookeyContext): string {

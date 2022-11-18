@@ -1,18 +1,22 @@
 import { KeysService } from 'apps/api/src/keys/keys.service';
 import { UserService } from 'apps/api/src/user/user.service';
 import { AppConfiguration } from 'apps/app/src/app.config';
+import { TelegrafExceptionFilter } from 'apps/app/src/filters/telegraf-exception.filter';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Action, Ctx, Hears, Scene, SceneEnter } from 'nestjs-telegraf';
 import { Markup } from 'telegraf';
 import * as tg from 'telegraf/types';
 
+import { UseFilters } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { BotAction, BotScene, USERNAME } from '../bot.constants';
 import { TookeyContext } from '../bot.types';
+import { ValidationException } from '../exceptions/validation.exception';
 import { BaseScene } from './base.scene';
 
 @Scene(BotScene.KEY_SHARE)
+@UseFilters(TelegrafExceptionFilter)
 export class KeyShareScene extends BaseScene {
   constructor(
     @InjectPinoLogger(KeyShareScene.name) private readonly logger: PinoLogger,
@@ -40,14 +44,12 @@ export class KeyShareScene extends BaseScene {
 
     const username = ctx.match[0].slice(1);
     if (username === ctx.update.message.from.username) {
-      return await ctx.replyWithHTML([`That's your current account 😟`].join('\n'));
+      throw new ValidationException(`That's your current account 😟`);
     }
 
     const user = await this.userService.getTelegramUser({ username });
     if (!user) {
-      await ctx.replyWithHTML(
-        ['Consider to invite your partner to <b>Tookey</b>. Just forward next message:'].join('\n'),
-      );
+      await ctx.replyWithHTML('Consider to invite your partner to <b>Tookey</b>. Just forward next message:');
 
       const botName = this.configService.get('telegramBotName', { infer: true });
       const parameter = Buffer.from(`invite=${ctx.user.username}`).toString('base64').replace(/\=/g, '');
@@ -69,7 +71,7 @@ export class KeyShareScene extends BaseScene {
       ctx.scene.state.keyShare.username = username;
 
       await ctx.replyWithHTML(
-        [`Nice. Now you can share this key with @${username}:`].join('\n'),
+        `Nice. Now you can share this key with @${username}:`,
         Markup.inlineKeyboard([Markup.button.callback('🔁 Share key', `${BotAction.KEY_SHARE_USER}${user.userId}`)]),
       );
     }
