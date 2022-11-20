@@ -41,8 +41,6 @@ export class AuthScene {
     ctx.scene.state.authCode = await ctx.replyWithPhoto({ source: qr });
 
     await this.updateAuthCode(ctx, 60);
-
-    ctx.scene.leave();
   }
 
   @OnEvent(AuthEvent.SIGNIN)
@@ -56,7 +54,6 @@ export class AuthScene {
   }
 
   private async updateAuthCode(@Ctx() ctx: TookeyContext<tg.Update.MessageUpdate>, timeLeft: number): Promise<void> {
-    this.logger.debug(timeLeft);
     if (ctx.scene.state.authCode && timeLeft === 0) {
       await ctx.deleteMessage(ctx.scene.state.authCode.message_id);
       delete ctx.scene.state.authCode;
