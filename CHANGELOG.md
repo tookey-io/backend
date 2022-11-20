@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.1](https://github.com/tookey-io/backend/compare/v1.4.0...v1.4.1) (2022-11-20)
+
+
+### Bug Fixes
+
+* auth qr code counter ([d9b6ba2](https://github.com/tookey-io/backend/commit/d9b6ba2cbd50a1f38bf3c2fec5e559158dc466e3))
+* deeplink url update ([7c8f5e0](https://github.com/tookey-io/backend/commit/7c8f5e002b864b93334816ada18d2346013745c1))
+* signin & refresh methods as post ([e0b8035](https://github.com/tookey-io/backend/commit/e0b8035767d643221923391d15a5019e7766599d))
+
 ## [1.4.0](https://github.com/tookey-io/backend/compare/v1.3.0...v1.4.0) (2022-11-18)
 
 
