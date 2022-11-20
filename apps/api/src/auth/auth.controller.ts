@@ -1,8 +1,8 @@
-import { ClassSerializerInterceptor, Controller, Get, UseInterceptors } from '@nestjs/common';
+import { ClassSerializerInterceptor, Controller, Post, UseInterceptors } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { AccessService } from '@tookey/access';
 
-import { AccessService } from '../../../../libs/access/src';
 import { ApiKeyAuth } from '../decorators/apikey-auth.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { JwtRefreshAuth } from '../decorators/jwt-refresh-auth.decorator';
@@ -26,7 +26,7 @@ export class AuthController {
   @ApiKeyAuth()
   @ApiOperation({ description: 'Show access and refresh tokens' })
   @ApiOkResponse({ type: [AuthTokenResponseDto] })
-  @Get('signin')
+  @Post('signin')
   async signin(@CurrentUser() user: UserContextDto): Promise<AuthTokenResponseDto[]> {
     const accessToken = this.authService.getJwtAccessToken(user.id);
     const refreshToken = this.authService.getJwtRefreshToken(user.id);
@@ -40,7 +40,7 @@ export class AuthController {
   }
 
   @JwtRefreshAuth()
-  @Get('refresh')
+  @Post('refresh')
   refresh(@CurrentUser() user: UserContextDto): AuthTokenResponseDto {
     return this.authService.getJwtAccessToken(user.id);
   }
