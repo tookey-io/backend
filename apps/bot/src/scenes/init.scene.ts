@@ -49,7 +49,7 @@ export class InitScene {
       const { user } = userTelegram;
       const { token } = await this.accessService.getAccessToken(user.id);
       const appUrl = this.configService.get('appUrl', { infer: true });
-      const link = `${appUrl}/app/open?token=${token}`;
+      const link = `${appUrl}/app/token/${token}`;
 
       await ctx.replyWithHTML(
         'Authenticate in <b>Tookey Signer</b>',
