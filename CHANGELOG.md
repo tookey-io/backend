@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.2](https://github.com/tookey-io/backend/compare/v1.4.1...v1.4.2) (2022-11-25)
+
+
+### Bug Fixes
+
+* **keys:** response with empty list keys instead of not found exception ([98b7bae](https://github.com/tookey-io/backend/commit/98b7baebbcf3b6c5be100ee304a1c6cfecc55619))
+* update keys list & auth signin response dtos ([dbe19e7](https://github.com/tookey-io/backend/commit/dbe19e716d62ddb1c7896792db8638b794b1a61b))
+
 ### [1.4.1](https://github.com/tookey-io/backend/compare/v1.4.0...v1.4.1) (2022-11-20)
 
 
