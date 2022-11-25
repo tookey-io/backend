@@ -31,6 +31,7 @@ import {
   KeyDeleteRequestDto,
   KeyDeleteResponseDto,
   KeyDto,
+  KeyListResponseDto,
   KeySignRequestDto,
   SignDto,
 } from './keys.dto';
@@ -66,10 +67,10 @@ export class KeysController {
   }
 
   @ApiOperation({ description: 'Get Keys' })
-  @ApiOkResponse({ type: KeyDto })
+  @ApiOkResponse({ type: KeyListResponseDto })
   @ApiNotFoundResponse()
   @Get()
-  getKeys(@CurrentUser() user: UserContextDto): Promise<KeyDto[]> {
+  getKeys(@CurrentUser() user: UserContextDto): Promise<KeyListResponseDto> {
     return this.keysService.getKeys(user.id);
   }
 

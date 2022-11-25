@@ -61,15 +61,19 @@ export class AuthScene {
     }
 
     if (ctx.scene.state.authCode) {
-      await this.bot.telegram.editMessageCaption(
-        ctx.update.message.chat.id,
-        ctx.scene.state.authCode.message_id,
-        undefined,
-        ['Scan QR code in <b>Tookey Signer</b> to authenticate', `Removes in ${timeLeft} sec`].join('\n'),
-        { parse_mode: 'HTML' },
-      );
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      this.updateAuthCode(ctx, timeLeft - 1);
+      try {
+        await this.bot.telegram.editMessageCaption(
+          ctx.update.message.chat.id,
+          ctx.scene.state.authCode.message_id,
+          undefined,
+          ['Scan QR code in <b>Tookey Signer</b> to authenticate', `Removes in ${timeLeft} sec`].join('\n'),
+          { parse_mode: 'HTML' },
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        this.updateAuthCode(ctx, timeLeft - 1);
+      } catch (error) {
+        this.logger.error(error.message);
+      }
     }
   }
 }

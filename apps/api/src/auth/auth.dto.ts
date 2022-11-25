@@ -1,8 +1,9 @@
-import { IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsString, ValidateNested } from 'class-validator';
 
 import { ApiProperty } from '@nestjs/swagger';
 
-export class AuthTokenResponseDto {
+export class AuthTokenDto {
   @ApiProperty()
   @IsString()
   token: string;
@@ -10,4 +11,16 @@ export class AuthTokenResponseDto {
   @ApiProperty()
   @IsString()
   validUntil: string;
+}
+
+export class AuthSigninResponseDto {
+  @ApiProperty({ type: () => AuthTokenDto })
+  @ValidateNested()
+  @Type(() => AuthTokenDto)
+  access: AuthTokenDto;
+
+  @ApiProperty({ type: () => AuthTokenDto })
+  @ValidateNested()
+  @Type(() => AuthTokenDto)
+  refresh: AuthTokenDto;
 }

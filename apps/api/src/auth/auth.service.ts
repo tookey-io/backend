@@ -6,7 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AccessService } from '@tookey/access';
 
-import { AuthTokenResponseDto } from './auth.dto';
+import { AuthTokenDto } from './auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -16,7 +16,7 @@ export class AuthService {
     private readonly configService: ConfigService<AppConfiguration>,
   ) {}
 
-  async getAccessToken(userId: number): Promise<AuthTokenResponseDto> {
+  async getAccessToken(userId: number): Promise<AuthTokenDto> {
     const accessToken = await this.accessService.getAccessToken(userId);
     if (!accessToken) throw new NotFoundException('Access token not found');
     return {
@@ -25,7 +25,7 @@ export class AuthService {
     };
   }
 
-  public getJwtAccessToken(userId: number): AuthTokenResponseDto {
+  public getJwtAccessToken(userId: number): AuthTokenDto {
     const jwt = this.configService.get('jwt', { infer: true });
     const token = this.jwtService.sign(
       { id: userId },

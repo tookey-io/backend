@@ -1,4 +1,4 @@
-import { Exclude, Expose, Transform } from 'class-transformer';
+import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
@@ -9,6 +9,7 @@ import {
   IsUUID,
   Length,
   MaxLength,
+  ValidateNested,
 } from 'class-validator';
 import { formatISO } from 'date-fns';
 
@@ -251,4 +252,11 @@ export class KeyShareDto {
 
   @IsNumber()
   userId: number;
+}
+
+export class KeyListResponseDto {
+  @ApiProperty({ type: () => [KeyDto] })
+  @ValidateNested({ each: true })
+  @Type(() => KeyDto)
+  items: KeyDto[];
 }

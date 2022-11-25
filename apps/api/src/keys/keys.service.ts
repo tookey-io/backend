@@ -24,6 +24,7 @@ import {
   KeyDto,
   KeyEventResponseDto,
   KeyGetRequestDto,
+  KeyListResponseDto,
   KeyParticipationDto,
   KeyShareDto,
   KeySignEventRequestDto,
@@ -51,7 +52,7 @@ export class KeysService {
 
     const keysCount = await this.keys.countBy({
       userId: user.id,
-      status: Not(In([TaskStatus.Timeout, TaskStatus.Error])),
+      status: TaskStatus.Finished,
     });
     if (keysCount >= user.keyLimit) throw new ForbiddenException('Keys limit reached');
 
@@ -60,30 +61,11 @@ export class KeysService {
     const uuid = randomUUID();
     this.eventEmitter.emit(KeyEvent.CREATE_REQUEST, uuid, dto, userId);
 
-    await this.waitForKeyCreateApprove(uuid, dto);
+    await this.waitForApprove(KeyEvent.CREATE_RESPONSE, uuid, dto.timeoutSeconds * 1000);
+
+    this.logger.debug(`Key generation approved: ${uuid}`);
 
     return this.saveKey(dto, userId);
-  }
-
-  async waitForKeyCreateApprove(uuid: string, dto: KeyCreateRequestDto): Promise<boolean> {
-    return this.eventEmitter
-      .waitFor(KeyEvent.CREATE_RESPONSE, {
-        handleError: false,
-        timeout: dto.timeoutSeconds * 1000,
-        filter: (data: KeyEventResponseDto) => data.uuid === uuid,
-        Promise,
-        overload: false,
-      })
-      .then(([{ isApproved }]: [KeyEventResponseDto]) => {
-        if (isApproved) return true;
-        throw new Error('reject');
-      })
-      .catch((error) => {
-        if (error.message === 'reject') throw new ForbiddenException('Rejected by user');
-        if (error.message === 'timeout') throw new RequestTimeoutException('Timeout');
-        this.logger.error(error);
-        throw new InternalServerErrorException(error.message);
-      });
   }
 
   async saveKey(dto: KeyCreateRequestDto, userId: number): Promise<KeyDto> {
@@ -136,6 +118,8 @@ export class KeysService {
         timeout_seconds: key.timeoutSeconds,
       });
 
+      this.logger.debug(`Key saved: ${key.roomId}`);
+
       return new KeyDto({
         ...key,
         participants: participants.map((participant) => participant.index),
@@ -163,7 +147,7 @@ export class KeysService {
     });
   }
 
-  async getKeys(userId?: number): Promise<KeyDto[]> {
+  async getKeys(userId?: number): Promise<KeyListResponseDto> {
     const participations = await this.participants.findBy({ userId });
     const keyIds = participations.reduce<number[]>((acc, { keyId }) => {
       if (acc.findIndex((i) => i === keyId) < 0) acc.push(keyId);
@@ -175,14 +159,16 @@ export class KeysService {
     });
     if (!keys.length) throw new NotFoundException('Keys not found');
 
-    return keys.map((key) => {
-      const { participants, ...keyProps } = key;
+    return {
+      items: keys.map((key) => {
+        const { participants, ...keyProps } = key;
 
-      return new KeyDto({
-        ...keyProps,
-        participants: participants.map((participant) => participant.index),
-      });
-    });
+        return new KeyDto({
+          ...keyProps,
+          participants: participants.map((participant) => participant.index),
+        });
+      }),
+    };
   }
 
   async getKeyParticipationsByUser(userId: number): Promise<KeyParticipationDto[]> {
@@ -226,16 +212,24 @@ export class KeysService {
     const uuid = randomUUID();
     this.eventEmitter.emit(KeyEvent.SIGN_REQUEST, uuid, signEventDto, userId);
 
-    return await this.eventEmitter
-      .waitFor(KeyEvent.SIGN_RESPONSE, {
+    await this.waitForApprove(KeyEvent.SIGN_RESPONSE, uuid, key.timeoutSeconds * 1000);
+
+    this.logger.debug(`Key sign approved: ${uuid}`);
+
+    return this.saveSign({ ...dto, keyId: key.id, timeoutSeconds: key.timeoutSeconds }, userId);
+  }
+
+  async waitForApprove(keyEvent: KeyEvent, uuid: string, timeout?: number): Promise<boolean> {
+    return this.eventEmitter
+      .waitFor(keyEvent, {
         handleError: false,
-        timeout: key.timeoutSeconds * 1000,
+        timeout,
         filter: (data: KeyEventResponseDto) => data.uuid === uuid,
         Promise,
         overload: false,
       })
       .then(([{ isApproved }]: [KeyEventResponseDto]) => {
-        if (isApproved) return this.saveSign(signEventDto, userId);
+        if (isApproved) return true;
         throw new Error('reject');
       })
       .catch((error) => {
