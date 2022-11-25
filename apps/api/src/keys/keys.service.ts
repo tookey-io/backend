@@ -157,17 +157,17 @@ export class KeysService {
       where: { id: In(keyIds), status: Not(In([TaskStatus.Timeout, TaskStatus.Error])) },
       relations: { participants: true },
     });
-    if (!keys.length) throw new NotFoundException('Keys not found');
 
     return {
-      items: keys.map((key) => {
-        const { participants, ...keyProps } = key;
-
-        return new KeyDto({
-          ...keyProps,
-          participants: participants.map((participant) => participant.index),
-        });
-      }),
+      items: keys.length
+        ? keys.map(
+            ({ participants, ...key }) =>
+              new KeyDto({
+                ...key,
+                participants: participants.map((participant) => participant.index),
+              }),
+          )
+        : [],
     };
   }
 

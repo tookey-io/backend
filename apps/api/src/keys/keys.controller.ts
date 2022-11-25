@@ -68,7 +68,6 @@ export class KeysController {
 
   @ApiOperation({ description: 'Get Keys' })
   @ApiOkResponse({ type: KeyListResponseDto })
-  @ApiNotFoundResponse()
   @Get()
   getKeys(@CurrentUser() user: UserContextDto): Promise<KeyListResponseDto> {
     return this.keysService.getKeys(user.id);
