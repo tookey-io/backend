@@ -61,7 +61,8 @@ export class KeysService {
     const uuid = randomUUID();
     this.eventEmitter.emit(KeyEvent.CREATE_REQUEST, uuid, dto, userId);
 
-    await this.waitForApprove(KeyEvent.CREATE_RESPONSE, uuid, dto.timeoutSeconds * 1000);
+    const isApproved = await this.waitForApprove(KeyEvent.CREATE_RESPONSE, uuid, dto.timeoutSeconds * 1000);
+    if (!isApproved) throw new ForbiddenException('Rejected by user');
 
     this.logger.debug(`Key generation approved: ${uuid}`);
 
@@ -212,7 +213,8 @@ export class KeysService {
     const uuid = randomUUID();
     this.eventEmitter.emit(KeyEvent.SIGN_REQUEST, uuid, signEventDto, userId);
 
-    await this.waitForApprove(KeyEvent.SIGN_RESPONSE, uuid, key.timeoutSeconds * 1000);
+    const isApproved = await this.waitForApprove(KeyEvent.SIGN_RESPONSE, uuid, key.timeoutSeconds * 1000);
+    if (!isApproved) throw new ForbiddenException('Rejected by user');
 
     this.logger.debug(`Key sign approved: ${uuid}`);
 
@@ -228,12 +230,8 @@ export class KeysService {
         Promise,
         overload: false,
       })
-      .then(([{ isApproved }]: [KeyEventResponseDto]) => {
-        if (isApproved) return true;
-        throw new Error('reject');
-      })
+      .then(([{ isApproved }]: [KeyEventResponseDto]) => isApproved)
       .catch((error) => {
-        if (error.message === 'reject') throw new ForbiddenException('Rejected by user');
         if (error.message === 'timeout') throw new RequestTimeoutException('Timeout');
         this.logger.error(error);
         throw new InternalServerErrorException(error.message);

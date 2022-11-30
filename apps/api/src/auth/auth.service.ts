@@ -1,5 +1,5 @@
 import { AppConfiguration } from 'apps/app/src/app.config';
-import { addMilliseconds, formatISO } from 'date-fns';
+import { addSeconds, formatISO } from 'date-fns';
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -36,7 +36,7 @@ export class AuthService {
     );
     return {
       token,
-      validUntil: formatISO(addMilliseconds(new Date(), jwt.accessTokenTTL)),
+      validUntil: formatISO(addSeconds(new Date(), jwt.accessTokenTTL)),
     };
   }
 
@@ -51,7 +51,7 @@ export class AuthService {
     );
     return {
       token,
-      validUntil: formatISO(addMilliseconds(new Date(), jwt.refreshTokenTTL)),
+      validUntil: formatISO(addSeconds(new Date(), jwt.refreshTokenTTL)),
     };
   }
 }

@@ -50,7 +50,7 @@ export class KeysController {
   @ApiOperation({ description: 'Create a Key' })
   @ApiOkResponse({ type: KeyDto })
   @ApiNotFoundResponse()
-  @ApiForbiddenResponse()
+  @ApiForbiddenResponse({ description: 'Rejected by user' })
   @ApiRequestTimeoutResponse()
   @ApiInternalServerErrorResponse()
   @Post()

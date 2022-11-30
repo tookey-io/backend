@@ -46,9 +46,9 @@ export function configuration(): AppConfiguration {
     isProduction: process.env.NODE_ENV === 'production',
     jwt: {
       accessTokenSecret: process.env.JWT_ACCESS_TOKEN_SECRET || 'secret_access',
-      accessTokenTTL: parseInt(process.env.JWT_ACCESS_TOKEN_TTL) || 1000 * 60 * 15, // 15 min
+      accessTokenTTL: parseInt(process.env.JWT_ACCESS_TOKEN_TTL) || 60 * 15, // 15 min
       refreshTokenSecret: process.env.JWT_REFRESH_TOKEN_SECRET || 'secret_refresh',
-      refreshTokenTTL: parseInt(process.env.JWT_REFRESH_TOKEN_TTL) || 7 * 1000 * 60 * 60 * 24, // 7 days
+      refreshTokenTTL: parseInt(process.env.JWT_REFRESH_TOKEN_TTL) || 60 * 60 * 24 * 7, // 7 days
     },
     db: {
       host: process.env.PG_HOST,
