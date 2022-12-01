@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.3](https://github.com/tookey-io/backend/compare/v1.4.2...v1.4.3) (2022-12-01)
+
+
+### Bug Fixes
+
+* tokens ttl, wait for approve response ([16af7c3](https://github.com/tookey-io/backend/commit/16af7c397a9503cae36a897bf2b887258a457f76))
+
 ### [1.4.2](https://github.com/tookey-io/backend/compare/v1.4.1...v1.4.2) (2022-11-25)
 
 
