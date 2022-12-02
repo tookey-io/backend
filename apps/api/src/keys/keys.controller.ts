@@ -66,11 +66,11 @@ export class KeysController {
     return this.keysService.getKey({ id }, user.id);
   }
 
-  @ApiOperation({ description: 'Get Keys' })
+  @ApiOperation({ description: 'Get Keys List' })
   @ApiOkResponse({ type: KeyListResponseDto })
   @Get()
-  getKeys(@CurrentUser() user: UserContextDto): Promise<KeyListResponseDto> {
-    return this.keysService.getKeys(user.id);
+  getKeyList(@CurrentUser() user: UserContextDto): Promise<KeyListResponseDto> {
+    return this.keysService.getKeyList(user.id);
   }
 
   @ApiOperation({ description: 'Delete a Key' })

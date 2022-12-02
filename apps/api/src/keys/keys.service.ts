@@ -148,7 +148,7 @@ export class KeysService {
     });
   }
 
-  async getKeys(userId?: number): Promise<KeyListResponseDto> {
+  async getKeyList(userId?: number): Promise<KeyListResponseDto> {
     const participations = await this.participants.findBy({ userId });
     const keyIds = participations.reduce<number[]>((acc, { keyId }) => {
       if (acc.findIndex((i) => i === keyId) < 0) acc.push(keyId);
