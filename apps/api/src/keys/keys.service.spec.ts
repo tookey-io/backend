@@ -2,6 +2,7 @@ import { PinoLogger, getLoggerToken } from 'nestjs-pino';
 import { DataSource } from 'typeorm';
 
 import { DeepMocked, createMock } from '@golevelup/ts-jest';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test } from '@nestjs/testing';
 import { AmqpService } from '@tookey/amqp';
@@ -10,6 +11,7 @@ import { Key, KeyParticipantRepository, KeyRepository, SignRepository } from '@t
 import { UserService } from '../user/user.service';
 import { KeyCreateRequestDto } from './keys.dto';
 import { KeysService } from './keys.service';
+import { KeyEvent } from './keys.types';
 
 describe('KeysService', () => {
   let keysService: KeysService;
@@ -52,10 +54,14 @@ describe('KeysService', () => {
       beforeEach(() => {
         eventEmitterMock.waitFor.mockResolvedValue([{ isApproved: true }]);
         keysRepositoryMock.createOrUpdateOne.mockResolvedValue({ id: 1, participantIndex: 1 } as Key);
-        keysRepositoryMock.findOne.mockResolvedValue({ id: 1, participantIndex: 1, participants: [] } as Key);
+        keysRepositoryMock.findOne.mockResolvedValue({
+          id: 1,
+          participantIndex: 1,
+          participants: [],
+        } as Key);
       });
       it('should receive approve callback from bot', async () => {
-        const approve = await keysService.waitForKeyCreateApprove('uuid', keyCreateRequestDto);
+        const approve = await keysService.waitForApprove(KeyEvent.CREATE_RESPONSE, 'uuid');
         expect(approve).toEqual(true);
       });
       it('should return a new key', async () => {
@@ -72,7 +78,8 @@ describe('KeysService', () => {
         try {
           await keysService.createKey(keyCreateRequestDto, 1);
         } catch (error) {
-          expect(error.message).toEqual('Rejected by user');
+          expect(error).toBeInstanceOf(ForbiddenException);
+          expect(error.message).toBe('Rejected by user');
         }
       });
     });
@@ -85,7 +92,8 @@ describe('KeysService', () => {
         try {
           await keysService.createKey(keyCreateRequestDto, null);
         } catch (error) {
-          expect(error.message).toEqual('User not found');
+          expect(error).toBeInstanceOf(NotFoundException);
+          expect(error.message).toBe('User not found');
         }
       });
     });
@@ -99,7 +107,8 @@ describe('KeysService', () => {
         try {
           await keysService.createKey(keyCreateRequestDto, 1);
         } catch (error) {
-          expect(error.message).toEqual('Keys limit reached');
+          expect(error).toBeInstanceOf(ForbiddenException);
+          expect(error.message).toBe('Keys limit reached');
         }
       });
     });
