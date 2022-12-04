@@ -7,7 +7,7 @@ import { AccessService } from '@tookey/access';
 import { UserContextDto } from '../user/user.dto';
 
 @Injectable()
-export class ApiKeyStrategy extends PassportStrategy(HeaderAPIKeyStrategy) {
+export class AuthKeyStrategy extends PassportStrategy(HeaderAPIKeyStrategy, 'auth-key') {
   constructor(readonly accessService: AccessService) {
     super(
       { header: 'apiKey', prefix: '' },

@@ -6,6 +6,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   ParseIntPipe,
   Post,
@@ -53,6 +54,7 @@ export class KeysController {
   @ApiForbiddenResponse({ description: 'Rejected by user' })
   @ApiRequestTimeoutResponse()
   @ApiInternalServerErrorResponse()
+  @HttpCode(200)
   @Post()
   createKey(@Body() dto: KeyCreateRequestDto, @CurrentUser() user: UserContextDto): Promise<KeyDto> {
     return this.keysService.createKey(dto, user.id);
@@ -83,6 +85,7 @@ export class KeysController {
   @ApiOperation({ description: 'Sign a Key' })
   @ApiOkResponse({ type: SignDto })
   @ApiNotFoundResponse()
+  @HttpCode(200)
   @Post('sign')
   signKey(@Body() dto: KeySignRequestDto, @CurrentUser() user: UserContextDto): Promise<SignDto> {
     return this.keysService.signKey(dto, user.id);

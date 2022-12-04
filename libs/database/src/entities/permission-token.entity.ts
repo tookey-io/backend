@@ -5,8 +5,9 @@ import {
   EntityManager,
   Index,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
-  OneToMany,
   Repository,
 } from 'typeorm';
 
@@ -30,10 +31,12 @@ export class PermissionToken extends MetaEntity {
   @Column({ type: 'varchar', length: 64, unique: true })
   token: string;
 
-  @OneToMany(() => Key, (key) => key.id)
+  @ManyToMany(() => Key)
+  @JoinTable()
   keys: Key[];
 
-  @OneToMany(() => Permission, (permission) => permission.id)
+  @ManyToMany(() => Permission)
+  @JoinTable()
   permissions: Permission[];
 
   @Column({ nullable: true })

@@ -7,7 +7,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PermissionRepository, PermissionTokenRepository, UserPermissionTokenRepository } from '@tookey/database';
 
 import { KeysService } from '../keys/keys.service';
-import { PermissionDto, PermissionTokenCreateRequestDto, PermissionTokenDto } from './permission.dto';
+import { PermissionResponseDto, PermissionTokenCreateRequestDto, PermissionTokenDto } from './permission.dto';
 
 @Injectable()
 export class PermissionService {
@@ -44,19 +44,23 @@ export class PermissionService {
     });
   }
 
-  async getPermissionsByUser(userId: number): Promise<Record<string, PermissionDto>> {
-    const userPermissionTokens = await this.userPermissionTokenRepository.find({
+  async getPermissionTokensByUser(userId: number): Promise<PermissionTokenDto[]> {
+    const tokens = await this.permissionTokenRepository.find({
       where: { userId },
-      relations: { permissionToken: { permissions: true } },
+      relations: { keys: true, permissions: true },
     });
 
-    return userPermissionTokens.reduce((acc, userToken) => {
-      return {
-        ...acc,
-        ...userToken.permissionToken.keys.map(({ publicKey }) => ({
-          [publicKey]: userToken.permissionToken.permissions,
-        })),
-      };
-    }, {});
+    return tokens.map((token) => ({
+      ...token,
+      keys: token.keys.map(({ publicKey }) => publicKey),
+    }));
+  }
+
+  async getPermissionToken(token: string) {
+    return await this.permissionTokenRepository.findOne({
+      where: { token },
+      relations: { keys: true, permissions: true },
+    });
+  }
   }
 }

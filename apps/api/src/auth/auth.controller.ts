@@ -24,7 +24,7 @@ export class AuthController {
   ) {}
 
   @ApiKeyAuth()
-  @ApiOperation({ description: 'Show access and refresh tokens' })
+  @ApiOperation({ description: 'Get access and refresh tokens' })
   @ApiOkResponse({ type: AuthSigninResponseDto })
   @HttpCode(200)
   @Post('signin')
