@@ -1,4 +1,4 @@
-import { Body, ClassSerializerInterceptor, Controller, Get, Post, UseInterceptors } from '@nestjs/common';
+import { Body, ClassSerializerInterceptor, Controller, Get, HttpCode, Post, UseInterceptors } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../decorators/current-user.decorator';
@@ -17,6 +17,7 @@ export class PermissionController {
   @ApiOperation({ description: 'Create Permission Token' })
   @ApiOkResponse({ type: PermissionTokenDto })
   @ApiBadRequestResponse({ description: 'Provided keys not found' })
+  @HttpCode(200)
   @Post()
   async createPermissionToken(
     @CurrentUser() user: UserContextDto,

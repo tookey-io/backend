@@ -211,14 +211,14 @@ export class KeysService {
     };
 
     const uuid = randomUUID();
-    this.eventEmitter.emit(KeyEvent.SIGN_REQUEST, uuid, signEventDto, userId);
+    this.eventEmitter.emit(KeyEvent.SIGN_REQUEST, uuid, signEventDto, key.userId);
 
     const isApproved = await this.waitForApprove(KeyEvent.SIGN_RESPONSE, uuid, key.timeoutSeconds * 1000);
     if (!isApproved) throw new ForbiddenException('Rejected by user');
 
     this.logger.debug(`Key sign approved: ${uuid}`);
 
-    return this.saveSign({ ...dto, keyId: key.id, timeoutSeconds: key.timeoutSeconds }, userId);
+    return this.saveSign({ ...dto, keyId: key.id, timeoutSeconds: key.timeoutSeconds }, key.userId);
   }
 
   async waitForApprove(keyEvent: KeyEvent, uuid: string, timeout?: number): Promise<boolean> {
