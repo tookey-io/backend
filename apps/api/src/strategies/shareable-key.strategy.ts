@@ -8,10 +8,10 @@ import { PermissionService } from '../permission/permission.service';
 import { UserContextDto } from '../user/user.dto';
 
 @Injectable()
-export class PermissionKeyStrategy extends PassportStrategy(HeaderAPIKeyStrategy, 'permission-key') {
+export class ShareableKeyStrategy extends PassportStrategy(HeaderAPIKeyStrategy, 'shareable-key') {
   constructor(readonly permissionService: PermissionService) {
     super(
-      { header: 'permissionKey', prefix: '' },
+      { header: 'X-SHAREABLE-KEY' },
       true,
       async (apikey: string, done: (err: Error | null, user?: UserContextDto) => void) => {
         const token = await permissionService.getPermissionToken(apikey);

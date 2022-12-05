@@ -31,7 +31,7 @@ export class PermissionResponseDto {
 }
 
 export class PermissionTokenCreateRequestDto {
-  @ApiProperty()
+  @ApiProperty({ description: 'List of public keys (2KNs)' })
   @IsString({ each: true })
   @Length(66, 66, { each: true })
   keys: string[];
@@ -41,7 +41,10 @@ export class PermissionTokenCreateRequestDto {
   @IsString()
   permissions?: string[];
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    description: 'Token TTL in seconds',
+    examples: ['Year: 31536000', 'Month: 2630000', 'Week: 604800'],
+  })
   @IsOptional()
   @IsNumber()
   ttl?: number;

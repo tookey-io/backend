@@ -3,9 +3,9 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AccessService } from '@tookey/access';
 
-import { ApiKeyAuth } from '../decorators/apikey-auth.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { JwtRefreshAuth } from '../decorators/jwt-refresh-auth.decorator';
+import { SigninKeyAuth } from '../decorators/signin-key-auth.decorator';
 import { UserContextDto } from '../user/user.dto';
 import { UserService } from '../user/user.service';
 import { AuthSigninResponseDto, AuthTokenDto } from './auth.dto';
@@ -23,7 +23,7 @@ export class AuthController {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  @ApiKeyAuth()
+  @SigninKeyAuth()
   @ApiOperation({ description: 'Get access and refresh tokens' })
   @ApiOkResponse({ type: AuthSigninResponseDto })
   @HttpCode(200)

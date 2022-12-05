@@ -3,7 +3,6 @@ import { ApiBadRequestResponse, ApiOkResponse, ApiOperation, ApiTags } from '@ne
 
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { JwtAuth } from '../decorators/jwt-auth.decorator';
-import { PermissionKeyJwtAuth } from '../decorators/permission-key-jwt-auth.decorator';
 import { UserContextDto } from '../user/user.dto';
 import { PermissionTokenCreateRequestDto, PermissionTokenDto } from './permission.dto';
 import { PermissionService } from './permission.service';

@@ -1,12 +1,12 @@
 import { UseGuards, applyDecorators } from '@nestjs/common';
 import { ApiBearerAuth, ApiSecurity, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
-import { PermissionKeyJwtAuthGuard } from '../guards/permission-key-jwt-auth.guard';
+import { ShareableKeyJwtGuard } from '../guards/shareable-key-jwt.guard';
 
-export function PermissionKeyJwtAuth() {
+export function ShareableKeyJwtAuth() {
   return applyDecorators(
-    UseGuards(PermissionKeyJwtAuthGuard),
-    ApiSecurity('permissionKey'),
+    UseGuards(ShareableKeyJwtGuard),
+    ApiSecurity('shareable'),
     ApiBearerAuth(),
     ApiUnauthorizedResponse({ description: 'Unauthorized' }),
   );
