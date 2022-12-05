@@ -13,7 +13,7 @@ import { AuthService } from './auth.service';
 import { AuthEvent } from './auth.types';
 
 @Controller('api/auth')
-@ApiTags('auth')
+@ApiTags('Authentication')
 @UseInterceptors(ClassSerializerInterceptor)
 export class AuthController {
   constructor(

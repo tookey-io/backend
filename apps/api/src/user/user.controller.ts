@@ -7,7 +7,7 @@ import { UserContextDto, UserDto } from './user.dto';
 import { UserService } from './user.service';
 
 @Controller('api/users')
-@ApiTags('users')
+@ApiTags('Users')
 @JwtAuth()
 @UseInterceptors(ClassSerializerInterceptor)
 export class UserController {

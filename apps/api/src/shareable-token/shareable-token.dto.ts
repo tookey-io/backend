@@ -20,7 +20,7 @@ export class PermissionDto {
   }
 }
 
-export class PermissionResponseDto {
+export class ShareableTokenResponseDto {
   @ApiProperty()
   @IsString()
   permissions: PermissionDto;
@@ -30,7 +30,7 @@ export class PermissionResponseDto {
   keys: KeyDto;
 }
 
-export class PermissionTokenCreateRequestDto {
+export class ShareableTokenCreateRequestDto {
   @ApiProperty({ description: 'List of public keys (2KNs)' })
   @IsString({ each: true })
   @Length(66, 66, { each: true })
@@ -51,7 +51,7 @@ export class PermissionTokenCreateRequestDto {
 }
 
 @Exclude()
-export class PermissionTokenDto {
+export class ShareableTokenDto {
   @ApiProperty()
   @Expose()
   @IsNumber()
@@ -84,7 +84,7 @@ export class PermissionTokenDto {
   @Transform(({ value }) => formatISO(new Date(value)))
   validUntil?: Date;
 
-  constructor(partial: Partial<PermissionTokenDto>) {
+  constructor(partial: Partial<ShareableTokenDto>) {
     Object.assign(this, partial);
   }
 }

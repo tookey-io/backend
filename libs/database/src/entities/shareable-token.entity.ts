@@ -18,7 +18,7 @@ import { Permission } from './permission.entity';
 import { User } from './user.entity';
 
 @Entity()
-export class PermissionToken extends MetaEntity {
+export class ShareableToken extends MetaEntity {
   @ManyToOne(() => User)
   @JoinColumn()
   user: User;
@@ -42,15 +42,15 @@ export class PermissionToken extends MetaEntity {
   @Column({ nullable: true })
   validUntil: Date | null;
 
-  constructor(partial: Partial<PermissionToken>) {
+  constructor(partial: Partial<ShareableToken>) {
     super();
     Object.assign(this, partial);
   }
 }
 
-@CustomRepository(PermissionToken)
-export class PermissionTokenRepository extends Repository<PermissionToken> {
-  createOrUpdateOne(entityLike: DeepPartial<PermissionToken>, entityManager?: EntityManager): Promise<PermissionToken> {
+@CustomRepository(ShareableToken)
+export class ShareableTokenRepository extends Repository<ShareableToken> {
+  createOrUpdateOne(entityLike: DeepPartial<ShareableToken>, entityManager?: EntityManager): Promise<ShareableToken> {
     const entity = this.create(entityLike);
     return entityManager ? entityManager.save(entity) : this.save(entity);
   }

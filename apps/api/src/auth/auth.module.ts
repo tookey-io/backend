@@ -6,7 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AccessModule } from '@tookey/access';
 
-import { PermissionModule } from '../permission/permission.module';
+import { ShareableTokenModule } from '../shareable-token/shareable-token.module';
 import { JwtRefreshTokenStrategy } from '../strategies/jwt-refresh-token.strategy';
 import { JwtStrategy } from '../strategies/jwt.strategy';
 import { ShareableKeyStrategy } from '../strategies/shareable-key.strategy';
@@ -20,7 +20,7 @@ import { AuthService } from './auth.service';
     AccessModule,
     UserModule,
     PassportModule,
-    PermissionModule,
+    ShareableTokenModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: async (configService: ConfigService<AppConfiguration>) => {

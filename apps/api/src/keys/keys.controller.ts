@@ -41,7 +41,7 @@ import {
 import { KeysService } from './keys.service';
 
 @Controller('api/keys')
-@ApiTags('keys')
+@ApiTags('Keys')
 @UseInterceptors(ClassSerializerInterceptor)
 export class KeysController {
   constructor(
