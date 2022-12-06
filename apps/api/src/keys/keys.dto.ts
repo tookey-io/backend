@@ -188,6 +188,7 @@ export class KeyDeleteRequestDto {
   @IsNumber()
   id: number;
 }
+
 export class KeyDeleteResponseDto {
   @ApiProperty()
   @IsNumber()
@@ -232,6 +233,10 @@ export class KeyParticipationDto {
   @ApiProperty()
   @IsString()
   keyName: string;
+
+  @ApiProperty()
+  @IsString()
+  publicKey: string;
 
   @ApiProperty()
   @IsNumber()

@@ -13,7 +13,7 @@ import { ConfigService } from '@nestjs/config';
 import { BotAction, BotScene, USERNAME } from '../bot.constants';
 import { TookeyContext } from '../bot.types';
 import { ValidationException } from '../exceptions/validation.exception';
-import { BaseScene } from './base.scene';
+import { BaseScene } from '../scenes/base.scene';
 
 @Scene(BotScene.KEY_SHARE)
 @UseFilters(TelegrafExceptionFilter)
@@ -78,7 +78,7 @@ export class KeyShareScene extends BaseScene {
   }
 
   @Action(new RegExp(`^${BotAction.KEY_SHARE_USER}\\d+$`))
-  async onShare(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
+  async onShare(@Ctx() ctx: TookeyContext) {
     this.logger.debug(ctx.scene.state);
     const userId = +this.getCallbackPayload(ctx, BotAction.KEY_SHARE_USER);
 

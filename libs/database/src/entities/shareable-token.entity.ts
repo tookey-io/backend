@@ -27,6 +27,12 @@ export class ShareableToken extends MetaEntity {
   @Column()
   userId: number;
 
+  @Column({ type: 'varchar', nullable: true })
+  name: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  description: string | null;
+
   @Index({ unique: true })
   @Column({ type: 'varchar', length: 64, unique: true })
   token: string;

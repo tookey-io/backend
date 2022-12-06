@@ -2,11 +2,13 @@ export enum BotScene {
   INIT = 'init',
   AUTH = 'auth',
   KEY_SHARE = 'keyShare',
+  SHAREABLE_TOKEN_CREATE = 'shareableTokenCreate',
 }
 
 export enum BotCommand {
   AUTH = 'auth',
   KEYS = 'keys',
+  SHAREABLE_TOKENS = 'tokens',
 }
 
 export enum BotAction {
@@ -18,10 +20,15 @@ export enum BotAction {
   KEY_SIGN_REQUEST = 'key:sign:request:',
   KEY_SHARE = 'key:share:',
   KEY_SHARE_USER = 'key:share:user:',
+  SHAREABLE_TOKEN_CREATE = 'shareable:create',
+  SHAREABLE_TOKEN_MANAGE = 'shareable:manage:',
+  SHAREABLE_TOKEN_PAGE = 'shareable:page:',
+  SHAREABLE_TOKEN_DELETE = 'shareable:delete:',
 }
 
 export enum BotMenu {
   KEYS = '🔑 Keys',
+  SHAREABLE_TOKENS = '🏷️ Shareable Tokens',
 }
 
 export const CALLBACK_ACTION = {
