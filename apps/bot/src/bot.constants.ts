@@ -1,3 +1,5 @@
+import { Markup } from 'telegraf';
+
 export enum BotScene {
   INIT = 'init',
   AUTH = 'auth',
@@ -29,7 +31,10 @@ export enum BotAction {
 export enum BotMenu {
   KEYS = '🔑 Keys',
   SHAREABLE_TOKENS = '🏷️ Shareable Tokens',
+  CANCEL = '⬅️ Cancel',
 }
+
+export const mainKeyboard = Markup.keyboard([[BotMenu.KEYS, BotMenu.SHAREABLE_TOKENS]]).resize();
 
 export const CALLBACK_ACTION = {
   KEY_CREATE_REQUEST: new RegExp(`^${BotAction.KEY_CREATE_REQUEST}(.{36})(approve|reject)$`),

@@ -38,7 +38,7 @@ export class ShareableTokensUpdate extends BaseScene {
     await this.updateShareableTokens(ctx);
 
     const newShareableTokensKeyboard = () =>
-      Markup.inlineKeyboard([[Markup.button.callback('➕ Create Token', BotAction.SHAREABLE_TOKEN_CREATE)]]);
+      Markup.inlineKeyboard([[Markup.button.callback('➕ Create', BotAction.SHAREABLE_TOKEN_CREATE)]]);
 
     if (!ctx.scene.state.shareableTokens || !ctx.scene.state.shareableTokens.length) {
       await ctx.replyWithHTML('<b>You have no Shareable Tokens yet!</b>');
@@ -64,8 +64,6 @@ export class ShareableTokensUpdate extends BaseScene {
 
   @Action(new RegExp(`^${BotAction.SHAREABLE_TOKEN_MANAGE}\\d+$`))
   async onManage(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
-    this.logger.debug(ctx.scene.state);
-
     const tokenId = +this.getCallbackPayload(ctx, BotAction.SHAREABLE_TOKEN_MANAGE);
 
     if (!ctx.scene.state.shareableTokens) await this.updateShareableTokens(ctx);
@@ -73,21 +71,18 @@ export class ShareableTokensUpdate extends BaseScene {
     const token = ctx.scene.state.shareableTokens.find((token) => token.id === tokenId);
 
     const shareableToken = await this.shareableTokenService.getShareableToken(token.token);
-    const message: string[] = [`<b>${shareableToken.name}</b>`];
-
-    if (shareableToken.token) message.push(`<code>${shareableToken.token}</code>`);
-    if (shareableToken.description) message.push(shareableToken.description);
-    if (shareableToken.keys) message.push(`Keys: ${shareableToken.keys.map((key) => key.name).join(', ')}`);
-
-    const validUntil = shareableToken.validUntil ? format(shareableToken.validUntil, 'MM/dd/yyyy') : null;
-
-    message.push('');
-    message.push(`Valid Until: ${validUntil || 'never expire'}`);
+    const validUntil = shareableToken.validUntil ? format(shareableToken.validUntil, 'MM/dd/yyyy') : 'never expire';
 
     await ctx.replyWithHTML(
-      message.join('\n'),
+      [
+        `<b>${shareableToken.name}</b>`,
+        `<code>${shareableToken.token}</code>`,
+        '',
+        `Keys: ${shareableToken.keys.map((key) => key.name).join(', ')}`,
+        `Valid Until: ${validUntil}`,
+      ].join('\n'),
       Markup.inlineKeyboard([
-        Markup.button.callback('❌ Delete token', `${BotAction.SHAREABLE_TOKEN_DELETE}${shareableToken.id}`),
+        Markup.button.callback('❌ Delete', `${BotAction.SHAREABLE_TOKEN_DELETE}${shareableToken.id}`),
       ]),
     );
   }

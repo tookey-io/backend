@@ -3,11 +3,12 @@ import { ShareableTokenService } from 'apps/api/src/shareable-token/shareable-to
 import { TelegrafExceptionFilter } from 'apps/app/src/filters/telegraf-exception.filter';
 import { format } from 'date-fns';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { Ctx, Wizard, WizardStep } from 'nestjs-telegraf';
+import { Ctx, Hears, Wizard, WizardStep } from 'nestjs-telegraf';
+import { Markup } from 'telegraf';
 
 import { UseFilters } from '@nestjs/common';
 
-import { BotScene } from '../bot.constants';
+import { BotMenu, BotScene, mainKeyboard } from '../bot.constants';
 import { TookeyContext } from '../bot.types';
 import { BaseScene } from '../scenes/base.scene';
 
@@ -22,6 +23,15 @@ export class ShareableTokenCreateScene extends BaseScene {
     super();
   }
 
+  @Hears(new RegExp(`^${BotMenu.CANCEL}$`))
+  async sceneLeave(@Ctx() ctx: TookeyContext) {
+    this.logger.debug(ctx.scene.state);
+
+    await ctx.reply('Canceled.', mainKeyboard);
+
+    ctx.scene.leave();
+  }
+
   @WizardStep(1)
   async stepName(@Ctx() ctx: TookeyContext) {
     const userTelegram = ctx.user;
@@ -32,7 +42,12 @@ export class ShareableTokenCreateScene extends BaseScene {
       ttl: null,
     };
 
-    await ctx.reply('To create a new Shareable Token, please send the name of the token you want to create.');
+    const sceneKeyboard = Markup.keyboard([[BotMenu.CANCEL]]).resize();
+
+    await ctx.reply(
+      'To create a new Shareable Token, please send the name of the token you want to create.',
+      sceneKeyboard,
+    );
 
     const keys = await this.keysService.getKeyParticipationsByUser(user.id);
     ctx.wizard.state.keys = keys.filter((key) => key.isOwner);
@@ -106,20 +121,22 @@ export class ShareableTokenCreateScene extends BaseScene {
     const keys = ctx.wizard.state.shareableTokenCreate.selectedKeys.map((i) => ctx.wizard.state.keys[i - 1].publicKey);
     const shareableToken = await this.shareableTokenService.createShareableToken(user.id, { name, keys, ttl });
 
-    const validUntil = shareableToken.validUntil ? format(shareableToken.validUntil, 'MM/dd/yyyy') : null;
+    const validUntil = shareableToken.validUntil ? format(shareableToken.validUntil, 'MM/dd/yyyy') : 'never expire';
 
     await ctx.reply(
       'Great! Your new Shareable Token has been successfully created, and it will expire in one hour. Here are the details of the new token:',
     );
     await ctx.replyWithHTML(
       [
-        `Token: <code>${shareableToken.token}</code>`,
-        `Name: ${ctx.wizard.state.shareableTokenCreate.tokenName}`,
+        `<b>${shareableToken.name}</b>`,
+        `<code>${shareableToken.token}</code>`,
+        '',
         `Keys: ${ctx.wizard.state.shareableTokenCreate.selectedKeys
-          .map((i) => `${i}. ${ctx.wizard.state.keys[i - 1].keyName}`)
+          .map((i) => ctx.wizard.state.keys[i - 1].keyName)
           .join(', ')}`,
-        `Valid Until: ${validUntil || 'never expire'}`,
+        `Valid Until: ${validUntil}`,
       ].join('\n'),
+      mainKeyboard,
     );
 
     ctx.scene.leave();

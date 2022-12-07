@@ -10,7 +10,7 @@ import { UseFilters } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AccessService } from '@tookey/access';
 
-import { BotMenu, BotScene } from '../bot.constants';
+import { BotScene, mainKeyboard } from '../bot.constants';
 import { TookeyContext } from '../bot.types';
 
 @Scene(BotScene.INIT)
@@ -28,7 +28,6 @@ export class InitScene {
     this.logger.debug(ctx.scene.state);
 
     const userTelegram = ctx.user;
-    const mainKeyboard = Markup.keyboard([[BotMenu.KEYS, BotMenu.SHAREABLE_TOKENS]]).resize();
 
     if (userTelegram.user.fresh) {
       await ctx.replyWithHTML(`<b>Hi, ${from.first_name}!</b>`, mainKeyboard);
