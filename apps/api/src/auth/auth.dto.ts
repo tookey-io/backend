@@ -13,7 +13,7 @@ export class AuthTokenDto {
   validUntil: string;
 }
 
-export class AuthSigninResponseDto {
+export class AuthTokensResponseDto {
   @ApiProperty({ type: () => AuthTokenDto })
   @ValidateNested()
   @Type(() => AuthTokenDto)
@@ -23,4 +23,14 @@ export class AuthSigninResponseDto {
   @ValidateNested()
   @Type(() => AuthTokenDto)
   refresh: AuthTokenDto;
+}
+
+export class AuthTwitterCallbackDto {
+  @ApiProperty()
+  @IsString()
+  code: string;
+
+  @ApiProperty()
+  @IsString()
+  state: string;
 }

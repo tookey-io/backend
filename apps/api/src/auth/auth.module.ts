@@ -11,6 +11,7 @@ import { JwtRefreshTokenStrategy } from '../strategies/jwt-refresh-token.strateg
 import { JwtStrategy } from '../strategies/jwt.strategy';
 import { ShareableKeyStrategy } from '../strategies/shareable-key.strategy';
 import { SigninKeyStrategy } from '../strategies/signin-key.strategy';
+import { TwitterModule } from '../twitter/twitter.module';
 import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -28,6 +29,7 @@ import { AuthService } from './auth.service';
         return { secret: jwt.accessTokenSecret, signOptions: { expiresIn: jwt.accessTokenTTL } };
       },
     }),
+    TwitterModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtRefreshTokenStrategy, JwtStrategy, SigninKeyStrategy, ShareableKeyStrategy],

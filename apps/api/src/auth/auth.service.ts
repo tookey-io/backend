@@ -1,7 +1,7 @@
 import { AppConfiguration } from 'apps/app/src/app.config';
 import { addSeconds, formatISO } from 'date-fns';
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
@@ -16,6 +16,7 @@ export class AuthService {
 
   public getJwtAccessToken(userId: number): AuthTokenDto {
     const jwt = this.configService.get('jwt', { infer: true });
+    if (!jwt) throw new InternalServerErrorException('Invalid JWT Access Token configuration');
     const token = this.jwtService.sign(
       { id: userId },
       {
@@ -31,6 +32,7 @@ export class AuthService {
 
   public getJwtRefreshToken(userId: number) {
     const jwt = this.configService.get('jwt', { infer: true });
+    if (!jwt) throw new InternalServerErrorException('Invalid JWT Refresh Token configuration');
     const token = this.jwtService.sign(
       { id: userId },
       {

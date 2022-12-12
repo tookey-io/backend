@@ -19,6 +19,12 @@ export type JWTConfig = {
   refreshTokenTTL: number;
 };
 
+export type TwitterConfig = {
+  clientId: string;
+  clientSecret: string;
+  callbackUrl: string;
+};
+
 export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig, AmpqConfig {
   defaultTtl: number;
   telegramToken: string;
@@ -29,6 +35,7 @@ export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig
   port: number;
   isProduction: boolean;
   jwt: JWTConfig;
+  twitter: TwitterConfig;
   db: DatabaseConnection;
   amqp: AmpqConnection;
   healthTimeout: number;
@@ -49,6 +56,11 @@ export function configuration(): AppConfiguration {
       accessTokenTTL: parseInt(process.env.JWT_ACCESS_TOKEN_TTL) || 60 * 15, // 15 min
       refreshTokenSecret: process.env.JWT_REFRESH_TOKEN_SECRET || 'secret_refresh',
       refreshTokenTTL: parseInt(process.env.JWT_REFRESH_TOKEN_TTL) || 60 * 60 * 24 * 7, // 7 days
+    },
+    twitter: {
+      clientId: process.env.TWITTER_CLIENT_ID,
+      clientSecret: process.env.TWITTER_CLIENT_SECRET,
+      callbackUrl: process.env.TWITTER_CALLBACK_URL,
     },
     db: {
       host: process.env.PG_HOST,
