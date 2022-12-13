@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.0](https://github.com/tookey-io/backend/compare/v1.4.3...v1.5.0) (2022-12-13)
+
+
+### Features
+
+* add permission auth key strategy, fix entities ([77e79ef](https://github.com/tookey-io/backend/commit/77e79efc5f7f849cd4823f2bfa4dd3fbb470a611))
+* add permissions token module, entities ([502146e](https://github.com/tookey-io/backend/commit/502146ed4d76e198b5ca6a2fab7e076d332776c3))
+* add twitter session ([62fc495](https://github.com/tookey-io/backend/commit/62fc495e23718bad4322777ac21fd657216b4e80))
+* **bot:** shareable tokens list/add/remove ([6c4f872](https://github.com/tookey-io/backend/commit/6c4f872f9a2024b2f350ebf599a023cec7965772))
+* sign transaction with shareable key ([6e3de23](https://github.com/tookey-io/backend/commit/6e3de23361797cb61605d8c2aa2acfc7525d1b6c))
+* twitter module (auth & tweet) ([03cb1e2](https://github.com/tookey-io/backend/commit/03cb1e2e0cd5a5c1c75be02a23c665ae59613656))
+
+
+### Bug Fixes
+
+* cancelable token creation ([00d5c5b](https://github.com/tookey-io/backend/commit/00d5c5b60fe1d6160c8c5a811202cfaed1dfd314))
+* remove express-session ([53a9e1a](https://github.com/tookey-io/backend/commit/53a9e1ad5697e5a9e8d1cc2f29868efc8d833118))
+* set key sign emit recipient to owner ([7cc9513](https://github.com/tookey-io/backend/commit/7cc951320c9529302e2b912a32026d83757415f5))
+
 ### [1.4.3](https://github.com/tookey-io/backend/compare/v1.4.2...v1.4.3) (2022-12-01)
 
 
