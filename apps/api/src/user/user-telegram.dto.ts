@@ -38,25 +38,25 @@ export class TelegramUserDto {
   @Expose()
   @IsOptional()
   @IsString()
-  firstName: string;
+  firstName?: string;
 
   @ApiPropertyOptional()
   @Expose()
   @IsOptional()
   @IsString()
-  lastName: string;
+  lastName?: string;
 
   @ApiPropertyOptional()
   @Expose()
   @IsOptional()
   @IsString()
-  username: string;
+  username?: string;
 
   @ApiPropertyOptional()
   @Expose()
   @IsOptional()
   @IsString()
-  languageCode: string;
+  languageCode?: string;
 
   constructor(partial: Partial<TelegramUserDto>) {
     Object.assign(this, partial);
@@ -75,6 +75,10 @@ export class TelegramUserRequestDto {
   @ApiPropertyOptional()
   @IsNumber()
   telegramId?: number;
+
+  @ApiPropertyOptional()
+  @IsString()
+  username?: string;
 }
 
 export class CreateTelegramUserDto {
@@ -86,19 +90,23 @@ export class CreateTelegramUserDto {
 
   @IsOptional()
   @IsString()
-  firstName: string;
+  firstName?: string;
 
   @IsOptional()
   @IsString()
-  lastName: string;
+  lastName?: string;
 
   @IsOptional()
   @IsString()
-  username: string;
+  username?: string;
 
   @IsOptional()
   @IsString()
-  languageCode: string;
+  languageCode?: string;
+
+  @IsOptional()
+  @IsString()
+  invitedBy?: string;
 }
 
 export class UpdateTelegramUserDto extends OmitType(PartialType(TelegramUserDto), ['id', 'user'] as const) {}

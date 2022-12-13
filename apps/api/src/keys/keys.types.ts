@@ -5,4 +5,5 @@ export enum KeyEvent {
   SIGN_REQUEST = 'key:sign:request',
   SIGN_RESPONSE = 'key:sign:response',
   SIGN_FINISHED = 'key:sign:finished',
+  SHARE_RESPONSE = 'key:share:response',
 }

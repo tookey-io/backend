@@ -15,7 +15,7 @@ export abstract class MetaEntity {
 
   @Exclude()
   @DeleteDateColumn({ nullable: true })
-  deletedAt: Date;
+  deletedAt: Date | null;
 
   @Exclude()
   @VersionColumn()

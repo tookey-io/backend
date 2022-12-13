@@ -14,18 +14,19 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AmqpService } from '@tookey/amqp';
 import { KeyParticipantRepository, KeyRepository, SignRepository, TaskStatus } from '@tookey/database';
 
+import { AmqpKeygenJoinDto, AmqpPayloadDto, AmqpSignApproveDto } from '../ampq.dto';
+import { TelegramUserDto } from '../user/user-telegram.dto';
 import { UserService } from '../user/user.service';
 import {
-  AmqpKeygenJoinDto,
-  AmqpPayloadDto,
-  AmqpSignApproveDto,
   KeyCreateRequestDto,
   KeyDeleteRequestDto,
   KeyDeleteResponseDto,
   KeyDto,
   KeyEventResponseDto,
   KeyGetRequestDto,
+  KeyListResponseDto,
   KeyParticipationDto,
+  KeyShareDto,
   KeySignEventRequestDto,
   KeySignRequestDto,
   SignDto,
@@ -51,33 +52,24 @@ export class KeysService {
 
     const keysCount = await this.keys.countBy({
       userId: user.id,
-      status: Not(In([TaskStatus.Timeout, TaskStatus.Error])),
+      status: TaskStatus.Finished,
     });
     if (keysCount >= user.keyLimit) throw new ForbiddenException('Keys limit reached');
 
-    this.eventEmitter.emit(KeyEvent.CREATE_REQUEST, dto, userId);
+    dto.name = dto.name || `Key #${keysCount + 1}`;
 
-    return await this.eventEmitter
-      .waitFor(KeyEvent.CREATE_RESPONSE, {
-        handleError: false,
-        timeout: dto.timeoutSeconds * 1000,
-        filter: (data: KeyEventResponseDto) => data.userId === userId,
-        Promise,
-        overload: false,
-      })
-      .then(([{ isApproved }]: [KeyEventResponseDto]) => {
-        if (isApproved) return this.saveKey(dto, userId, keysCount);
-        throw new Error('reject');
-      })
-      .catch((error) => {
-        if (error.message === 'reject') throw new ForbiddenException('Rejected by user');
-        if (error.message === 'timeout') throw new RequestTimeoutException('Timeout');
-        this.logger.error(error);
-        throw new InternalServerErrorException(error.message);
-      });
+    const uuid = randomUUID();
+    this.eventEmitter.emit(KeyEvent.CREATE_REQUEST, uuid, dto, userId);
+
+    const isApproved = await this.waitForApprove(KeyEvent.CREATE_RESPONSE, uuid, dto.timeoutSeconds * 1000);
+    if (!isApproved) throw new ForbiddenException('Rejected by user');
+
+    this.logger.debug(`Key generation approved: ${uuid}`);
+
+    return this.saveKey(dto, userId);
   }
 
-  async saveKey(dto: KeyCreateRequestDto, userId: number, keysCount: number): Promise<KeyDto> {
+  async saveKey(dto: KeyCreateRequestDto, userId: number): Promise<KeyDto> {
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
@@ -93,7 +85,7 @@ export class KeysService {
           participantsCount: dto.participantsCount,
           participantsThreshold: dto.participantsThreshold,
           timeoutSeconds: dto.timeoutSeconds,
-          name: dto.name || `Key #${keysCount + 1}`,
+          name: dto.name,
           description: dto.description,
           tags: dto.tags,
         },
@@ -127,6 +119,8 @@ export class KeysService {
         timeout_seconds: key.timeoutSeconds,
       });
 
+      this.logger.debug(`Key saved: ${key.roomId}`);
+
       return new KeyDto({
         ...key,
         participants: participants.map((participant) => participant.index),
@@ -134,42 +128,48 @@ export class KeysService {
     } catch (error) {
       queryRunner.isTransactionActive && (await queryRunner.rollbackTransaction());
       this.logger.error('Create key transaction', error);
-      throw new InternalServerErrorException();
+      throw new InternalServerErrorException(error.message);
     } finally {
       await queryRunner.release();
     }
   }
 
   async getKey(dto: KeyGetRequestDto, userId?: number): Promise<KeyDto> {
-    const key = await this.keys.findOne({
-      where: { ...dto, userId },
-      relations: { participants: true },
-    });
+    const participants = await this.participants.findBy({ keyId: dto.id });
+    const participation = participants.findIndex((participant) => participant.userId === userId);
+    if (userId && participation < 0) throw new NotFoundException('Key not found');
+
+    const key = await this.keys.findOneBy({ ...dto, status: Not(In([TaskStatus.Timeout, TaskStatus.Error])) });
     if (!key) throw new NotFoundException('Key not found');
 
-    const { participants, ...keyProps } = key;
-
     return new KeyDto({
-      ...keyProps,
+      ...key,
       participants: participants.map((participant) => participant.index),
     });
   }
 
-  async getKeys(userId?: number): Promise<KeyDto[]> {
+  async getKeyList(userId?: number): Promise<KeyListResponseDto> {
+    const participations = await this.participants.findBy({ userId });
+    const keyIds = participations.reduce<number[]>((acc, { keyId }) => {
+      if (acc.findIndex((i) => i === keyId) < 0) acc.push(keyId);
+      return acc;
+    }, []);
     const keys = await this.keys.find({
-      where: { userId, status: Not(In([TaskStatus.Timeout, TaskStatus.Error])) },
+      where: { id: In(keyIds), status: Not(In([TaskStatus.Timeout, TaskStatus.Error])) },
       relations: { participants: true },
     });
-    if (!keys.length) throw new NotFoundException('Keys not found');
 
-    return keys.map((key) => {
-      const { participants, ...keyProps } = key;
-
-      return new KeyDto({
-        ...keyProps,
-        participants: participants.map((participant) => participant.index),
-      });
-    });
+    return {
+      items: keys.length
+        ? keys.map(
+            ({ participants, ...key }) =>
+              new KeyDto({
+                ...key,
+                participants: participants.map((participant) => participant.index),
+              }),
+          )
+        : [],
+    };
   }
 
   async getKeyParticipationsByUser(userId: number): Promise<KeyParticipationDto[]> {
@@ -181,10 +181,16 @@ export class KeysService {
     return participations.map((participation) => ({
       keyId: participation.keyId,
       keyName: participation.key.name,
+      publicKey: participation.key.publicKey,
       userId: participation.userId,
       userIndex: participation.index,
       isOwner: userId === participation.key.userId,
     }));
+  }
+
+  async getTelegramUsersByKey(keyId: number): Promise<TelegramUserDto[]> {
+    const participants = await this.participants.findBy({ keyId });
+    return await Promise.all(participants.map(({ userId }) => this.users.getTelegramUser({ userId })));
   }
 
   async delete(dto: KeyDeleteRequestDto, userId?: number): Promise<KeyDeleteResponseDto> {
@@ -193,7 +199,10 @@ export class KeysService {
   }
 
   async signKey(dto: KeySignRequestDto, userId?: number): Promise<SignDto> {
-    const key = await this.keys.findOneBy({ publicKey: dto.publicKey, userId });
+    const key = await this.keys.findOne({
+      where: { publicKey: dto.publicKey, participants: { userId } },
+      relations: { participants: true },
+    });
     if (!key) throw new NotFoundException('Key not found');
 
     const signEventDto: KeySignEventRequestDto = {
@@ -202,22 +211,28 @@ export class KeysService {
       timeoutSeconds: key.timeoutSeconds,
     };
 
-    this.eventEmitter.emit(KeyEvent.SIGN_REQUEST, signEventDto, userId);
+    const uuid = randomUUID();
+    this.eventEmitter.emit(KeyEvent.SIGN_REQUEST, uuid, signEventDto, key.userId);
 
-    return await this.eventEmitter
-      .waitFor(KeyEvent.SIGN_RESPONSE, {
+    const isApproved = await this.waitForApprove(KeyEvent.SIGN_RESPONSE, uuid, key.timeoutSeconds * 1000);
+    if (!isApproved) throw new ForbiddenException('Rejected by user');
+
+    this.logger.debug(`Key sign approved: ${uuid}`);
+
+    return this.saveSign({ ...dto, keyId: key.id, timeoutSeconds: key.timeoutSeconds }, key.userId);
+  }
+
+  async waitForApprove(keyEvent: KeyEvent, uuid: string, timeout?: number): Promise<boolean> {
+    return this.eventEmitter
+      .waitFor(keyEvent, {
         handleError: false,
-        timeout: key.timeoutSeconds * 1000,
-        filter: (data: KeyEventResponseDto) => data.userId === userId,
+        timeout,
+        filter: (data: KeyEventResponseDto) => data.uuid === uuid,
         Promise,
         overload: false,
       })
-      .then(([{ isApproved }]: [KeyEventResponseDto]) => {
-        if (isApproved) return this.saveSign(signEventDto, userId);
-        throw new Error('reject');
-      })
+      .then(([{ isApproved }]: [KeyEventResponseDto]) => isApproved)
       .catch((error) => {
-        if (error.message === 'reject') throw new ForbiddenException('Rejected by user');
         if (error.message === 'timeout') throw new RequestTimeoutException('Timeout');
         this.logger.error(error);
         throw new InternalServerErrorException(error.message);
@@ -296,6 +311,23 @@ export class KeysService {
       this.logger.info('Sign status update', sign.status);
     } catch (error) {
       this.logger.error('Sign status update fail', error);
+    }
+  }
+
+  async shareKey(dto: KeyShareDto): Promise<void> {
+    const participations = await this.participants.find({
+      where: { key: { id: dto.keyId, status: Not(In([TaskStatus.Timeout, TaskStatus.Error])) } },
+    });
+    const key = await this.getKey({ id: dto.keyId });
+    const owner = await this.users.getTelegramUser({ userId: key.userId });
+
+    const ownerParticipation = participations.find((participation) => participation.userId === owner.userId);
+    const userParticipation = participations.find((participation) => participation.userId === dto.userId);
+
+    if (!userParticipation) {
+      await this.participants.createOrUpdateOne({ ...dto, index: ownerParticipation.index });
+
+      this.eventEmitter.emit(KeyEvent.SHARE_RESPONSE, key, owner.username, dto.userId);
     }
   }
 }

@@ -1,4 +1,4 @@
-import { Exclude, Expose, Transform } from 'class-transformer';
+import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
@@ -9,7 +9,7 @@ import {
   IsUUID,
   Length,
   MaxLength,
-  ValidateIf,
+  ValidateNested,
 } from 'class-validator';
 import { formatISO } from 'date-fns';
 
@@ -22,6 +22,11 @@ export class KeyDto {
   @Expose()
   @IsNumber()
   id: number;
+
+  @ApiProperty()
+  @Expose()
+  @IsNumber()
+  userId: number;
 
   @ApiProperty()
   @Expose()
@@ -161,6 +166,9 @@ export class KeyCreateRequestDto {
 }
 
 export class KeyEventResponseDto {
+  @IsUUID()
+  uuid: string;
+
   @IsNumber()
   userId: number;
 
@@ -180,6 +188,7 @@ export class KeyDeleteRequestDto {
   @IsNumber()
   id: number;
 }
+
 export class KeyDeleteResponseDto {
   @ApiProperty()
   @IsNumber()
@@ -226,6 +235,10 @@ export class KeyParticipationDto {
   keyName: string;
 
   @ApiProperty()
+  @IsString()
+  publicKey: string;
+
+  @ApiProperty()
   @IsNumber()
   userId: number;
 
@@ -238,89 +251,17 @@ export class KeyParticipationDto {
   isOwner: boolean;
 }
 
-export const AMQP_ACTION = ['keygen_status', 'sign_status', 'keygen_join', 'sign_approve'] as const;
-export type ActionStatus = typeof AMQP_ACTION[number];
+export class KeyShareDto {
+  @IsNumber()
+  keyId: number;
 
-export class AmqpPayloadDto {
-  @ApiProperty({ enum: AMQP_ACTION })
-  @IsEnum(AMQP_ACTION)
-  action: Extract<ActionStatus, 'keygen_status' | 'sign_status'>;
-
-  @ApiProperty()
-  @IsString()
-  room_id: string;
-
-  @ApiProperty()
-  @Transform(({ value }) => value || [])
-  @IsNumber({}, { each: true })
-  active_indexes: number[];
-
-  @ApiProperty()
-  @IsEnum(TaskStatus)
-  status: TaskStatus;
-
-  @ApiPropertyOptional()
-  @ValidateIf(({ action }: AmqpPayloadDto) => action === 'keygen_status')
-  @Transform(({ value }) => value || '')
-  @IsString()
-  public_key?: string;
-
-  @ApiPropertyOptional()
-  @ValidateIf(({ action }: AmqpPayloadDto) => action === 'sign_status')
-  @Transform(({ value }) => value || '')
-  @IsString()
-  result?: string;
+  @IsNumber()
+  userId: number;
 }
 
-class AmpqMessageDto {
-  @ApiProperty({ enum: AMQP_ACTION })
-  @IsEnum(AMQP_ACTION)
-  action: Extract<ActionStatus, 'keygen_join' | 'sign_approve'>;
-
-  @ApiProperty()
-  @IsString()
-  user_id: string;
-
-  @ApiProperty()
-  @IsString()
-  room_id: string;
-
-  @ApiProperty()
-  @IsString()
-  key_id: string;
-
-  // @IsString()
-  // relay_address: string;
-}
-
-export class AmqpKeygenJoinDto extends AmpqMessageDto {
-  @ApiProperty()
-  @IsNumber()
-  participant_index: number;
-
-  @ApiProperty()
-  @IsNumber()
-  participants_count: number;
-
-  @ApiProperty()
-  @IsNumber()
-  participants_threshold: number;
-
-  @ApiProperty()
-  @IsNumber()
-  timeout_seconds: number;
-}
-
-export class AmqpSignApproveDto extends AmpqMessageDto {
-  @ApiProperty()
-  @IsNumber({}, { each: true })
-  participants_indexes: number[];
-
-  @ApiProperty()
-  @IsString()
-  data: string;
-
-  @ApiProperty()
-  @IsNumber()
-  timeout_seconds: number;
+export class KeyListResponseDto {
+  @ApiProperty({ type: () => [KeyDto] })
+  @ValidateNested({ each: true })
+  @Type(() => KeyDto)
+  items: KeyDto[];
 }

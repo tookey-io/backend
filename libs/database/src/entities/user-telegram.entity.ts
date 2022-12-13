@@ -20,19 +20,19 @@ export class UserTelegram extends MetaEntity {
 
   @Index()
   @Column({ type: 'bigint', unique: true, nullable: true })
-  chatId: number;
+  chatId: number | null;
 
   @Column({ type: 'varchar', nullable: true })
-  firstName: string;
+  firstName: string | null;
 
   @Column({ type: 'varchar', nullable: true })
-  lastName: string;
+  lastName: string | null;
 
   @Column({ type: 'varchar', nullable: true })
-  username: string;
+  username: string | null;
 
   @Column({ type: 'varchar', nullable: true })
-  languageCode: string;
+  languageCode: string | null;
 }
 
 @CustomRepository(UserTelegram)

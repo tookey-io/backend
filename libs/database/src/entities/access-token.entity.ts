@@ -1,4 +1,4 @@
-import { Column, DeepPartial, Entity, EntityManager, Index, ManyToOne, Repository } from 'typeorm';
+import { Column, DeepPartial, Entity, EntityManager, Index, OneToOne, Repository } from 'typeorm';
 
 import { CustomRepository } from '../typeorm-ex.decorator';
 import { MetaEntity } from './base';
@@ -6,11 +6,11 @@ import { User } from './user.entity';
 
 @Entity()
 export class AccessToken extends MetaEntity {
-  @ManyToOne(() => User)
+  @OneToOne(() => User)
   user: User;
 
   @Index()
-  @Column()
+  @Column({ unique: true })
   userId: number;
 
   @Index({ unique: true })

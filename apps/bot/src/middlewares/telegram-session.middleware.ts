@@ -71,11 +71,10 @@ export class TelegramSessionMiddleware implements TelegrafMiddleware {
       chatId = ctx.update.my_chat_member.chat.id;
     }
 
-    if (fromId === 0 || chatId === 0) {
-      this.logger.error('Session key generation fail', ctx.update);
-      return;
+    if (fromId > 0 && chatId > 0) {
+      return `${chatId}:${fromId}`;
     }
 
-    return `${chatId}:${fromId}`;
+    this.logger.error('Session key generation fail', ctx.update);
   }
 }

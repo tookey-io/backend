@@ -31,5 +31,6 @@ $ npm run start:prod
 
 To manage releases, please follow the workflow listed below:
 
-1. Create your features and commit them. Execute the `npm run commit` in the command line to make a commit with Commitizen
-2. Run `npm run release` to create a changelog and a semantic versioning-based release
+1. Create your features and commit them. If commit messages aren’t following convention, commitlint will raise errors
+1. Execute the `npm run commit` in the command line to make a commit with Commitizen
+1. Run `npm run release` to create a changelog and a semantic versioning-based release

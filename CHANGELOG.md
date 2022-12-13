@@ -2,6 +2,84 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.0](https://github.com/tookey-io/backend/compare/v1.4.3...v1.5.0) (2022-12-13)
+
+
+### Features
+
+* add permission auth key strategy, fix entities ([77e79ef](https://github.com/tookey-io/backend/commit/77e79efc5f7f849cd4823f2bfa4dd3fbb470a611))
+* add permissions token module, entities ([502146e](https://github.com/tookey-io/backend/commit/502146ed4d76e198b5ca6a2fab7e076d332776c3))
+* add twitter session ([62fc495](https://github.com/tookey-io/backend/commit/62fc495e23718bad4322777ac21fd657216b4e80))
+* **bot:** shareable tokens list/add/remove ([6c4f872](https://github.com/tookey-io/backend/commit/6c4f872f9a2024b2f350ebf599a023cec7965772))
+* sign transaction with shareable key ([6e3de23](https://github.com/tookey-io/backend/commit/6e3de23361797cb61605d8c2aa2acfc7525d1b6c))
+* twitter module (auth & tweet) ([03cb1e2](https://github.com/tookey-io/backend/commit/03cb1e2e0cd5a5c1c75be02a23c665ae59613656))
+
+
+### Bug Fixes
+
+* cancelable token creation ([00d5c5b](https://github.com/tookey-io/backend/commit/00d5c5b60fe1d6160c8c5a811202cfaed1dfd314))
+* remove express-session ([53a9e1a](https://github.com/tookey-io/backend/commit/53a9e1ad5697e5a9e8d1cc2f29868efc8d833118))
+* set key sign emit recipient to owner ([7cc9513](https://github.com/tookey-io/backend/commit/7cc951320c9529302e2b912a32026d83757415f5))
+
+### [1.4.3](https://github.com/tookey-io/backend/compare/v1.4.2...v1.4.3) (2022-12-01)
+
+
+### Bug Fixes
+
+* tokens ttl, wait for approve response ([16af7c3](https://github.com/tookey-io/backend/commit/16af7c397a9503cae36a897bf2b887258a457f76))
+
+### [1.4.2](https://github.com/tookey-io/backend/compare/v1.4.1...v1.4.2) (2022-11-25)
+
+
+### Bug Fixes
+
+* **keys:** response with empty list keys instead of not found exception ([98b7bae](https://github.com/tookey-io/backend/commit/98b7baebbcf3b6c5be100ee304a1c6cfecc55619))
+* update keys list & auth signin response dtos ([dbe19e7](https://github.com/tookey-io/backend/commit/dbe19e716d62ddb1c7896792db8638b794b1a61b))
+
+### [1.4.1](https://github.com/tookey-io/backend/compare/v1.4.0...v1.4.1) (2022-11-20)
+
+
+### Bug Fixes
+
+* auth qr code counter ([d9b6ba2](https://github.com/tookey-io/backend/commit/d9b6ba2cbd50a1f38bf3c2fec5e559158dc466e3))
+* deeplink url update ([7c8f5e0](https://github.com/tookey-io/backend/commit/7c8f5e002b864b93334816ada18d2346013745c1))
+* signin & refresh methods as post ([e0b8035](https://github.com/tookey-io/backend/commit/e0b8035767d643221923391d15a5019e7766599d))
+
+## [1.4.0](https://github.com/tookey-io/backend/compare/v1.3.0...v1.4.0) (2022-11-18)
+
+
+### Features
+
+* **bot:** exception filter ([2f7cbaf](https://github.com/tookey-io/backend/commit/2f7cbaf21d392a5fbb8a1876665b8dd815c3ec9d))
+* **key manage:** display owner username or shared with usernames ([c9394f5](https://github.com/tookey-io/backend/commit/c9394f518cc0c0c2d699a6429f4c0c9bc821ce63))
+
+## [1.3.0](https://github.com/tookey-io/backend/compare/v1.2.1...v1.3.0) (2022-11-17)
+
+
+### Features
+
+* **key share:** key sharing with telegram users flow, referral start link ([6077010](https://github.com/tookey-io/backend/commit/60770109027b665b4018ad4a3254e6f0bb318008))
+
+
+### Bug Fixes
+
+* **sign:** wrong regexp ([f316377](https://github.com/tookey-io/backend/commit/f3163779579d6afa510c4cb1064ba3fb6434a990))
+
+### [1.2.1](https://github.com/tookey-io/backend/compare/v1.2.0...v1.2.1) (2022-11-17)
+
+
+### Bug Fixes
+
+* **event emitter:** use event uuid when sending key create and key sign requests ([8191159](https://github.com/tookey-io/backend/commit/8191159ca5a0bdb029b483ef39f30f4c336f9898))
+* fix null types ([d72e965](https://github.com/tookey-io/backend/commit/d72e9655d52ea279cdf8b537aabdff619e077ef3))
+
+## [1.2.0](https://github.com/tookey-io/backend/compare/v1.1.1...v1.2.0) (2022-11-17)
+
+
+### Features
+
+* **auth:** update auth flow, add access & refresh jwt tokens, access token is otp now ([95944ad](https://github.com/tookey-io/backend/commit/95944ad5ef92a065297736ffd95eca973bb59602))
+
 ### [1.1.1](https://github.com/tookey-io/backend/compare/v1.1.0...v1.1.1) (2022-11-17)
 
 

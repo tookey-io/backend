@@ -1,9 +1,10 @@
 import * as crypto from 'crypto';
-import { addMilliseconds, compareAsc } from 'date-fns';
+import { addMilliseconds } from 'date-fns';
+import { MoreThan } from 'typeorm';
 
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AccessToken, AccessTokenRepository, User } from '@tookey/database';
+import { AccessToken, AccessTokenRepository } from '@tookey/database';
 
 import { AccessConfig } from './access.types';
 
@@ -15,20 +16,16 @@ export class AccessService {
   ) {}
 
   async getAccessToken(userId: number): Promise<AccessToken> {
-    const found = await this.accessTokens.findOneBy({ userId });
-    if (found && compareAsc(found.validUntil, new Date()) > 0) return found;
+    const found = await this.accessTokens.findOneBy({ userId, validUntil: MoreThan(new Date()) });
+    if (found) return found;
 
     return this.refreshToken(userId);
   }
 
-  async getTokenUser(token: string): Promise<User | null> {
-    const found = await this.accessTokens.findOne({ where: { token }, relations: { user: true } });
+  async getTokenUserId(token: string): Promise<number | null> {
+    const found = await this.accessTokens.findOne({ where: { token, validUntil: MoreThan(new Date()) } });
     if (!found) return null;
-    if (compareAsc(found.validUntil, new Date()) <= 0) {
-      await this.refreshToken(found.userId);
-      return null;
-    }
-    return found.user;
+    return found.userId;
   }
 
   async isValidToken(token: string): Promise<boolean> {
@@ -36,13 +33,13 @@ export class AccessService {
     return count > 0;
   }
 
-  private async refreshToken(userId: number): Promise<AccessToken> {
+  async refreshToken(userId: number): Promise<AccessToken> {
     const accessToken = this.accessTokens.create({
       userId,
       token: crypto.randomBytes(32).toString('hex'),
       validUntil: addMilliseconds(new Date(), this.config.get('defaultTtl', { infer: true })),
     });
-
+    await this.accessTokens.delete({ userId });
     return await this.accessTokens.createOrUpdateOne(accessToken);
   }
 }
