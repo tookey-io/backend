@@ -1,12 +1,12 @@
 import { UseGuards, applyDecorators } from '@nestjs/common';
 import { ApiSecurity, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
-import { ApiKeyGuard } from '../guards/apikey.guard';
+import { SigninKeyGuard } from '../guards/signin-key.guard';
 
-export function ApiKeyAuth() {
+export function SigninKeyAuth() {
   return applyDecorators(
-    UseGuards(ApiKeyGuard),
-    ApiSecurity('apiKey'),
+    UseGuards(SigninKeyGuard),
+    ApiSecurity('signin'),
     ApiUnauthorizedResponse({ description: 'Unauthorized' }),
   );
 }

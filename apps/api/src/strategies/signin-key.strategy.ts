@@ -7,10 +7,10 @@ import { AccessService } from '@tookey/access';
 import { UserContextDto } from '../user/user.dto';
 
 @Injectable()
-export class ApiKeyStrategy extends PassportStrategy(HeaderAPIKeyStrategy) {
+export class SigninKeyStrategy extends PassportStrategy(HeaderAPIKeyStrategy, 'signin-key') {
   constructor(readonly accessService: AccessService) {
     super(
-      { header: 'apiKey', prefix: '' },
+      { header: 'X-SIGNIN-KEY' },
       true,
       async (apikey: string, done: (err: Error | null, user?: UserContextDto) => void) => {
         const userId = await accessService.getTokenUserId(apikey);

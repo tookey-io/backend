@@ -4,12 +4,18 @@ import { formatISO } from 'date-fns';
 
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 
-import { KeyDto } from '../keys/keys.dto';
-
 export class UserContextDto {
   @ApiProperty()
   @IsNumber()
   id: number;
+
+  @ApiPropertyOptional()
+  @IsString({ each: true })
+  keys?: string[];
+
+  @ApiPropertyOptional()
+  @IsString({ each: true })
+  permissions?: string[];
 }
 
 @Exclude()

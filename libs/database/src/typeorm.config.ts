@@ -1,5 +1,7 @@
-import { join } from 'path';
 import { DataSource } from 'typeorm';
+
+import * as entities from './entities';
+import * as migrations from './migrations';
 
 const dataSource = new DataSource({
   type: 'postgres',
@@ -8,8 +10,8 @@ const dataSource = new DataSource({
   username: process.env.PG_USER || 'user',
   password: process.env.PG_PASS || 'password',
   database: process.env.PG_DB || 'tookey',
-  entities: [join(__dirname, '/entities/**.entity{.ts,.js}')],
-  migrations: [join(__dirname, '/migrations/*{.ts,.js}')],
+  entities,
+  migrations,
   migrationsTableName: 'migrations',
   migrationsRun: true,
 });

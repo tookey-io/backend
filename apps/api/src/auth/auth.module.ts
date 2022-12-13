@@ -1,12 +1,16 @@
+import { AppConfiguration } from 'apps/app/src/app.config';
+
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AccessModule } from '@tookey/access';
 
-import { AppConfiguration } from '../../../app/src/app.config';
+import { ShareableTokenModule } from '../shareable-token/shareable-token.module';
 import { JwtRefreshTokenStrategy } from '../strategies/jwt-refresh-token.strategy';
 import { JwtStrategy } from '../strategies/jwt.strategy';
+import { ShareableKeyStrategy } from '../strategies/shareable-key.strategy';
+import { SigninKeyStrategy } from '../strategies/signin-key.strategy';
 import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -16,6 +20,7 @@ import { AuthService } from './auth.service';
     AccessModule,
     UserModule,
     PassportModule,
+    ShareableTokenModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: async (configService: ConfigService<AppConfiguration>) => {
@@ -25,6 +30,6 @@ import { AuthService } from './auth.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtRefreshTokenStrategy, JwtStrategy],
+  providers: [AuthService, JwtRefreshTokenStrategy, JwtStrategy, SigninKeyStrategy, ShareableKeyStrategy],
 })
 export class AuthModule {}
