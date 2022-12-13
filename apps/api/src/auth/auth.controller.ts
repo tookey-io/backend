@@ -1,11 +1,11 @@
 import {
+  BadRequestException,
   Body,
   ClassSerializerInterceptor,
   Controller,
   Get,
   HttpCode,
   Post,
-  Session,
   UseInterceptors,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -27,7 +27,6 @@ import { AuthEvent } from './auth.types';
 @ApiTags('Authentication')
 @UseInterceptors(ClassSerializerInterceptor)
 export class AuthController {
-  sess: any = {};
   constructor(
     private readonly authService: AuthService,
     private readonly userService: UserService,
@@ -65,32 +64,23 @@ export class AuthController {
   @ApiOperation({ description: 'Get twitter auth url' })
   @ApiOkResponse({ type: TwitterAuthUrlResponseDto })
   @Get('twitter')
-  async twitterAuthUrl(@Session() session: Record<string, any>): Promise<TwitterAuthUrlResponseDto> {
+  async twitterAuthUrl(): Promise<TwitterAuthUrlResponseDto> {
     const { url, state, codeVerifier } = await this.twitterService.getAuthLink();
-    this.sess.codeVerifier = codeVerifier;
-    this.sess.state = state;
-    session.codeVerifier = codeVerifier;
-    session.state = state;
+    this.twitterService.saveSession(state, codeVerifier);
     return { url };
   }
 
   @ApiOperation({ description: 'Get access and refresh tokens with twitter' })
   @ApiOkResponse({ type: AuthTokensResponseDto })
   @Post('twitter')
-  async twitterAuthCallback(
-    @Body() body: AuthTwitterCallbackDto,
-    // @Session() session: Record<string, any>,
-  ): Promise<AuthTokensResponseDto> {
-    // TODO(temadev): validate token !!!
-    // if (!body.state || !body.code || !session.state || !session.codeVerifier) {
-    //   throw new BadRequestException('You denied the app or your session expired!');
-    // }
-    // if (body.state !== session.state) {
-    //   throw new BadRequestException('Stored tokens didnt match!');
-    // }
-    const user = await this.twitterService.requestUser({ code: body.code, codeVerifier: this.sess.codeVerifier });
+  async twitterAuthCallback(@Body() body: AuthTwitterCallbackDto): Promise<AuthTokensResponseDto> {
+    const session = await this.twitterService.loadSession(body.state);
+    if (!session) throw new BadRequestException('Session not found');
+
+    const user = await this.twitterService.requestUser({ code: body.code, codeVerifier: session.codeVerifier });
     const access = this.authService.getJwtAccessToken(user.userId);
     const refresh = this.authService.getJwtRefreshToken(user.userId);
+    await this.userService.setCurrentRefreshToken(refresh.token, user.id);
     return { access, refresh };
   }
 }

@@ -6,7 +6,7 @@ import { DataSource } from 'typeorm';
 
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { UserTwitterRepository } from '@tookey/database';
+import { TwitterSession, TwitterSessionRepository, UserTwitterRepository } from '@tookey/database';
 
 import { UserDto } from '../user/user.dto';
 import { UserService } from '../user/user.service';
@@ -28,6 +28,7 @@ export class TwitterService {
     private readonly configService: ConfigService<AppConfiguration>,
     private readonly dataSource: DataSource,
     private readonly twitterUsers: UserTwitterRepository,
+    private readonly twitterSession: TwitterSessionRepository,
     private readonly userService: UserService,
   ) {
     const { clientId, clientSecret } = configService.get('twitter', { infer: true });
@@ -128,9 +129,11 @@ export class TwitterService {
   }
 
   async refreshTokenByUserId(id: number): Promise<void> {
-    const user = await this.getUser({ id });
-    const { accessToken, refreshToken } = await this.client.refreshOAuth2Token(user.refreshToken);
-    await this.updateUser(user.id, { accessToken, refreshToken }, null);
+    const user = await this.twitterUsers.findOne({ where: { id } });
+    try {
+      const { accessToken, refreshToken } = await this.client.refreshOAuth2Token(user.refreshToken);
+      await this.updateUser(user.id, { accessToken, refreshToken }, null);
+    } catch (error) {}
   }
 
   async tweet(userId: number, dto: CreateTweetDto): Promise<{ id: string; text: string }> {
@@ -139,19 +142,20 @@ export class TwitterService {
 
     const client = new TwitterApi(user.accessToken);
 
-    // // First, post all your images to Twitter
-    // const mediaIds = await Promise.all([
-    //   // file path
-    //   client.v1.uploadMedia('./my-image.jpg'),
-    //   // from a buffer, for example obtained with an image modifier package
-    //   client.v1.uploadMedia(Buffer.from(rotatedImage), { type: 'png' }),
-    // ]);
-
-    // mediaIds is a string[], can be given to .tweet
-    const tweet = await client.v2.tweet(dto.tweet, {
-      // media: { media_ids: mediaIds },
-    });
-
+    const tweet = await client.v2.tweet(dto.tweet);
     return tweet.data;
+
+    // TODO: save message id and check on game start
+  }
+
+  async saveSession(state: string, codeVerifier: string): Promise<TwitterSession> {
+    return this.twitterSession.createOrUpdateOne({ state, codeVerifier });
+  }
+
+  async loadSession(state: string): Promise<TwitterSession | null> {
+    const session = await this.twitterSession.findOneBy({ state });
+    if (!session) return null;
+    this.twitterSession.delete({ id: session.id });
+    return session;
   }
 }
