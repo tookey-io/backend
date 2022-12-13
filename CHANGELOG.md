@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.5.1](https://github.com/tookey-io/backend/compare/v1.5.0...v1.5.1) (2022-12-13)
+
+
+### Bug Fixes
+
+* cors ([687618e](https://github.com/tookey-io/backend/commit/687618e30260bfd7f972ffdaeb22e73e99a8fa65))
+
 ## [1.5.0](https://github.com/tookey-io/backend/compare/v1.4.3...v1.5.0) (2022-12-13)
 
 

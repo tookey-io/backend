@@ -25,6 +25,12 @@ export type TwitterConfig = {
   callbackUrl: string;
 };
 
+export type CorsConfig = {
+  origin: string | string[];
+  allowedHeaders: string;
+  methods: string;
+};
+
 export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig, AmpqConfig {
   defaultTtl: number;
   telegramToken: string;
@@ -39,6 +45,7 @@ export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig
   db: DatabaseConnection;
   amqp: AmpqConnection;
   healthTimeout: number;
+  cors: CorsConfig;
 }
 
 export function configuration(): AppConfiguration {
@@ -75,5 +82,10 @@ export function configuration(): AppConfiguration {
       topics: process.env.AMQP_TOPICS ? process.env.AMQP_TOPICS.split(',') : [],
     },
     healthTimeout: (process.env.HEALTH_TIMEOUT ? parseInt(process.env.HEALTH_TIMEOUT, 10) : 120) * 1_000,
+    cors: {
+      origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',
+      allowedHeaders: process.env.CORS_ALLOWED_HEADERS ? process.env.CORS_ALLOWED_HEADERS : '*',
+      methods: process.env.CORS_METHODS ? process.env.CORS_METHODS : '*',
+    },
   };
 }
