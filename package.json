@@ -58,6 +58,7 @@
     "rxjs": "^7.5.5",
     "swagger-ui-express": "^4.6.0",
     "telegraf": "^4.8.6",
+    "twitter-api-v2": "^1.12.9",
     "typeorm": "^0.3.7"
   },
   "devDependencies": {

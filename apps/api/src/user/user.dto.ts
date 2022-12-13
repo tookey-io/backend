@@ -1,5 +1,5 @@
 import { Exclude, Expose, Transform } from 'class-transformer';
-import { IsBoolean, IsDate, IsNumber, IsString } from 'class-validator';
+import { IsBoolean, IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
 import { formatISO } from 'date-fns';
 
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
@@ -52,7 +52,11 @@ export class UserRequestDto {
   id?: number;
 }
 
-export class CreateUserDto {}
+export class CreateUserDto {
+  @IsOptional()
+  @IsString()
+  invitedBy?: string;
+}
 
 export class UpdateUserDto extends OmitType(PartialType(UserDto), ['id', 'lastInteraction'] as const) {
   @ApiProperty()

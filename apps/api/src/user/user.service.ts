@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 
 import { Injectable } from '@nestjs/common';
 import { User, UserRepository, UserTelegramRepository } from '@tookey/database';
@@ -28,9 +28,9 @@ export class UserService {
     return new UserDto(user);
   }
 
-  async createUser(dto: CreateUserDto): Promise<UserDto> {
-    const parent = await this.users.findRoot();
-    const user = await this.users.createOrUpdateOne({ ...dto, parent });
+  async createUser(dto: CreateUserDto, entityManager?: EntityManager): Promise<UserDto> {
+    const parent = dto.invitedBy ? await this.getParentUser(dto.invitedBy) : await this.users.findRoot();
+    const user = await this.users.createOrUpdateOne({ ...dto, parent }, entityManager);
     return new UserDto(user);
   }
 
@@ -60,13 +60,12 @@ export class UserService {
     const entityManager = queryRunner.manager;
 
     try {
-      const parent = await this.getParentUser(dto.invitedBy);
-      const user = await this.users.createOrUpdateOne({ parent }, entityManager);
+      const user = await this.createUser({ invitedBy: dto.invitedBy }, entityManager);
       const userTelegram = await this.telegramUsers.createOrUpdateOne({ ...dto, userId: user.id }, entityManager);
 
       await queryRunner.commitTransaction();
 
-      return new TelegramUserDto({ ...userTelegram, user: new UserDto(user) });
+      return new TelegramUserDto({ ...userTelegram, user });
     } catch (error) {
       queryRunner.isTransactionActive && (await queryRunner.rollbackTransaction());
       this.logger.error('Create Telegram User transaction', error);
