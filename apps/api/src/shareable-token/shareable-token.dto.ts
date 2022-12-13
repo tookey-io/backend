@@ -1,5 +1,5 @@
 import { Exclude, Expose, Transform, Type } from 'class-transformer';
-import { IsNumber, IsOptional, IsString, Length, ValidateNested } from 'class-validator';
+import { IsNumber, IsOptional, IsString, Length, MaxLength, ValidateNested } from 'class-validator';
 import { formatISO } from 'date-fns';
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -28,6 +28,24 @@ export class ShareableTokenResponseDto {
   @ApiProperty()
   @IsString()
   keys: KeyDto;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @MaxLength(40)
+  @IsString()
+  name?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @MaxLength(200)
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => formatISO(new Date(value)))
+  validUntil?: Date;
 }
 
 export class ShareableTokenCreateRequestDto {
@@ -35,6 +53,18 @@ export class ShareableTokenCreateRequestDto {
   @IsString({ each: true })
   @Length(66, 66, { each: true })
   keys: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @MaxLength(40)
+  @IsString()
+  name?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @MaxLength(200)
+  @IsString()
+  description?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -56,6 +86,18 @@ export class ShareableTokenDto {
   @Expose()
   @IsNumber()
   id: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @MaxLength(40)
+  @IsString()
+  name?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @MaxLength(200)
+  @IsString()
+  description?: string;
 
   @ApiProperty()
   @Expose()
@@ -87,4 +129,15 @@ export class ShareableTokenDto {
   constructor(partial: Partial<ShareableTokenDto>) {
     Object.assign(this, partial);
   }
+}
+
+export class ShareableTokenDeleteRequestDto {
+  @ApiProperty()
+  @IsNumber()
+  id: number;
+}
+export class ShareableTokenDeleteResponseDto {
+  @ApiProperty()
+  @IsNumber()
+  affected: number;
 }

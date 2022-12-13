@@ -181,6 +181,7 @@ export class KeysService {
     return participations.map((participation) => ({
       keyId: participation.keyId,
       keyName: participation.key.name,
+      publicKey: participation.key.publicKey,
       userId: participation.userId,
       userIndex: participation.index,
       isOwner: userId === participation.key.userId,

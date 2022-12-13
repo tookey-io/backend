@@ -7,7 +7,12 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PermissionRepository, ShareableTokenRepository } from '@tookey/database';
 
 import { KeysService } from '../keys/keys.service';
-import { ShareableTokenCreateRequestDto, ShareableTokenDto } from './shareable-token.dto';
+import {
+  ShareableTokenCreateRequestDto,
+  ShareableTokenDeleteRequestDto,
+  ShareableTokenDeleteResponseDto,
+  ShareableTokenDto,
+} from './shareable-token.dto';
 
 @Injectable()
 export class ShareableTokenService {
@@ -31,6 +36,8 @@ export class ShareableTokenService {
     });
     const shareableTokenEntity = this.shareableTokenRepository.create({
       userId,
+      name: dto.name,
+      description: dto.description,
       token: crypto.randomBytes(32).toString('hex'),
       keys: keyIds,
       permissions,
@@ -60,5 +67,10 @@ export class ShareableTokenService {
       where: { token },
       relations: { keys: true, permissions: true },
     });
+  }
+
+  async delete(dto: ShareableTokenDeleteRequestDto, userId?: number): Promise<ShareableTokenDeleteResponseDto> {
+    const { affected } = await this.shareableTokenRepository.softDelete({ id: dto.id, userId });
+    return { affected };
   }
 }

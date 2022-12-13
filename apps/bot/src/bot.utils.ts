@@ -12,3 +12,5 @@ export function getPagination(currentPage = 1, totalPages = 5): { text: string; 
 
   return keys;
 }
+
+export const replaceMiddle = (str: string): string => (str.length < 9 ? str : `${str.slice(0, 8)}...${str.slice(-8)}`);

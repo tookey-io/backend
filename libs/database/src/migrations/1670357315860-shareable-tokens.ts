@@ -1,12 +1,12 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class shareableTokens1670253434983 implements MigrationInterface {
-  name = 'shareableTokens1670253434983';
+export class shareableTokens1670357315860 implements MigrationInterface {
+  name = 'shareableTokens1670357315860';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`CREATE TABLE "permission" ("id" SERIAL NOT NULL, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), "deletedAt" TIMESTAMP, "revision" integer NOT NULL, "code" character varying NOT NULL, "description" character varying, CONSTRAINT "PK_3b8b97af9d9d8807e41e6f48362" PRIMARY KEY ("id"))`);
     await queryRunner.query(`CREATE INDEX "IDX_30e166e8c6359970755c5727a2" ON "permission" ("code") `);
-    await queryRunner.query(`CREATE TABLE "shareable_token" ("id" SERIAL NOT NULL, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), "deletedAt" TIMESTAMP, "revision" integer NOT NULL, "userId" integer NOT NULL, "token" character varying(64) NOT NULL, "validUntil" TIMESTAMP, CONSTRAINT "UQ_7e8ac60ac8ec1b08676cb1afbce" UNIQUE ("token"), CONSTRAINT "PK_e8edb50c15c517633765d759952" PRIMARY KEY ("id"))`);
+    await queryRunner.query(`CREATE TABLE "shareable_token" ("id" SERIAL NOT NULL, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), "deletedAt" TIMESTAMP, "revision" integer NOT NULL, "userId" integer NOT NULL, "name" character varying, "description" character varying, "token" character varying(64) NOT NULL, "validUntil" TIMESTAMP, CONSTRAINT "UQ_7e8ac60ac8ec1b08676cb1afbce" UNIQUE ("token"), CONSTRAINT "PK_e8edb50c15c517633765d759952" PRIMARY KEY ("id"))`);
     await queryRunner.query(`CREATE INDEX "IDX_82068b0b89558a3c99cfb07adc" ON "shareable_token" ("userId") `);
     await queryRunner.query(`CREATE UNIQUE INDEX "IDX_7e8ac60ac8ec1b08676cb1afbc" ON "shareable_token" ("token") `);
     await queryRunner.query(`CREATE TABLE "shareable_token_keys_key" ("shareableTokenId" integer NOT NULL, "keyId" integer NOT NULL, CONSTRAINT "PK_6ab07092ce11339a676134f7f32" PRIMARY KEY ("shareableTokenId", "keyId"))`);

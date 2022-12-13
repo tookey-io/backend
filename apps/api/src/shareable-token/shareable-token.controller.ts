@@ -1,10 +1,24 @@
-import { Body, ClassSerializerInterceptor, Controller, Get, HttpCode, Post, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  ClassSerializerInterceptor,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Post,
+  UseInterceptors,
+} from '@nestjs/common';
 import { ApiBadRequestResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { JwtAuth } from '../decorators/jwt-auth.decorator';
 import { UserContextDto } from '../user/user.dto';
-import { ShareableTokenCreateRequestDto, ShareableTokenDto } from './shareable-token.dto';
+import {
+  ShareableTokenCreateRequestDto,
+  ShareableTokenDeleteRequestDto,
+  ShareableTokenDeleteResponseDto,
+  ShareableTokenDto,
+} from './shareable-token.dto';
 import { ShareableTokenService } from './shareable-token.service';
 
 @Controller('api/shareable-tokens')
@@ -32,5 +46,16 @@ export class ShareableTokenController {
   @Get('my')
   async getShareableTokensByUser(@CurrentUser() user: UserContextDto): Promise<ShareableTokenDto[]> {
     return await this.shareableTokenService.getShareableTokensByUser(user.id);
+  }
+
+  @JwtAuth()
+  @ApiOperation({ description: 'Delete Shareable Token' })
+  @ApiOkResponse({ type: ShareableTokenDeleteResponseDto })
+  @Delete()
+  deleteShareableToken(
+    @Body() dto: ShareableTokenDeleteRequestDto,
+    @CurrentUser() user: UserContextDto,
+  ): Promise<ShareableTokenDeleteResponseDto> {
+    return this.shareableTokenService.delete(dto, user.id);
   }
 }
