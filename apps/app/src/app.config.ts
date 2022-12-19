@@ -31,6 +31,11 @@ export type CorsConfig = {
   methods: string;
 };
 
+export type RedisConfig = {
+  host: string;
+  port: number;
+};
+
 export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig, AmpqConfig {
   defaultTtl: number;
   telegramToken: string;
@@ -46,6 +51,7 @@ export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig
   amqp: AmpqConnection;
   healthTimeout: number;
   cors: CorsConfig;
+  redis: RedisConfig;
 }
 
 export function configuration(): AppConfiguration {
@@ -86,6 +92,10 @@ export function configuration(): AppConfiguration {
       origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',
       allowedHeaders: process.env.CORS_ALLOWED_HEADERS ? process.env.CORS_ALLOWED_HEADERS : '*',
       methods: process.env.CORS_METHODS ? process.env.CORS_METHODS : '*',
+    },
+    redis: {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6379,
     },
   };
 }

@@ -1,5 +1,6 @@
 import { ApiModule } from 'apps/api/src/api.module';
 import { BotModule } from 'apps/bot/src/bot.module';
+import { RpsModule } from 'apps/rps/src/rps.module';
 import { LoggerModule } from 'nestjs-pino';
 
 import { CacheModule, Module } from '@nestjs/common';
@@ -37,6 +38,7 @@ import { AppController } from './app.controller';
     BotModule,
     ApiModule,
     AccessModule,
+    RpsModule,
   ],
   controllers: [AppController],
   providers: [],
