@@ -47,7 +47,7 @@ export class RpsService {
     }, {});
 
     const winnersResponse = winners.reduce((acc, cur, i) => {
-      if (cur > 0) return [...acc, [players[i]]];
+      if (cur > 0) return [...acc, players[i]];
       return acc;
     }, []);
 
