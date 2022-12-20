@@ -5,7 +5,7 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { RPS_QUEUE } from './rps.constants';
-import { RpsController } from './rps.controller';
+import { RpsGateway } from './rps.gateway';
 import { RpsProcessor } from './rps.processor';
 import { RpsService } from './rps.service';
 
@@ -20,7 +20,6 @@ import { RpsService } from './rps.service';
     }),
     BullModule.registerQueue({ name: RPS_QUEUE }),
   ],
-  controllers: [RpsController],
-  providers: [RpsService, RpsProcessor],
+  providers: [RpsService, RpsProcessor, RpsGateway],
 })
 export class RpsModule {}

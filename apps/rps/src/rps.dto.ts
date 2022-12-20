@@ -2,6 +2,12 @@ import { IsString } from 'class-validator';
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+export enum Moves {
+  Rock = 1, // 001
+  Scissors = 2, // 010
+  Paper = 4, // 100
+}
+
 export type PlayerId = string;
 export type RoomId = string;
 
@@ -33,7 +39,7 @@ export class RpsStateRequestDto {
   playerId: PlayerId;
 }
 
-type RpsGameStatus = 'created' | 'finished';
+type RpsGameStatus = 'started' | 'finished';
 
 export class RpsStateResponseDto {
   @ApiProperty()
@@ -46,6 +52,22 @@ export class RpsStateResponseDto {
 
   @ApiPropertyOptional()
   moves?: {
-    [playerId: PlayerId]: string;
+    [playerId: PlayerId]: number;
   };
+}
+
+export class RpsRoomDto {
+  [address: string]: number;
+}
+
+export class RpsRoomUpdateDto {
+  @IsString()
+  roomId: string;
+
+  @IsString()
+  address: string;
+}
+
+export class RpsMoveUpdateDto extends RpsRoomUpdateDto {
+  move: Moves;
 }

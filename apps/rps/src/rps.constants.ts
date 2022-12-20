@@ -1,9 +1,5 @@
-export const RPS_QUEUE = 'rps';
+import { Moves } from './rps.dto';
 
-export enum Moves {
-  Rock = 1, // 001
-  Scissors = 2, // 010
-  Paper = 4, // 100
-}
+export const RPS_QUEUE = 'rps';
 
 export const ALL = Moves.Rock | Moves.Scissors | Moves.Paper;
