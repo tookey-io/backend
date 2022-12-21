@@ -1,84 +1,118 @@
 import { Queue } from 'bull';
+import * as crypto from 'crypto';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 import { InjectQueue } from '@nestjs/bull';
 import { BadRequestException, Injectable } from '@nestjs/common';
 
 import { ALL, RPS_QUEUE } from './rps.constants';
-import { Moves, RpsMoveUpdateDto, RpsRoomDto, RpsRoomUpdateDto, RpsStateResponseDto } from './rps.dto';
+import { Moves, RpsPlayerCommitDto, RpsPlayerRevealDto, RpsRoomDataDto } from './rps.dto';
 
 @Injectable()
 export class RpsService {
-  rooms = new Map<string, RpsRoomDto>();
+  games = new Map<string, RpsRoomDataDto>();
 
   constructor(
     @InjectPinoLogger(RpsService.name) private readonly logger: PinoLogger,
-    @InjectQueue(RPS_QUEUE) private readonly rpsQueue: Queue<RpsMoveUpdateDto>,
+    @InjectQueue(RPS_QUEUE) private readonly rpsQueue: Queue<RpsPlayerRevealDto | RpsPlayerCommitDto>,
   ) {}
 
-  updateRoom(dto: RpsRoomUpdateDto): RpsRoomDto {
-    if (!this.rooms.has(dto.roomId)) this.rooms.set(dto.roomId, { [`${dto.address}`]: 0 });
-    else {
-      const room = this.rooms.get(dto.roomId);
-      this.rooms.set(dto.roomId, { ...room, [`${dto.address}`]: 0 });
-    }
-    return this.rooms.get(dto.roomId);
+  syncNodes(name: 'commit' | 'reveal', dto: RpsPlayerRevealDto | RpsPlayerCommitDto): void {
+    this.rpsQueue.add(name, dto);
   }
 
-  leaveRoom(dto: RpsRoomUpdateDto): RpsRoomDto {
-    if (!this.rooms.has(dto.roomId)) return null;
-    const room = this.rooms.get(dto.roomId);
-    if (!room[dto.address]) return null;
+  async syncInProgress(): Promise<boolean> {
+    this.logger.info('sync started');
+    return new Promise((resolve) => {
+      // TODO(temadev): sync aknowledge
+      setTimeout(() => {
+        resolve(true);
+        this.logger.info('sync resolved');
+      }, 500);
+    });
+  }
 
-    delete room[dto.address];
-    this.rooms.set(dto.roomId, room);
+  join(roomId: string, playerId: string): RpsRoomDataDto {
+    if (!this.games.has(roomId)) {
+      this.games.set(roomId, { [`${playerId}`]: { playerId } });
+    } else {
+      const room = this.games.get(roomId);
+      this.games.set(roomId, { ...room, [`${playerId}`]: { playerId } });
+    }
+    return this.games.get(roomId);
+  }
+
+  leave(roomId: string, playerId: string): RpsRoomDataDto {
+    if (!this.games.has(roomId)) return null;
+    const room = this.games.get(roomId);
+    if (room[playerId]) {
+      delete room[playerId];
+      this.games.set(roomId, room);
+      return this.games.get(roomId);
+    }
     return room;
   }
 
-  getRoom(roomId: string, address: string): RpsRoomDto {
-    if (!this.rooms.has(roomId)) return null;
-    const room = this.rooms.get(roomId);
-    if (!room[address]) return null;
-    return room;
+  commit(dto: RpsPlayerCommitDto, sync?: boolean): RpsRoomDataDto {
+    this.logger.info(sync);
+    if (!sync) this.syncNodes('commit', dto);
+    const { roomId, playerId, commitment } = dto;
+    if (!this.games.has(roomId)) return;
+    const room = this.games.get(roomId);
+    const players = Object.values(room);
+    const player = players.find((p) => p.playerId === playerId);
+    if (!player) return;
+    this.games.set(roomId, { ...room, [playerId]: { playerId, commitment } });
+    return this.games.get(roomId);
   }
 
-  async playerMove(dto: RpsMoveUpdateDto): Promise<void> {
-    const jobId = `${dto.roomId}:${dto.address}`;
-    await this.rpsQueue.add('player-move', dto, { jobId });
+  isAllPlayersCommitted(roomId: string): boolean {
+    if (!this.games.has(roomId)) return;
+    const room = this.games.get(roomId);
+    return Object.values(room).every((player) => player.commitment);
   }
 
-  updateState(dto: RpsMoveUpdateDto): void {
-    if (!this.rooms.has(dto.roomId)) return null;
-    const room = this.rooms.get(dto.roomId);
-    this.rooms.set(dto.roomId, { ...room, [dto.address]: dto.move });
+  reveal(dto: RpsPlayerRevealDto, sync?: boolean): RpsRoomDataDto {
+    this.logger.info(sync);
+    if (!sync) this.syncNodes('reveal', dto);
+    const { roomId, playerId, choice, nonce } = dto;
+    if (!this.games.has(roomId)) return;
+    const room = this.games.get(roomId);
+    const players = Object.values(room);
+    const player = players.find((p) => p.playerId === playerId);
+    if (!player) return;
+
+    this.games.set(roomId, { ...room, [playerId]: { ...player, choice, nonce } });
+    return this.games.get(roomId);
   }
 
-  getState(roomId: string): RpsStateResponseDto {
-    if (!this.rooms.has(roomId)) {
-      throw new BadRequestException('');
-    }
-    const room = this.rooms.get(roomId);
+  isAllPlayersRevealed(roomId: string): boolean {
+    if (!this.games.has(roomId)) return;
+    const room = this.games.get(roomId);
+    return Object.values(room).every((player) => {
+      return this.hash(player.choice, player.nonce) === player.commitment;
+    });
+  }
+
+  getWinners(roomId: string): string[] | null {
+    if (!this.games.has(roomId)) throw new BadRequestException('');
+    const room = this.games.get(roomId);
     const players = Object.keys(room);
-    const moves = Object.values(room);
-    const isAllMoved = Object.values(room).every((move) => move > 0);
-    if (!isAllMoved) return { status: 'started' };
+    const playersData = Object.values(room);
 
-    const winners = this.draw(moves);
+    const winnersIndexes = this.draw(playersData.map((data) => data.choice));
 
-    const movesResponse = moves.reduce((acc, cur, i) => {
-      return { ...acc, [players[i]]: cur };
-    }, {} as { [address: string]: number });
-
-    const winnersResponse = winners.reduce((acc, cur, i) => {
+    return winnersIndexes.reduce((acc, cur, i) => {
       if (cur > 0) return [...acc, players[i]];
       return acc;
     }, [] as string[]);
+  }
 
-    return {
-      status: 'finished',
-      moves: movesResponse,
-      winners: winnersResponse,
-    };
+  archiveRoom(roomId: string): void {
+    if (!this.games.has(roomId)) return;
+    const room = this.games.get(roomId);
+    this.games.set(roomId + Date.now(), room);
+    this.games.delete(roomId);
   }
 
   private draw(moves: Moves[]): number[] {
@@ -105,5 +139,11 @@ export class RpsService {
 
     // if last bit set add 1 else add 0
     return (n & 1) + this.countSetBits(n >> 1);
+  }
+
+  private hash(message: string | number, randomValue: string): string {
+    const hash = crypto.createHash('sha256');
+    hash.update(randomValue + message);
+    return hash.digest('hex');
   }
 }

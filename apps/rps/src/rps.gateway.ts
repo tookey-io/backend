@@ -9,7 +9,14 @@ import {
   WsResponse,
 } from '@nestjs/websockets';
 
-import { RpsMoveUpdateDto, RpsRoomUpdateDto } from './rps.dto';
+import {
+  RpsGameState,
+  RpsPlayerCommitDto,
+  RpsPlayerJoinDto,
+  RpsPlayerLeaveDto,
+  RpsPlayerRevealDto,
+  RpsStatus,
+} from './rps.dto';
 import { RpsService } from './rps.service';
 
 @WebSocketGateway({
@@ -24,27 +31,57 @@ export class RpsGateway {
   constructor(private readonly rpsService: RpsService) {}
 
   @SubscribeMessage('room-join')
-  room(@MessageBody() data: RpsRoomUpdateDto, @ConnectedSocket() socket: Socket): WsResponse<unknown> {
-    socket.join(data.roomId);
-    const room = this.rpsService.updateRoom(data);
-    socket.to(data.roomId).emit('room', room);
-    return { event: 'room', data: room };
+  roomJoin(@MessageBody() data: RpsPlayerJoinDto, @ConnectedSocket() socket: Socket): WsResponse<RpsGameState> {
+    const { roomId, playerId } = data;
+    socket.join(roomId);
+    const players = this.rpsService.join(roomId, playerId);
+    const status = Object.keys(players).length > 1 ? RpsStatus.Start : RpsStatus.Wait;
+    const roomState: RpsGameState = { players, roomId, status };
+    socket.to(roomId).emit('rps-state', roomState);
+    return { event: 'rps-state', data: roomState };
   }
 
   @SubscribeMessage('room-leave')
-  roomLeave(@MessageBody() data: RpsRoomUpdateDto, @ConnectedSocket() socket: Socket): WsResponse<unknown> {
-    socket.leave(data.roomId);
-    const room = this.rpsService.leaveRoom(data);
-    socket.to(data.roomId).emit('room', room);
+  roomLeave(@MessageBody() data: RpsPlayerLeaveDto, @ConnectedSocket() socket: Socket): WsResponse<RpsGameState> {
+    const { roomId, playerId } = data;
+    socket.leave(roomId);
+    const players = this.rpsService.leave(roomId, playerId);
+    const status = Object.keys(players).length > 1 ? RpsStatus.Start : RpsStatus.Wait;
+    const roomState: RpsGameState = { players, roomId, status };
+    socket.to(roomId).emit('rps-state', roomState);
     return { event: 'room', data: {} };
   }
 
-  @SubscribeMessage('move')
-  move(@MessageBody() dto: RpsMoveUpdateDto, @ConnectedSocket() socket: Socket): void {
-    this.rpsService.playerMove(dto);
-    setTimeout(() => {
-      const status = this.rpsService.getState(dto.roomId);
-      socket.to(dto.roomId).emit('status', status);
-    }, 2000);
+  @SubscribeMessage('commit')
+  async commit(
+    @MessageBody() data: RpsPlayerCommitDto,
+    @ConnectedSocket() socket: Socket,
+  ): Promise<WsResponse<RpsGameState>> {
+    const { roomId, playerId, commitment } = data;
+    const players = this.rpsService.commit({ roomId, playerId, commitment });
+    await this.rpsService.syncInProgress();
+    const status = this.rpsService.isAllPlayersCommitted(data.roomId) ? RpsStatus.Reveal : RpsStatus.Commit;
+    const roomState: RpsGameState = { players, roomId, status };
+    socket.to(roomId).emit('rps-state', roomState);
+    return { event: 'rps-state', data: roomState };
+  }
+
+  @SubscribeMessage('reveal')
+  async reveal(
+    @MessageBody() data: RpsPlayerRevealDto,
+    @ConnectedSocket() socket: Socket,
+  ): Promise<WsResponse<RpsGameState>> {
+    const { roomId, playerId, choice, nonce } = data;
+    const players = this.rpsService.reveal({ roomId, playerId, choice, nonce });
+    await this.rpsService.syncInProgress();
+    const status = this.rpsService.isAllPlayersRevealed(data.roomId) ? RpsStatus.Finished : RpsStatus.Fail;
+    const roomState: RpsGameState = { players, roomId, status };
+    if (status === RpsStatus.Finished) {
+      const winners = this.rpsService.getWinners(roomId);
+      roomState.winners = winners;
+      socket.leave(roomId);
+    }
+    socket.to(roomId).emit('rps-state', roomState);
+    return { event: 'rps-state', data: roomState };
   }
 }
