@@ -25,6 +25,12 @@ export type TwitterConfig = {
   callbackUrl: string;
 };
 
+export type DiscordConfig = {
+  clientID: string;
+  clientSecret: string;
+  callbackUrl: string;
+};
+
 export type CorsConfig = {
   origin: string | string[];
   allowedHeaders: string;
@@ -47,6 +53,7 @@ export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig
   isProduction: boolean;
   jwt: JWTConfig;
   twitter: TwitterConfig;
+  discord: DiscordConfig;
   db: DatabaseConnection;
   amqp: AmpqConnection;
   healthTimeout: number;
@@ -74,6 +81,11 @@ export function configuration(): AppConfiguration {
       clientId: process.env.TWITTER_CLIENT_ID,
       clientSecret: process.env.TWITTER_CLIENT_SECRET,
       callbackUrl: process.env.TWITTER_CALLBACK_URL,
+    },
+    discord: {
+      clientID: process.env.DISCORD_CLIENT_ID,
+      clientSecret: process.env.DISCORD_CLIENT_SECRET,
+      callbackUrl: process.env.DISCORD_CALLBACK_URL,
     },
     db: {
       host: process.env.PG_HOST,

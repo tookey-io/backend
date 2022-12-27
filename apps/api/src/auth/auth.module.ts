@@ -5,8 +5,10 @@ import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AccessModule } from '@tookey/access';
+import { TypeOrmExModule, UserDiscordRepository } from '@tookey/database';
 
 import { ShareableTokenModule } from '../shareable-token/shareable-token.module';
+import { DiscordStrategy } from '../strategies/discord.strategy';
 import { JwtRefreshTokenStrategy } from '../strategies/jwt-refresh-token.strategy';
 import { JwtStrategy } from '../strategies/jwt.strategy';
 import { ShareableKeyStrategy } from '../strategies/shareable-key.strategy';
@@ -15,9 +17,13 @@ import { TwitterModule } from '../twitter/twitter.module';
 import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { DiscordService } from './providers/discord.service';
+
+const AuthRepositories = TypeOrmExModule.forCustomRepository([UserDiscordRepository]);
 
 @Module({
   imports: [
+    AuthRepositories,
     AccessModule,
     UserModule,
     PassportModule,
@@ -32,6 +38,14 @@ import { AuthService } from './auth.service';
     TwitterModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtRefreshTokenStrategy, JwtStrategy, SigninKeyStrategy, ShareableKeyStrategy],
+  providers: [
+    AuthService,
+    JwtRefreshTokenStrategy,
+    JwtStrategy,
+    SigninKeyStrategy,
+    ShareableKeyStrategy,
+    DiscordStrategy,
+    DiscordService,
+  ],
 })
 export class AuthModule {}
