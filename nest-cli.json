@@ -62,6 +62,15 @@
       "compilerOptions": {
         "tsConfigPath": "libs/amqp/tsconfig.lib.json"
       }
+    },
+    "rps": {
+      "type": "application",
+      "root": "apps/rps",
+      "entryFile": "main",
+      "sourceRoot": "apps/rps/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/rps/tsconfig.app.json"
+      }
     }
   }
 }
