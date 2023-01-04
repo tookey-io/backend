@@ -28,7 +28,7 @@ export type TwitterConfig = {
 export type DiscordConfig = {
   clientID: string;
   clientSecret: string;
-  callbackUrl: string;
+  callbackURL: string;
 };
 
 export type CorsConfig = {
@@ -85,7 +85,7 @@ export function configuration(): AppConfiguration {
     discord: {
       clientID: process.env.DISCORD_CLIENT_ID,
       clientSecret: process.env.DISCORD_CLIENT_SECRET,
-      callbackUrl: process.env.DISCORD_CALLBACK_URL,
+      callbackURL: process.env.DISCORD_CALLBACK_URL,
     },
     db: {
       host: process.env.PG_HOST,
