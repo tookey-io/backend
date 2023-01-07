@@ -15,6 +15,7 @@ import { AmqpService } from '@tookey/amqp';
 import { KeyParticipantRepository, KeyRepository, SignRepository, TaskStatus } from '@tookey/database';
 
 import { AmqpKeygenJoinDto, AmqpPayloadDto, AmqpSignApproveDto } from '../ampq.dto';
+import { KeyEvent } from '../api.events';
 import { TelegramUserDto } from '../user/user-telegram.dto';
 import { UserService } from '../user/user.service';
 import {
@@ -31,7 +32,6 @@ import {
   KeySignRequestDto,
   SignDto,
 } from './keys.dto';
-import { KeyEvent } from './keys.types';
 
 @Injectable()
 export class KeysService {

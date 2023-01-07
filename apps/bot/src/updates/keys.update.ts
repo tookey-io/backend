@@ -1,6 +1,6 @@
+import { KeyEvent } from 'apps/api/src/api.events';
 import { KeyParticipationDto } from 'apps/api/src/keys/keys.dto';
 import { KeysService } from 'apps/api/src/keys/keys.service';
-import { KeyEvent } from 'apps/api/src/keys/keys.types';
 import { UserService } from 'apps/api/src/user/user.service';
 import { TelegrafExceptionFilter } from 'apps/app/src/filters/telegraf-exception.filter';
 import { formatDistanceToNow } from 'date-fns';

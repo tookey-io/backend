@@ -1,3 +1,12 @@
+export enum AuthEvent {
+  SIGNIN = 'auth:signin',
+}
+
+export enum UserEvent {
+  CREATE = 'user:create',
+  CREATE_DISCORD = 'user:create:discord',
+}
+
 export enum KeyEvent {
   CREATE_REQUEST = 'key:create:request',
   CREATE_RESPONSE = 'key:create:response',

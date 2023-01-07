@@ -2,6 +2,7 @@ export * from './access-token.entity';
 export * from './key-participant.entity';
 export * from './key.entity';
 export * from './permission.entity';
+export * from './pipefy.entity';
 export * from './shareable-token.entity';
 export * from './sign.entity';
 export * from './telegram-session.entity';

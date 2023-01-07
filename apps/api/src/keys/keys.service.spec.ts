@@ -1,6 +1,7 @@
 import { PinoLogger, getLoggerToken } from 'nestjs-pino';
 import { DataSource } from 'typeorm';
 
+import { KeyEvent } from 'apps/api/src/api.events';
 import { DeepMocked, createMock } from '@golevelup/ts-jest';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -11,7 +12,6 @@ import { Key, KeyParticipantRepository, KeyRepository, SignRepository } from '@t
 import { UserService } from '../user/user.service';
 import { KeyCreateRequestDto } from './keys.dto';
 import { KeysService } from './keys.service';
-import { KeyEvent } from './keys.types';
 
 describe('KeysService', () => {
   let keysService: KeysService;

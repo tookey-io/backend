@@ -1,11 +1,13 @@
+import { UserEvent } from 'apps/api/src/api.events';
+import { UserDto } from 'apps/api/src/user/user.dto';
+import { UserService } from 'apps/api/src/user/user.service';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { DataSource } from 'typeorm';
 
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserDiscordRepository } from '@tookey/database';
 
-import { UserDto } from '../../user/user.dto';
-import { UserService } from '../../user/user.service';
 import { CreateDiscordUserDto, DiscordUserDto, DiscordUserRequestDto, UpdateDiscordUserDto } from './discord.dto';
 
 @Injectable()
@@ -15,6 +17,7 @@ export class DiscordService {
     private readonly dataSource: DataSource,
     private readonly discordUsers: UserDiscordRepository,
     private readonly userService: UserService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async getUser(dto: DiscordUserRequestDto, relations?: ['user']): Promise<DiscordUserDto | null> {
@@ -48,7 +51,9 @@ export class DiscordService {
 
       await queryRunner.commitTransaction();
 
-      return new DiscordUserDto({ ...userDiscord });
+      const userDiscordDto = new DiscordUserDto({ ...userDiscord });
+      this.eventEmitter.emit(UserEvent.CREATE_DISCORD, userDiscordDto);
+      return userDiscordDto;
     } catch (error) {
       queryRunner.isTransactionActive && (await queryRunner.rollbackTransaction());
       this.logger.error('Create Discord User transaction', error);

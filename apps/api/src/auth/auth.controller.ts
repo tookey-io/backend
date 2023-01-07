@@ -13,6 +13,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AccessService } from '@tookey/access';
 
+import { AuthEvent } from '../api.events';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { JwtRefreshAuth } from '../decorators/jwt-refresh-auth.decorator';
 import { SigninKeyAuth } from '../decorators/signin-key-auth.decorator';
@@ -23,7 +24,6 @@ import { UserContextDto } from '../user/user.dto';
 import { UserService } from '../user/user.service';
 import { AuthTokenDto, AuthTokensResponseDto, AuthTwitterCallbackDto } from './auth.dto';
 import { AuthService } from './auth.service';
-import { AuthEvent } from './auth.types';
 
 @Controller('api/auth')
 @ApiTags('Authentication')

@@ -42,6 +42,11 @@ export type RedisConfig = {
   port: number;
 };
 
+export type PipefyConfig = {
+  endpoint: string;
+  authorization: string;
+};
+
 export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig, AmpqConfig {
   defaultTtl: number;
   telegramToken: string;
@@ -59,6 +64,7 @@ export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig
   healthTimeout: number;
   cors: CorsConfig;
   redis: RedisConfig;
+  pipefy: PipefyConfig;
 }
 
 export function configuration(): AppConfiguration {
@@ -108,6 +114,10 @@ export function configuration(): AppConfiguration {
     redis: {
       host: process.env.REDIS_HOST || 'localhost',
       port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6379,
+    },
+    pipefy: {
+      endpoint: process.env.PIPEFY_ENDPOINT || 'https://api.pipefy.com/graphql',
+      authorization: process.env.PIPEFY_AUTH || '',
     },
   };
 }
