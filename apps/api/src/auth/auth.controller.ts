@@ -6,7 +6,6 @@ import {
   Get,
   HttpCode,
   Post,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -17,13 +16,13 @@ import { AuthEvent } from '../api.events';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { JwtRefreshAuth } from '../decorators/jwt-refresh-auth.decorator';
 import { SigninKeyAuth } from '../decorators/signin-key-auth.decorator';
-import { DiscordAuthGuard } from '../guards/discord-auth.guard';
 import { TwitterAuthUrlResponseDto } from '../twitter/twitter.dto';
 import { TwitterService } from '../twitter/twitter.service';
 import { UserContextDto } from '../user/user.dto';
 import { UserService } from '../user/user.service';
 import { AuthTokenDto, AuthTokensResponseDto, AuthTwitterCallbackDto } from './auth.dto';
 import { AuthService } from './auth.service';
+import { DiscordService } from './providers/discord.service';
 
 @Controller('api/auth')
 @ApiTags('Authentication')
@@ -35,6 +34,7 @@ export class AuthController {
     private readonly accessService: AccessService,
     private readonly eventEmitter: EventEmitter2,
     private readonly twitterService: TwitterService,
+    private readonly discordService: DiscordService,
   ) {}
 
   @SigninKeyAuth()
@@ -86,14 +86,24 @@ export class AuthController {
     return { access, refresh };
   }
 
+  @ApiOperation({ description: 'Get discord auth url' })
+  @ApiOkResponse({ type: TwitterAuthUrlResponseDto })
+  @Get('discord')
+  async discordAuthUrl(): Promise<TwitterAuthUrlResponseDto> {
+    const { url, state } = await this.discordService.getAuthLink();
+    return {
+      url,
+    };
+  }
+
   @ApiOperation({ description: 'Get access and refresh tokens with discord' })
   @ApiOkResponse({ type: AuthTokensResponseDto })
-  @Get('discord')
-  @UseGuards(DiscordAuthGuard)
-  async discordAuthUrl(@CurrentUser() user: UserContextDto): Promise<AuthTokensResponseDto> {
-    const access = this.authService.getJwtAccessToken(user.id);
-    const refresh = this.authService.getJwtRefreshToken(user.id);
-    await this.userService.setCurrentRefreshToken(refresh.token, user.id);
+  @Post('discord')
+  async discordAuthCallback(@Body() { code }: any): Promise<AuthTokensResponseDto> {
+    const user = await this.discordService.requestUser({ code });
+    const access = this.authService.getJwtAccessToken(user.userId);
+    const refresh = this.authService.getJwtRefreshToken(user.userId);
+    // await this.userService.setCurrentRefreshToken(refresh.token, user.id);
     return { access, refresh };
   }
 }

@@ -4,8 +4,8 @@ import { HeaderAPIKeyStrategy } from 'passport-headerapikey';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 
-import { ShareableTokenService } from '../shareable-token/shareable-token.service';
-import { UserContextDto } from '../user/user.dto';
+import { ShareableTokenService } from '../../shareable-token/shareable-token.service';
+import { UserContextDto } from '../../user/user.dto';
 
 @Injectable()
 export class ShareableKeyStrategy extends PassportStrategy(HeaderAPIKeyStrategy, 'shareable-key') {

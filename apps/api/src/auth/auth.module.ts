@@ -8,16 +8,16 @@ import { AccessModule } from '@tookey/access';
 import { TypeOrmExModule, UserDiscordRepository } from '@tookey/database';
 
 import { ShareableTokenModule } from '../shareable-token/shareable-token.module';
-import { DiscordStrategy } from '../strategies/discord.strategy';
-import { JwtRefreshTokenStrategy } from '../strategies/jwt-refresh-token.strategy';
-import { JwtStrategy } from '../strategies/jwt.strategy';
-import { ShareableKeyStrategy } from '../strategies/shareable-key.strategy';
-import { SigninKeyStrategy } from '../strategies/signin-key.strategy';
 import { TwitterModule } from '../twitter/twitter.module';
 import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { DiscordService } from './providers/discord.service';
+// import { DiscordStrategy } from './strategies/discord.strategy';
+import { JwtRefreshTokenStrategy } from './strategies/jwt-refresh-token.strategy';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { ShareableKeyStrategy } from './strategies/shareable-key.strategy';
+import { SigninKeyStrategy } from './strategies/signin-key.strategy';
 
 const AuthRepositories = TypeOrmExModule.forCustomRepository([UserDiscordRepository]);
 
@@ -44,7 +44,7 @@ const AuthRepositories = TypeOrmExModule.forCustomRepository([UserDiscordReposit
     JwtStrategy,
     SigninKeyStrategy,
     ShareableKeyStrategy,
-    DiscordStrategy,
+    // DiscordStrategy,
     DiscordService,
   ],
 })

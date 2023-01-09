@@ -1,7 +1,7 @@
+import { KeyEvent } from 'apps/api/src/api.events';
 import { PinoLogger, getLoggerToken } from 'nestjs-pino';
 import { DataSource } from 'typeorm';
 
-import { KeyEvent } from 'apps/api/src/api.events';
 import { DeepMocked, createMock } from '@golevelup/ts-jest';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';

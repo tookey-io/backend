@@ -4,7 +4,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { AccessService } from '@tookey/access';
 
-import { UserContextDto } from '../user/user.dto';
+import { UserContextDto } from '../../user/user.dto';
 
 @Injectable()
 export class SigninKeyStrategy extends PassportStrategy(HeaderAPIKeyStrategy, 'signin-key') {
