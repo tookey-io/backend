@@ -47,6 +47,11 @@ export type PipefyConfig = {
   authorization: string;
 };
 
+export type EthersConfig = {
+  network?: string;
+  secret: string;
+};
+
 export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig, AmpqConfig {
   defaultTtl: number;
   telegramToken: string;
@@ -65,6 +70,7 @@ export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig
   cors: CorsConfig;
   redis: RedisConfig;
   pipefy: PipefyConfig;
+  ethers: EthersConfig;
 }
 
 export function configuration(): AppConfiguration {
@@ -118,6 +124,10 @@ export function configuration(): AppConfiguration {
     pipefy: {
       endpoint: process.env.PIPEFY_ENDPOINT || 'https://api.pipefy.com/graphql',
       authorization: process.env.PIPEFY_AUTH || '',
+    },
+    ethers: {
+      network: process.env.ETHERS_NETWORK,
+      secret: process.env.ETHERS_SECRET || 'ethers_secret',
     },
   };
 }

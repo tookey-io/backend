@@ -51,6 +51,7 @@
     "crypto": "^1.0.1",
     "date-fns": "^2.29.3",
     "graphql-request": "^5.1.0",
+    "nestjs-ethers": "^1.0.3",
     "nestjs-pino": "^3.1.1",
     "nestjs-telegraf": "^2.6.0",
     "passport": "^0.6.0",

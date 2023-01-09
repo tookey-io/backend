@@ -6,8 +6,9 @@ import { PipefyModule } from './pipefy/pipefy.module';
 import { ShareableTokenModule } from './shareable-token/shareable-token.module';
 import { TwitterModule } from './twitter/twitter.module';
 import { UserModule } from './user/user.module';
+import { WalletModule } from './wallet/wallet.module';
 
 @Module({
-  imports: [KeyModule, UserModule, AuthModule, ShareableTokenModule, TwitterModule, PipefyModule],
+  imports: [KeyModule, UserModule, AuthModule, ShareableTokenModule, TwitterModule, PipefyModule, WalletModule],
 })
 export class ApiModule {}

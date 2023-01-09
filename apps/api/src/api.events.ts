@@ -16,3 +16,7 @@ export enum KeyEvent {
   SIGN_FINISHED = 'key:sign:finished',
   SHARE_RESPONSE = 'key:share:response',
 }
+
+export enum WalletEvent {
+  CREATE = 'wallet:create',
+}

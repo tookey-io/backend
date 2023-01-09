@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 
-import { UserEvent } from '../api.events';
+import { UserEvent, WalletEvent } from '../api.events';
 import { DiscordUserDto } from '../auth/providers/discord.dto';
 import { UserDto } from '../user/user.dto';
 import { PipefyService } from './pipefy.service';
@@ -28,7 +28,15 @@ export class PipefyEventsHandler {
     }
   }
 
-  private retry<T>(fn: () => Promise<T>, count = 5, timeout = 200): Promise<T> {
+  @OnEvent(WalletEvent.CREATE)
+  async createWallet(userId: number, address: string): Promise<void> {
+    const cardId = await this.retry(() => this.pipefyService.getCardIdByUserId(userId));
+    if (!cardId) return;
+
+    await this.pipefyService.updateCardField({ cardId, fieldId: 'internal_wallet', value: address });
+  }
+
+  private retry<T>(fn: () => Promise<T>, count = 100, timeout = 200): Promise<T> {
     return new Promise<T>(async (resolve) => {
       while (true) {
         const result: T = await fn();

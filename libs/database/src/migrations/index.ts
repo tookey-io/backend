@@ -7,3 +7,4 @@ export * from './1670837373822-user-twitter';
 export * from './1670937978086-twitter-session';
 export * from './1672156969552-discord';
 export * from './1673044747005-pipefy';
+export * from './1673116508305-wallet';
