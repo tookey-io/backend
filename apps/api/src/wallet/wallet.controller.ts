@@ -1,4 +1,4 @@
-import { ClassSerializerInterceptor, Controller, Get, UseInterceptors } from '@nestjs/common';
+import { ClassSerializerInterceptor, Controller, Get, Post, UseInterceptors } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../decorators/current-user.decorator';
@@ -12,6 +12,14 @@ import { WalletService } from './wallet.service';
 @UseInterceptors(ClassSerializerInterceptor)
 export class WalletController {
   constructor(private readonly walletService: WalletService) {}
+
+  @JwtAuth()
+  @ApiOperation({ description: 'Create Custody Wallet' })
+  @ApiOkResponse({ type: WalletResponseDto })
+  @Post()
+  async createWallet(@CurrentUser() user: UserContextDto): Promise<WalletResponseDto> {
+    return await this.walletService.createWallet(user.id);
+  }
 
   @JwtAuth()
   @ApiOperation({ description: 'Create Custody Wallet' })

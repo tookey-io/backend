@@ -2,7 +2,7 @@ import { AppConfiguration } from 'apps/app/src/app.config';
 import * as crypto from 'crypto';
 import { EthersSigner, InjectSignerProvider, Wallet, getAddress } from 'nestjs-ethers';
 
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { WalletRepository } from '@tookey/database';
@@ -22,12 +22,14 @@ export class WalletService {
 
   async getAddress(userId: number): Promise<WalletResponseDto> {
     const wallet = await this.wallet.findOneBy({ userId });
-    if (!wallet) return this.createWallet(userId);
+    if (!wallet) throw new NotFoundException('Wallet not found');
     const address = getAddress('0x' + wallet.address);
     return { address };
   }
 
   async createWallet(userId: number): Promise<WalletResponseDto> {
+    const walletCount = await this.wallet.countBy({ userId });
+    if (walletCount > 0) throw new BadRequestException('Wallet exist');
     const wallet: Wallet = this.ethersSigner.createRandomWallet();
     const walletSecret = this.getWalletSecret(userId);
     const encryptedKey = await this.encryptPrivateKey(wallet.privateKey, walletSecret);
