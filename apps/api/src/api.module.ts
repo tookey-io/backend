@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { AuthModule } from './auth/auth.module';
+import { DiscordModule } from './discord/discord.module';
 import { KeyModule } from './keys/keys.module';
 import { PipefyModule } from './pipefy/pipefy.module';
 import { ShareableTokenModule } from './shareable-token/shareable-token.module';
@@ -9,6 +10,15 @@ import { UserModule } from './user/user.module';
 import { WalletModule } from './wallet/wallet.module';
 
 @Module({
-  imports: [KeyModule, UserModule, AuthModule, ShareableTokenModule, TwitterModule, PipefyModule, WalletModule],
+  imports: [
+    KeyModule,
+    UserModule,
+    AuthModule,
+    ShareableTokenModule,
+    TwitterModule,
+    DiscordModule,
+    PipefyModule,
+    WalletModule,
+  ],
 })
 export class ApiModule {}

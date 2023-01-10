@@ -16,13 +16,13 @@ import { AuthEvent } from '../api.events';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { JwtRefreshAuth } from '../decorators/jwt-refresh-auth.decorator';
 import { SigninKeyAuth } from '../decorators/signin-key-auth.decorator';
+import { DiscordService } from '../discord/discord.service';
 import { TwitterAuthUrlResponseDto } from '../twitter/twitter.dto';
 import { TwitterService } from '../twitter/twitter.service';
 import { UserContextDto } from '../user/user.dto';
 import { UserService } from '../user/user.service';
 import { AuthTokenDto, AuthTokensResponseDto, AuthTwitterCallbackDto } from './auth.dto';
 import { AuthService } from './auth.service';
-import { DiscordService } from './providers/discord.service';
 
 @Controller('api/auth')
 @ApiTags('Authentication')
@@ -90,10 +90,7 @@ export class AuthController {
   @ApiOkResponse({ type: TwitterAuthUrlResponseDto })
   @Get('discord')
   async discordAuthUrl(): Promise<TwitterAuthUrlResponseDto> {
-    const { url, state } = await this.discordService.getAuthLink();
-    return {
-      url,
-    };
+    return await this.discordService.getAuthLink();
   }
 
   @ApiOperation({ description: 'Get access and refresh tokens with discord' })
@@ -103,7 +100,7 @@ export class AuthController {
     const user = await this.discordService.requestUser({ code });
     const access = this.authService.getJwtAccessToken(user.userId);
     const refresh = this.authService.getJwtRefreshToken(user.userId);
-    // await this.userService.setCurrentRefreshToken(refresh.token, user.id);
+    await this.userService.setCurrentRefreshToken(refresh.token, user.id);
     return { access, refresh };
   }
 }

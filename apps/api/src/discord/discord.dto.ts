@@ -1,9 +1,9 @@
 import { Exclude, Expose, Type } from 'class-transformer';
-import { IsBoolean, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsBoolean, IsDate, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 
-import { UserDto } from '../../user/user.dto';
+import { UserDto } from '../user/user.dto';
 
 @Exclude()
 export class DiscordUserDto {
@@ -66,6 +66,11 @@ export class DiscordUserDto {
   @IsOptional()
   @IsString()
   refreshToken?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDate()
+  validUntil?: Date;
 
   constructor(partial: Partial<DiscordUserDto>) {
     Object.assign(this, partial);
@@ -141,6 +146,48 @@ export class CreateDiscordUserDto {
   @IsOptional()
   @IsString()
   refreshToken?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDate()
+  validUntil?: Date;
 }
 
 export class UpdateDiscordUserDto extends OmitType(PartialType(DiscordUserDto), ['id', 'user'] as const) {}
+
+export class DiscordTokenExchangeDto {
+  @IsString()
+  accessToken: string;
+  @IsNumber()
+  expiresIn: number;
+  @IsString()
+  refreshToken: string;
+  @IsString()
+  scope: string;
+  @IsString()
+  tokenType: string;
+}
+
+export class DiscordAuthUrlResponseDto {
+  @ApiProperty()
+  @IsString()
+  url: string;
+}
+
+export class DiscordAccessTokenRequestDto {
+  @ApiProperty()
+  @IsString()
+  code: string;
+}
+
+export class DiscordGuildMembershipRequestDto {
+  @ApiProperty({ example: '1052191123092811816' })
+  @IsString()
+  guild: string;
+}
+
+export class DiscordGuildMembershipResponseDto {
+  @ApiProperty()
+  @IsBoolean()
+  isMember: boolean;
+}

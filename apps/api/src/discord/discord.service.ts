@@ -2,19 +2,30 @@ import { UserEvent } from 'apps/api/src/api.events';
 import { UserDto } from 'apps/api/src/user/user.dto';
 import { UserService } from 'apps/api/src/user/user.service';
 import { AppConfiguration } from 'apps/app/src/app.config';
-import { randomUUID } from 'crypto';
+import { addSeconds } from 'date-fns';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { DataSource } from 'typeorm';
 
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserDiscordRepository } from '@tookey/database';
 
-import { CreateDiscordUserDto, DiscordUserDto, DiscordUserRequestDto, UpdateDiscordUserDto } from './discord.dto';
+import {
+  CreateDiscordUserDto,
+  DiscordAccessTokenRequestDto,
+  DiscordAuthUrlResponseDto,
+  DiscordGuildMembershipResponseDto,
+  DiscordTokenExchangeDto,
+  DiscordUserDto,
+  DiscordUserRequestDto,
+  UpdateDiscordUserDto,
+} from './discord.dto';
 
 @Injectable()
 export class DiscordService {
+  discordApiUrl = 'https://discord.com/api';
+
   constructor(
     @InjectPinoLogger(DiscordService.name) private readonly logger: PinoLogger,
     private readonly dataSource: DataSource,
@@ -24,27 +35,24 @@ export class DiscordService {
     private readonly configService: ConfigService<AppConfiguration>,
   ) {}
 
-  async getAuthLink(): Promise<any> {
+  async getAuthLink(): Promise<DiscordAuthUrlResponseDto> {
     const scope = ['identify', 'email', 'guilds.members.read'];
     const discord = this.configService.get('discord', { infer: true });
-    const oAuth2Url = 'https://discord.com/api/oauth2/authorize';
-    const state = randomUUID();
+    const oAuth2Url = `${this.discordApiUrl}/oauth2/authorize`;
     const params = new URLSearchParams({
       client_id: discord.clientID,
       redirect_uri: discord.callbackURL,
       response_type: 'code',
-      state,
       scope: scope.join(' '),
     });
     const url = `${oAuth2Url}?${params.toString()}`;
-    return { url, state };
+    return { url };
   }
 
-  async requestUser({ code, codeVerifier }: any): Promise<any> {
+  private async exchangeTokens(code: string): Promise<DiscordTokenExchangeDto> {
     try {
       const { clientID, clientSecret, callbackURL } = this.configService.get('discord', { infer: true });
-
-      const tokenResponseData = await fetch('https://discord.com/api/oauth2/token', {
+      const response = await fetch(`${this.discordApiUrl}/oauth2/token`, {
         method: 'POST',
         body: new URLSearchParams({
           client_id: clientID,
@@ -59,34 +67,34 @@ export class DiscordService {
         },
       });
 
-      const oauthData = await tokenResponseData.json();
-      console.log(oauthData);
+      const data = await response.json();
 
-      const userResult = await fetch('https://discord.com/api/users/@me', {
-        headers: {
-          authorization: `${oauthData.token_type} ${oauthData.access_token}`,
-        },
+      return {
+        accessToken: data.access_token,
+        expiresIn: data.expires_in,
+        refreshToken: data.refresh_token,
+        scope: data.scope,
+        tokenType: data.token_type,
+      };
+    } catch (error) {
+      throw new BadRequestException(error);
+    }
+  }
+
+  async requestUser({ code }: DiscordAccessTokenRequestDto): Promise<DiscordUserDto> {
+    try {
+      const oauthData = await this.exchangeTokens(code);
+      const authorization = `Bearer ${oauthData.accessToken}`;
+
+      const response = await fetch(`${this.discordApiUrl}/users/@me`, {
+        headers: { authorization },
       });
 
-      const userData = await userResult.json();
-
-      console.log(userData);
-
-      const guildId = '1052191123092811816';
-      const guildResult = await fetch(`https://discord.com/api/users/@me/guilds/${guildId}/member`, {
-        headers: {
-          authorization: `${oauthData.token_type} ${oauthData.access_token}`,
-        },
-      });
-
-      const guildData = await guildResult.json();
-
-      console.log(guildData);
-
+      const userData = await response.json();
       const discordUser = await this.getUser({ discordId: userData.id }, null);
       const discordTag = `${userData.username}#${userData.discriminator}`;
 
-      // const validUntil = oauthData.expires_in ? addSeconds(new Date(), oauthData.expires_in) : null;
+      const validUntil = oauthData.expiresIn ? addSeconds(new Date(), oauthData.expiresIn * 1000) : null;
 
       if (!discordUser) {
         return await this.createDiscordUser({
@@ -96,8 +104,9 @@ export class DiscordService {
           avatar: userData.avatar,
           locale: userData.locale,
           verified: userData.verified,
-          accessToken: oauthData.access_token,
-          refreshToken: oauthData.refresh_token,
+          accessToken: oauthData.accessToken,
+          refreshToken: oauthData.refreshToken,
+          validUntil,
         });
       } else {
         return await this.updateUser(
@@ -109,8 +118,8 @@ export class DiscordService {
             avatar: userData.avatar,
             locale: userData.locale,
             verified: userData.verified,
-            accessToken: oauthData.access_token,
-            refreshToken: oauthData.refresh_token,
+            accessToken: oauthData.accessToken,
+            refreshToken: oauthData.refreshToken,
           },
           null,
         );
@@ -120,9 +129,26 @@ export class DiscordService {
     }
   }
 
+  async checkGuildMembership(userId: number, guildId: string): Promise<DiscordGuildMembershipResponseDto> {
+    const user = await this.getUser({ userId }, null);
+    const authorization = `Bearer ${user.accessToken}`;
+    const result = await fetch(`${this.discordApiUrl}/users/@me/guilds/${guildId}/member`, {
+      headers: { authorization },
+    });
+
+    const data = await result.json();
+
+    return { isMember: !!data.joined_at };
+  }
+
   async getUser(dto: DiscordUserRequestDto, relations?: ['user']): Promise<DiscordUserDto | null> {
-    const userDiscord = await this.discordUsers.findOne({ where: dto, relations });
+    let userDiscord = await this.discordUsers.findOne({ where: dto, relations });
     if (!userDiscord) return null;
+
+    if (userDiscord.validUntil < new Date()) {
+      await this.refreshTokenByUserId(userDiscord.id);
+      userDiscord = await this.discordUsers.findOne({ where: dto, relations });
+    }
 
     if (userDiscord.user) {
       return new DiscordUserDto({ ...userDiscord, user: new UserDto(userDiscord.user) });
@@ -160,5 +186,32 @@ export class DiscordService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async refreshTokenByUserId(id: number): Promise<void> {
+    const user = await this.discordUsers.findOne({ where: { id } });
+    try {
+      const { clientID, clientSecret } = this.configService.get('discord', { infer: true });
+      const response = await fetch(`${this.discordApiUrl}/oauth2/token/revoke`, {
+        method: 'POST',
+        body: new URLSearchParams({
+          client_id: clientID,
+          client_secret: clientSecret,
+          grant_type: 'refresh_token',
+          refresh_token: user.refreshToken,
+        }).toString(),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+
+      const data = await response.json();
+      const validUntil = data.expires_in ? addSeconds(new Date(), data.expires_in * 1000) : null;
+      await this.updateUser(
+        user.id,
+        { accessToken: data.access_token, refreshToken: data.refresh_token, validUntil },
+        null,
+      );
+    } catch (error) {}
   }
 }

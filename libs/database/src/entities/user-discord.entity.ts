@@ -38,6 +38,9 @@ export class UserDiscord extends MetaEntity {
 
   @Column({ type: 'varchar', nullable: true })
   refreshToken: string | null;
+
+  @Column({ nullable: true })
+  validUntil: Date | null;
 }
 
 @CustomRepository(UserDiscord)
