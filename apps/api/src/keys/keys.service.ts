@@ -46,7 +46,7 @@ export class KeysService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async createKey(dto: KeyCreateRequestDto, userId: number): Promise<KeyDto> {
+  async createKey(dto: KeyCreateRequestDto, userId: number, roomId?: string): Promise<KeyDto> {
     const user = await this.users.getUser({ id: userId });
     if (!user) throw new NotFoundException('User not found');
 
@@ -57,6 +57,8 @@ export class KeysService {
     if (keysCount >= user.keyLimit) throw new ForbiddenException('Keys limit reached');
 
     dto.name = dto.name || `Key #${keysCount + 1}`;
+
+    if (roomId) return this.saveKey(dto, userId, roomId);
 
     const uuid = randomUUID();
     this.eventEmitter.emit(KeyEvent.CREATE_REQUEST, uuid, dto, userId);
@@ -69,7 +71,7 @@ export class KeysService {
     return this.saveKey(dto, userId);
   }
 
-  async saveKey(dto: KeyCreateRequestDto, userId: number): Promise<KeyDto> {
+  async saveKey(dto: KeyCreateRequestDto, userId: number, roomId?: string): Promise<KeyDto> {
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
@@ -77,11 +79,14 @@ export class KeysService {
 
     const entityManager = queryRunner.manager;
 
+    roomId = roomId || randomUUID();
+
     try {
       const { id, participantIndex } = await this.keys.createOrUpdateOne(
         {
           userId,
-          roomId: randomUUID(),
+          roomId,
+          participantIndex: dto.participantIndex,
           participantsCount: dto.participantsCount,
           participantsThreshold: dto.participantsThreshold,
           timeoutSeconds: dto.timeoutSeconds,
@@ -198,12 +203,14 @@ export class KeysService {
     return { affected };
   }
 
-  async signKey(dto: KeySignRequestDto, userId?: number): Promise<SignDto> {
+  async signKey(dto: KeySignRequestDto, userId?: number, roomId?: string): Promise<SignDto> {
     const key = await this.keys.findOne({
       where: { publicKey: dto.publicKey, participants: { userId } },
       relations: { participants: true },
     });
     if (!key) throw new NotFoundException('Key not found');
+
+    if (roomId) return this.saveSign({ ...dto, keyId: key.id, timeoutSeconds: key.timeoutSeconds }, userId, roomId);
 
     const signEventDto: KeySignEventRequestDto = {
       ...dto,
@@ -239,10 +246,12 @@ export class KeysService {
       });
   }
 
-  async saveSign(dto: KeySignEventRequestDto, userId?: number): Promise<SignDto> {
+  async saveSign(dto: KeySignEventRequestDto, userId?: number, roomId?: string): Promise<SignDto> {
+    roomId = roomId || randomUUID();
+
     const { id } = await this.signs.createOrUpdateOne({
       keyId: dto.keyId,
-      roomId: randomUUID(),
+      roomId,
       data: dto.data,
       metadata: dto.metadata,
       participantsConfirmations: dto.participantsConfirmations,
@@ -266,51 +275,55 @@ export class KeysService {
 
   async handleKeygenStatusUpdate(payload: AmqpPayloadDto): Promise<void> {
     try {
-      const key = await this.keys.findOneBy({ roomId: payload.room_id });
+      const keys = await this.keys.findBy({ roomId: payload.room_id });
 
-      key.status = payload.status;
+      for (const key of keys) {
+        key.status = payload.status;
 
-      if (key.status === TaskStatus.Started) {
-        key.participantsActive = payload.active_indexes;
+        if (key.status === TaskStatus.Started) {
+          key.participantsActive = payload.active_indexes;
+        }
+
+        if (key.status === TaskStatus.Finished) {
+          key.participantsActive = payload.active_indexes;
+          key.publicKey = payload.public_key;
+
+          this.eventEmitter.emit(KeyEvent.CREATE_FINISHED, key.publicKey, key.userId);
+        }
+
+        await this.keys.createOrUpdateOne(key);
+
+        this.logger.info(`Keygen status update: ${key.status}`);
       }
-
-      if (key.status === TaskStatus.Finished) {
-        key.participantsActive = payload.active_indexes;
-        key.publicKey = payload.public_key;
-
-        this.eventEmitter.emit(KeyEvent.CREATE_FINISHED, key.publicKey, key.userId);
-      }
-
-      await this.keys.createOrUpdateOne(key);
-
-      this.logger.info('Keygen status update', key.status);
     } catch (error) {
-      this.logger.error('Keygen status update fail', error);
+      this.logger.error(`Keygen status update fail: ${error}`);
     }
   }
 
   async handleSignStatusUpdate(payload: AmqpPayloadDto): Promise<void> {
     try {
-      const sign = await this.signs.findOne({ where: { roomId: payload.room_id }, relations: { key: true } });
+      const signs = await this.signs.find({ where: { roomId: payload.room_id }, relations: { key: true } });
 
-      sign.status = payload.status;
+      for (const sign of signs) {
+        sign.status = payload.status;
 
-      if (sign.status === TaskStatus.Started) {
-        sign.participantsConfirmations = payload.active_indexes;
+        if (sign.status === TaskStatus.Started) {
+          sign.participantsConfirmations = payload.active_indexes;
+        }
+
+        if (sign.status === TaskStatus.Finished) {
+          sign.participantsConfirmations = payload.active_indexes;
+          sign.result = payload.result;
+
+          this.eventEmitter.emit(KeyEvent.SIGN_FINISHED, sign.key.name, sign.key.userId);
+        }
+
+        await this.signs.createOrUpdateOne(sign);
+
+        this.logger.info(`Sign status update: ${sign.status}`);
       }
-
-      if (sign.status === TaskStatus.Finished) {
-        sign.participantsConfirmations = payload.active_indexes;
-        sign.result = payload.result;
-
-        this.eventEmitter.emit(KeyEvent.SIGN_FINISHED, sign.key.name, sign.key.userId);
-      }
-
-      await this.signs.createOrUpdateOne(sign);
-
-      this.logger.info('Sign status update', sign.status);
     } catch (error) {
-      this.logger.error('Sign status update fail', error);
+      this.logger.error(`Sign status update fail: ${error}`);
     }
   }
 

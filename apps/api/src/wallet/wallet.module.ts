@@ -5,6 +5,7 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmExModule, WalletRepository } from '@tookey/database';
 
+import { KeyModule } from '../keys/keys.module';
 import { WalletController } from './wallet.controller';
 import { WalletService } from './wallet.service';
 
@@ -20,6 +21,7 @@ const WalletRepositories = TypeOrmExModule.forCustomRepository([WalletRepository
         return { network };
       },
     }),
+    KeyModule,
   ],
   controllers: [WalletController],
   providers: [WalletService],

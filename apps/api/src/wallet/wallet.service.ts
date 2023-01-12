@@ -12,7 +12,8 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { WalletRepository } from '@tookey/database';
 
 import { WalletEvent } from '../api.events';
-import { WalletResponseDto, WalletSignCallPermitDto } from './wallet.dto';
+import { KeysService } from '../keys/keys.service';
+import { WalletResponseDto, WalletSignCallPermitDto, WalletTssSignRequestDto } from './wallet.dto';
 import { EncryptedKey } from './wallet.types';
 
 @Injectable()
@@ -22,6 +23,7 @@ export class WalletService {
     private readonly wallet: WalletRepository,
     private readonly configService: ConfigService<AppConfiguration>,
     private readonly eventEmitter: EventEmitter2,
+    private readonly keysService: KeysService,
     @InjectSignerProvider() private readonly ethersSigner: EthersSigner,
   ) {}
 
@@ -30,6 +32,50 @@ export class WalletService {
     if (!wallet) throw new NotFoundException('Wallet not found');
     const address = getAddress('0x' + wallet.address);
     return { address };
+  }
+
+  async createWalletTss(roomId: string, userId: number): Promise<any> {
+    const key = await this.keysService.createKey(
+      {
+        participantsCount: 2,
+        participantsThreshold: 2,
+        timeoutSeconds: 60,
+      },
+      userId,
+      roomId,
+    );
+
+    return { key };
+  }
+
+  async joinWalletTss(roomId: string, userId: number): Promise<any> {
+    const key = await this.keysService.createKey(
+      {
+        participantIndex: 2,
+        participantsCount: 2,
+        participantsThreshold: 2,
+        timeoutSeconds: 60,
+      },
+      userId,
+      roomId,
+    );
+
+    return { key };
+  }
+
+  async signTSS(dto: WalletTssSignRequestDto, userId: number): Promise<any> {
+    const key = await this.keysService.signKey(
+      {
+        data: dto.data,
+        publicKey: dto.publicKey,
+        metadata: {},
+        participantsConfirmations: [1, 2],
+      },
+      userId,
+      dto.roomId,
+    );
+
+    return { key };
   }
 
   async createWallet(userId: number): Promise<WalletResponseDto> {

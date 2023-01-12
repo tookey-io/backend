@@ -142,6 +142,10 @@ export class KeyCreateRequestDto {
   @IsNumber()
   participantsCount: number;
 
+  @ApiPropertyOptional({ default: 1 })
+  @IsNumber()
+  participantIndex?: number;
+
   @ApiPropertyOptional({ default: 60 })
   @IsNumber()
   timeoutSeconds?: number;

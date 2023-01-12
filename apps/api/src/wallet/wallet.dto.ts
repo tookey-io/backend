@@ -8,6 +8,26 @@ export class WalletCreateRequestDto {
   password: string;
 }
 
+export class WalletTssCreateRequestDto {
+  @ApiProperty()
+  @IsString()
+  roomId: string;
+}
+
+export class WalletTssSignRequestDto {
+  @ApiProperty()
+  @IsString()
+  roomId: string;
+
+  @ApiProperty()
+  @IsString()
+  data: string;
+
+  @ApiProperty()
+  @IsString()
+  publicKey: string;
+}
+
 export class WalletResponseDto {
   @ApiProperty()
   @IsString()
