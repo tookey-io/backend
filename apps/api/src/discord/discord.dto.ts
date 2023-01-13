@@ -190,4 +190,10 @@ export class DiscordGuildMembershipResponseDto {
   @ApiProperty()
   @IsBoolean()
   isMember: boolean;
+
+  @ApiProperty()
+  username: string;
+
+  @ApiProperty()
+  roles: string[]
 }
