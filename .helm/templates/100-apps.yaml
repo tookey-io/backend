@@ -37,7 +37,7 @@ spec:
               value: "-1001803593182"
 
             - name: CORS_ORIGINS
-              value: "https://stanks.online"
+              value: "https://stanks.online,https://tookey.io"
             - name: CORS_ALLOWED_HEADERS
               value: "Content-Type,Authorization"
           envFrom:
