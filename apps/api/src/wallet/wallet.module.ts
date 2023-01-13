@@ -7,6 +7,7 @@ import { TypeOrmExModule, WalletRepository } from '@tookey/database';
 
 import { KeyModule } from '../keys/keys.module';
 import { WalletController } from './wallet.controller';
+import { WalletGateway } from './wallet.gateway';
 import { WalletService } from './wallet.service';
 
 const WalletRepositories = TypeOrmExModule.forCustomRepository([WalletRepository]);
@@ -24,7 +25,7 @@ const WalletRepositories = TypeOrmExModule.forCustomRepository([WalletRepository
     KeyModule,
   ],
   controllers: [WalletController],
-  providers: [WalletService],
+  providers: [WalletService, WalletGateway],
   exports: [WalletService, WalletRepositories],
 })
 export class WalletModule {}

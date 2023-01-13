@@ -17,6 +17,7 @@ import { JwtRefreshTokenStrategy } from './strategies/jwt-refresh-token.strategy
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { ShareableKeyStrategy } from './strategies/shareable-key.strategy';
 import { SigninKeyStrategy } from './strategies/signin-key.strategy';
+import { WsJwtStrategy } from './strategies/ws-jwt.strategy';
 
 const AuthRepositories = TypeOrmExModule.forCustomRepository([UserDiscordRepository]);
 
@@ -38,6 +39,13 @@ const AuthRepositories = TypeOrmExModule.forCustomRepository([UserDiscordReposit
     DiscordModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtRefreshTokenStrategy, JwtStrategy, SigninKeyStrategy, ShareableKeyStrategy],
+  providers: [
+    AuthService,
+    JwtRefreshTokenStrategy,
+    JwtStrategy,
+    WsJwtStrategy,
+    SigninKeyStrategy,
+    ShareableKeyStrategy,
+  ],
 })
 export class AuthModule {}
