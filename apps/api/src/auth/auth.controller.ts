@@ -6,6 +6,7 @@ import {
   Get,
   HttpCode,
   Post,
+  Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -16,6 +17,7 @@ import { AuthEvent } from '../api.events';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { JwtRefreshAuth } from '../decorators/jwt-refresh-auth.decorator';
 import { SigninKeyAuth } from '../decorators/signin-key-auth.decorator';
+import { DiscordAuthUrlResponseDto } from '../discord/discord.dto';
 import { DiscordService } from '../discord/discord.service';
 import { TwitterAuthUrlResponseDto } from '../twitter/twitter.dto';
 import { TwitterService } from '../twitter/twitter.service';
@@ -87,10 +89,10 @@ export class AuthController {
   }
 
   @ApiOperation({ description: 'Get discord auth url' })
-  @ApiOkResponse({ type: TwitterAuthUrlResponseDto })
+  @ApiOkResponse({ type: DiscordAuthUrlResponseDto })
   @Get('discord')
-  async discordAuthUrl(): Promise<TwitterAuthUrlResponseDto> {
-    return await this.discordService.getAuthLink();
+  async discordAuthUrl(@Query('state') state?: string): Promise<DiscordAuthUrlResponseDto> {
+    return await this.discordService.getAuthLink(state);
   }
 
   @ApiOperation({ description: 'Get access and refresh tokens with discord' })

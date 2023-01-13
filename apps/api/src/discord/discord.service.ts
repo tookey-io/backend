@@ -35,8 +35,8 @@ export class DiscordService {
     private readonly configService: ConfigService<AppConfiguration>,
   ) {}
 
-  async getAuthLink(): Promise<DiscordAuthUrlResponseDto> {
-    const scope = ['identify', 'email', 'guilds.members.read'];
+  async getAuthLink(state?: string): Promise<DiscordAuthUrlResponseDto> {
+    const scope = ['identify', 'email'];
     const discord = this.configService.get('discord', { infer: true });
     const oAuth2Url = `${this.discordApiUrl}/oauth2/authorize`;
     const params = new URLSearchParams({
@@ -45,6 +45,7 @@ export class DiscordService {
       response_type: 'code',
       scope: scope.join(' '),
     });
+    if (state) params.set('state', state);
     const url = `${oAuth2Url}?${params.toString()}`;
     return { url };
   }
