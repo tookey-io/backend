@@ -1,0 +1,104 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "backend"
+  namespace: "aofg-production"
+  labels:
+    service: "backend"
+spec:
+  replicas: 1
+  minReadySeconds: 15
+  selector:
+    matchLabels:
+      service: "backend"
+  template:
+    metadata:
+      labels:
+        service: "backend"
+    spec:
+      containers:
+        - name: service
+          image: {{ $.Values.image }}
+          livenessProbe:
+            exec:
+              command: [ "/bin/sh", "/app/bin/liveness.sh" ]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command: [ "/bin/sh", "/app/bin/readiness.sh" ]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+          env:
+            - name: CORS_ORIGINS
+              value: "https://stanks.online"
+            - name: CORS_ALLOWED_HEADERS
+              value: "Content-Type,Authorization"
+          envFrom:
+            - secretRef:
+                name: backend-env
+                optional: false
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 200m
+              memory: 256Mi
+          ports:
+            - name: "http"
+              containerPort: 3000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "backend"
+  namespace: "aofg-production"
+spec:
+  type: ClusterIP
+  selector:
+    service: "backend"
+  ports:
+    - port: 80
+      targetPort: 3000
+      name: "http"
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: "backend"
+  namespace: "aofg-production"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: "Host(`backend.aofg-production.tookey.cloud`)"
+      kind: Rule
+      services:
+        - name: backend
+          port: 80
+  tls:
+    certResolver: main-le
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: "backend-cloudflare"
+  namespace: "aofg-production"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: "Host(`backend.aofg.io`)"
+      kind: Rule
+      services:
+        - name: backend
+          port: 80
+  tls:
+    secretName: traefik-cloudflare-cert

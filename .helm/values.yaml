@@ -1,0 +1,5 @@
+botType: backend
+
+# Should be provided from cmd
+branch: staging
+image: ""
