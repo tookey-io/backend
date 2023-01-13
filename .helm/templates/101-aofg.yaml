@@ -33,8 +33,6 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 5
           env:
-            {% comment %} - name: CORS_ORIGINS
-              value: "https://aofg.io" {% endcomment %}
             - name: CORS_ALLOWED_HEADERS
               value: "Content-Type,Authorization"
           envFrom:
