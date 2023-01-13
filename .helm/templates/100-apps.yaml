@@ -36,8 +36,8 @@ spec:
             - name: TELEGRAM_EXCEPTIONS_CHAT_ID
               value: "-1001803593182"
 
-            - name: CORS_ORIGINS
-              value: "https://stanks.online,https://tookey.io"
+            {% comment %} - name: CORS_ORIGINS
+              value: "https://stanks.online,https://tookey.io" {% endcomment %}
             - name: CORS_ALLOWED_HEADERS
               value: "Content-Type,Authorization"
           envFrom:
