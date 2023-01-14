@@ -4,8 +4,10 @@ import { UserService } from 'apps/api/src/user/user.service';
 import { AppConfiguration } from 'apps/app/src/app.config';
 import { addSeconds } from 'date-fns';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { firstValueFrom } from 'rxjs';
 import { DataSource } from 'typeorm';
 
+import { HttpService } from '@nestjs/axios';
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -33,6 +35,7 @@ export class DiscordService {
     private readonly discordUsers: UserDiscordRepository,
     private readonly userService: UserService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly httpService: HttpService,
     private readonly configService: ConfigService<AppConfiguration>,
   ) {}
 
@@ -53,23 +56,23 @@ export class DiscordService {
   private async exchangeTokens(code: string): Promise<DiscordTokenExchangeDto> {
     try {
       const { clientID, clientSecret, callbackURL } = this.configService.get('discord', { infer: true });
-      const body = new URLSearchParams({
-        client_id: clientID,
-        client_secret: clientSecret,
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: callbackURL,
-      }).toString();
-      this.logger.warn(`exchangeTokens body: ${body}`);
-      const response = await fetch(`${this.discordApiUrl}/oauth2/token`, {
-        method: 'POST',
-        body,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      });
-
-      const data = await response.json();
+      const { data } = await firstValueFrom(
+        this.httpService.request({
+          url: `${this.discordApiUrl}/oauth2/token`,
+          method: 'POST',
+          data: new URLSearchParams({
+            client_id: clientID,
+            client_secret: clientSecret,
+            code,
+            grant_type: 'authorization_code',
+            redirect_uri: callbackURL,
+          }),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept-Encoding': 'gzip,deflate,compress',
+          },
+        }),
+      );
 
       if (data.error) throw new BadRequestException(data.error_description);
 
@@ -90,24 +93,26 @@ export class DiscordService {
       const oauthData = await this.exchangeTokens(code);
       const authorization = `Bearer ${oauthData.accessToken}`;
 
-      const response = await fetch(`${this.discordApiUrl}/users/@me`, {
-        headers: { authorization },
-      });
+      const { data } = await firstValueFrom(
+        this.httpService.request({
+          url: `${this.discordApiUrl}/users/@me`,
+          headers: { authorization },
+        }),
+      );
 
-      const userData = await response.json();
-      const discordUser = await this.getUser({ discordId: userData.id }, null);
-      const discordTag = `${userData.username}#${userData.discriminator}`;
+      const discordUser = await this.getUser({ discordId: data.id }, null);
+      const discordTag = `${data.username}#${data.discriminator}`;
 
       const validUntil = oauthData.expiresIn ? addSeconds(new Date(), oauthData.expiresIn * 1000) : null;
 
       if (!discordUser) {
         return await this.createDiscordUser({
-          discordId: userData.id,
+          discordId: data.id,
           discordTag,
-          email: userData.email,
-          avatar: userData.avatar,
-          locale: userData.locale,
-          verified: userData.verified,
+          email: data.email,
+          avatar: data.avatar,
+          locale: data.locale,
+          verified: data.verified,
           accessToken: oauthData.accessToken,
           refreshToken: oauthData.refreshToken,
           validUntil,
@@ -116,12 +121,12 @@ export class DiscordService {
         return await this.updateUser(
           discordUser.id,
           {
-            discordId: userData.id,
+            discordId: data.id,
             discordTag,
-            email: userData.email,
-            avatar: userData.avatar,
-            locale: userData.locale,
-            verified: userData.verified,
+            email: data.email,
+            avatar: data.avatar,
+            locale: data.locale,
+            verified: data.verified,
             accessToken: oauthData.accessToken,
             refreshToken: oauthData.refreshToken,
           },
@@ -129,18 +134,20 @@ export class DiscordService {
         );
       }
     } catch (error) {
-      throw new ForbiddenException('Invalid verifier or access tokens!');
+      throw new ForbiddenException(error);
     }
   }
 
   async checkGuildMembership(userId: number, guildId: string): Promise<DiscordGuildMembershipResponseDto> {
     const user = await this.getUser({ userId }, null);
     const authorization = `Bearer ${user.accessToken}`;
-    const result = await fetch(`${this.discordApiUrl}/users/@me/guilds/${guildId}/member`, {
-      headers: { authorization },
-    });
 
-    const data = await result.json();
+    const { data } = await firstValueFrom(
+      this.httpService.request({
+        url: `${this.discordApiUrl}/users/@me/guilds/${guildId}/member`,
+        headers: { authorization },
+      }),
+    );
 
     return { isMember: !!data.joined_at };
   }
@@ -196,20 +203,24 @@ export class DiscordService {
     const user = await this.discordUsers.findOne({ where: { id } });
     try {
       const { clientID, clientSecret } = this.configService.get('discord', { infer: true });
-      const response = await fetch(`${this.discordApiUrl}/oauth2/token/revoke`, {
-        method: 'POST',
-        body: new URLSearchParams({
-          client_id: clientID,
-          client_secret: clientSecret,
-          grant_type: 'refresh_token',
-          refresh_token: user.refreshToken,
-        }).toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      });
 
-      const data = await response.json();
+      const { data } = await firstValueFrom(
+        this.httpService.request({
+          url: `${this.discordApiUrl}/oauth2/token/revoke`,
+          method: 'POST',
+          data: new URLSearchParams({
+            client_id: clientID,
+            client_secret: clientSecret,
+            grant_type: 'refresh_token',
+            refresh_token: user.refreshToken,
+          }),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept-Encoding': 'gzip,deflate,compress',
+          },
+        }),
+      );
+
       const validUntil = data.expires_in ? addSeconds(new Date(), data.expires_in * 1000) : null;
       await this.updateUser(
         user.id,
