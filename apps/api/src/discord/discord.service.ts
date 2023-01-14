@@ -53,16 +53,18 @@ export class DiscordService {
   private async exchangeTokens(code: string): Promise<DiscordTokenExchangeDto> {
     try {
       const { clientID, clientSecret, callbackURL } = this.configService.get('discord', { infer: true });
+      const body = new URLSearchParams({
+        client_id: clientID,
+        client_secret: clientSecret,
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: callbackURL,
+        scope: 'identify',
+      }).toString();
+      this.logger.info(body);
       const response = await fetch(`${this.discordApiUrl}/oauth2/token`, {
         method: 'POST',
-        body: new URLSearchParams({
-          client_id: clientID,
-          client_secret: clientSecret,
-          code,
-          grant_type: 'authorization_code',
-          redirect_uri: callbackURL,
-          scope: 'identify',
-        }).toString(),
+        body,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },

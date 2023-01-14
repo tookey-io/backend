@@ -35,6 +35,8 @@ spec:
           env:
             - name: CORS_ALLOWED_HEADERS
               value: "Content-Type,Authorization"
+            - name: DISCORD_CALLBACK_URL
+              value: "https://aofg.io/auth/discord"
             - name: NODE_ENV
               value: "production"
           envFrom:
