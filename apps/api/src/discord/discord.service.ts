@@ -70,6 +70,8 @@ export class DiscordService {
 
       const data = await response.json();
 
+      if (data.error) throw new BadRequestException(data.error_description);
+
       return {
         accessToken: data.access_token,
         expiresIn: data.expires_in,
