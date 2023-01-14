@@ -59,7 +59,6 @@ export class DiscordService {
         code,
         grant_type: 'authorization_code',
         redirect_uri: callbackURL,
-        scope: this.scope.join(' '),
       }).toString();
       this.logger.warn(`exchangeTokens body: ${body}`);
       const response = await fetch(`${this.discordApiUrl}/oauth2/token`, {
