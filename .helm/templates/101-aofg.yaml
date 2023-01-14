@@ -35,6 +35,8 @@ spec:
           env:
             - name: CORS_ALLOWED_HEADERS
               value: "Content-Type,Authorization"
+            - name: NODE_ENV
+              value: "production"
           envFrom:
             - secretRef:
                 name: backend-env
