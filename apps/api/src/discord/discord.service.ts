@@ -25,6 +25,7 @@ import {
 @Injectable()
 export class DiscordService {
   discordApiUrl = 'https://discord.com/api';
+  scope = ['identify', 'email'];
 
   constructor(
     @InjectPinoLogger(DiscordService.name) private readonly logger: PinoLogger,
@@ -36,14 +37,13 @@ export class DiscordService {
   ) {}
 
   async getAuthLink(state?: string): Promise<DiscordAuthUrlResponseDto> {
-    const scope = ['identify', 'email'];
     const discord = this.configService.get('discord', { infer: true });
     const oAuth2Url = `${this.discordApiUrl}/oauth2/authorize`;
     const params = new URLSearchParams({
       client_id: discord.clientID,
       redirect_uri: discord.callbackURL,
       response_type: 'code',
-      scope: scope.join(' '),
+      scope: this.scope.join(' '),
     });
     if (state) params.set('state', state);
     const url = `${oAuth2Url}?${params.toString()}`;
@@ -59,7 +59,7 @@ export class DiscordService {
         code,
         grant_type: 'authorization_code',
         redirect_uri: callbackURL,
-        scope: 'identify',
+        scope: this.scope.join(' '),
       }).toString();
       this.logger.warn(`exchangeTokens body: ${body}`);
       const response = await fetch(`${this.discordApiUrl}/oauth2/token`, {
