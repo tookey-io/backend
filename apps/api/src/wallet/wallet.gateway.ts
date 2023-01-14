@@ -1,13 +1,21 @@
-import { Observable, filter, fromEvent, map } from 'rxjs';
-import { Server } from 'socket.io';
+import { Observable, filter, fromEvent, map, tap } from 'rxjs';
+import { Server, Socket } from 'socket.io';
 
 import { UseGuards } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer, WsResponse } from '@nestjs/websockets';
+import {
+  ConnectedSocket,
+  MessageBody,
+  SubscribeMessage,
+  WebSocketGateway,
+  WebSocketServer,
+  WsResponse,
+} from '@nestjs/websockets';
 
 import { KeyEvent } from '../api.events';
 import { WsCurrentUser } from '../decorators/current-user.decorator';
 import { WsJwtGuard } from '../guards/ws-jwt.guard';
+import { UserContextDto } from '../user/user.dto';
 import { WalletService } from './wallet.service';
 
 @UseGuards(WsJwtGuard)
@@ -23,11 +31,21 @@ export class WalletGateway {
   constructor(private readonly walletService: WalletService, private readonly eventEmitter: EventEmitter2) {}
 
   @SubscribeMessage('wallet-create')
-  roomJoin(@MessageBody() data: { roomId: string }, @WsCurrentUser() user: any): Observable<WsResponse<any>> {
-    this.walletService.createWalletTss(data.roomId, user.id);
+  roomJoin(
+    @MessageBody('roomId') roomId: string,
+    @WsCurrentUser() user: UserContextDto,
+    @ConnectedSocket() socket: Socket,
+  ): Observable<WsResponse<any>> {
+    this.walletService.createWalletTss(roomId, user.id);
+    socket.join(roomId);
     return fromEvent(this.eventEmitter, KeyEvent.CREATE_FINISHED).pipe(
       filter((it) => it[1] === user.id),
-      map((data) => ({ event: 'wallet-create', data: data[0] })),
+      tap((data) => console.log(`${data}`)),
+      map((data) => {
+        const publicKey = data[0];
+        socket.to(roomId).emit('wallet-create', publicKey);
+        return { event: 'wallet-create', data: publicKey };
+      }),
     );
   }
 }

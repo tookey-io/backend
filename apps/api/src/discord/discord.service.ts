@@ -66,6 +66,8 @@ export class DiscordService {
             code,
             grant_type: 'authorization_code',
             redirect_uri: callbackURL,
+            // scope: this.scope.join(' '),
+            scope: 'identify email',
           }),
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
