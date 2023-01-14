@@ -61,7 +61,7 @@ export class DiscordService {
         redirect_uri: callbackURL,
         scope: 'identify',
       }).toString();
-      this.logger.info(body);
+      this.logger.warn(`exchangeTokens body: ${body}`);
       const response = await fetch(`${this.discordApiUrl}/oauth2/token`, {
         method: 'POST',
         body,
