@@ -142,6 +142,10 @@ export class KeyCreateRequestDto {
   @IsNumber()
   participantsCount: number;
 
+  @ApiPropertyOptional({ default: 1 })
+  @IsNumber()
+  participantIndex?: number;
+
   @ApiPropertyOptional({ default: 60 })
   @IsNumber()
   timeoutSeconds?: number;
@@ -264,4 +268,15 @@ export class KeyListResponseDto {
   @ValidateNested({ each: true })
   @Type(() => KeyDto)
   items: KeyDto[];
+}
+
+export class KeyCreateFinishedDto {
+  @ApiProperty()
+  @IsString()
+  @Length(66, 66)
+  publicKey: string;
+
+  @ApiProperty()
+  @IsNumber()
+  userId: number;
 }

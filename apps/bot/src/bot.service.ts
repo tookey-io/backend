@@ -19,8 +19,10 @@ export class BotService implements TelegrafOptionsFactory {
   ) {}
 
   createTelegrafOptions(): TelegrafModuleOptions {
+    const token = this.configService.get('telegramToken', { infer: true });
     return {
-      token: this.configService.get('telegramToken', { infer: true }),
+      token,
+      launchOptions: token ? undefined : false,
       middlewares: [
         this.telegramUser.use.bind(this.telegramUser),
         this.telegramSession.use.bind(this.telegramSession),

@@ -4,8 +4,10 @@ import { UserService } from 'apps/api/src/user/user.service';
 import { AppConfiguration } from 'apps/app/src/app.config';
 import { addSeconds } from 'date-fns';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { firstValueFrom } from 'rxjs';
 import { DataSource } from 'typeorm';
 
+import { HttpService } from '@nestjs/axios';
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -25,6 +27,7 @@ import {
 @Injectable()
 export class DiscordService {
   discordApiUrl = 'https://discord.com/api';
+  scope = ['identify', 'email'];
 
   constructor(
     @InjectPinoLogger(DiscordService.name) private readonly logger: PinoLogger,
@@ -32,19 +35,20 @@ export class DiscordService {
     private readonly discordUsers: UserDiscordRepository,
     private readonly userService: UserService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly httpService: HttpService,
     private readonly configService: ConfigService<AppConfiguration>,
   ) {}
 
-  async getAuthLink(): Promise<DiscordAuthUrlResponseDto> {
-    const scope = ['identify', 'email', 'guilds.members.read'];
+  async getAuthLink(state?: string): Promise<DiscordAuthUrlResponseDto> {
     const discord = this.configService.get('discord', { infer: true });
     const oAuth2Url = `${this.discordApiUrl}/oauth2/authorize`;
     const params = new URLSearchParams({
       client_id: discord.clientID,
       redirect_uri: discord.callbackURL,
       response_type: 'code',
-      scope: scope.join(' '),
+      scope: this.scope.join(' '),
     });
+    if (state) params.set('state', state);
     const url = `${oAuth2Url}?${params.toString()}`;
     return { url };
   }
@@ -52,28 +56,31 @@ export class DiscordService {
   private async exchangeTokens(code: string): Promise<DiscordTokenExchangeDto> {
     try {
       const { clientID, clientSecret, callbackURL } = this.configService.get('discord', { infer: true });
-      const response = await fetch(`${this.discordApiUrl}/oauth2/token`, {
-        method: 'POST',
-        body: new URLSearchParams({
-          client_id: clientID,
-          client_secret: clientSecret,
-          code,
-          grant_type: 'authorization_code',
-          redirect_uri: callbackURL,
-          scope: 'identify',
-        }).toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      });
+      const { data } = await firstValueFrom(
+        this.httpService.request({
+          url: `${this.discordApiUrl}/oauth2/token`,
+          method: 'POST',
+          data: new URLSearchParams({
+            client_id: clientID,
+            client_secret: clientSecret,
+            code,
+            grant_type: 'authorization_code',
+            redirect_uri: callbackURL,
+          }),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept-Encoding': 'gzip,deflate,compress',
+          },
+        }),
+      );
 
-      const data = await response.json();
+      if (data.error) throw new BadRequestException(data.error_description);
 
       return {
         accessToken: data.access_token,
         expiresIn: data.expires_in,
         refreshToken: data.refresh_token,
-        scope: data.scope,
+        scopes: data.scopes,
         tokenType: data.token_type,
       };
     } catch (error) {
@@ -86,24 +93,29 @@ export class DiscordService {
       const oauthData = await this.exchangeTokens(code);
       const authorization = `Bearer ${oauthData.accessToken}`;
 
-      const response = await fetch(`${this.discordApiUrl}/users/@me`, {
-        headers: { authorization },
-      });
+      const { data } = await firstValueFrom(
+        this.httpService.request({
+          url: `${this.discordApiUrl}/users/@me`,
+          headers: {
+            authorization,
+            'Accept-Encoding': 'gzip,deflate,compress',
+          },
+        }),
+      );
 
-      const userData = await response.json();
-      const discordUser = await this.getUser({ discordId: userData.id }, null);
-      const discordTag = `${userData.username}#${userData.discriminator}`;
+      const discordUser = await this.getUser({ discordId: data.id }, null);
+      const discordTag = `${data.username}#${data.discriminator}`;
 
       const validUntil = oauthData.expiresIn ? addSeconds(new Date(), oauthData.expiresIn * 1000) : null;
 
       if (!discordUser) {
         return await this.createDiscordUser({
-          discordId: userData.id,
+          discordId: data.id,
           discordTag,
-          email: userData.email,
-          avatar: userData.avatar,
-          locale: userData.locale,
-          verified: userData.verified,
+          email: data.email,
+          avatar: data.avatar,
+          locale: data.locale,
+          verified: data.verified,
           accessToken: oauthData.accessToken,
           refreshToken: oauthData.refreshToken,
           validUntil,
@@ -112,12 +124,12 @@ export class DiscordService {
         return await this.updateUser(
           discordUser.id,
           {
-            discordId: userData.id,
+            discordId: data.id,
             discordTag,
-            email: userData.email,
-            avatar: userData.avatar,
-            locale: userData.locale,
-            verified: userData.verified,
+            email: data.email,
+            avatar: data.avatar,
+            locale: data.locale,
+            verified: data.verified,
             accessToken: oauthData.accessToken,
             refreshToken: oauthData.refreshToken,
           },
@@ -125,18 +137,23 @@ export class DiscordService {
         );
       }
     } catch (error) {
-      throw new ForbiddenException('Invalid verifier or access tokens!');
+      throw new ForbiddenException(error);
     }
   }
 
   async getGuildRoles(userId: number, guildId: string) {
     const user = await this.getUser({ userId }, null);
     const authorization = `Bearer ${user.accessToken}`;
-    const result = await fetch(`${this.discordApiUrl}/guilds/${guildId}/roles`, {
-      headers: { authorization },
-    });
 
-    const data = await result.json();
+    const { data } = await firstValueFrom(
+      this.httpService.request({
+        url: `${this.discordApiUrl}/users/@me/guilds/${guildId}/member`,
+        headers: {
+          authorization,
+          'Accept-Encoding': 'gzip,deflate,compress',
+        },
+      }),
+    );
 
     console.log(data)
   }
@@ -217,20 +234,24 @@ export class DiscordService {
     const user = await this.discordUsers.findOne({ where: { id } });
     try {
       const { clientID, clientSecret } = this.configService.get('discord', { infer: true });
-      const response = await fetch(`${this.discordApiUrl}/oauth2/token/revoke`, {
-        method: 'POST',
-        body: new URLSearchParams({
-          client_id: clientID,
-          client_secret: clientSecret,
-          grant_type: 'refresh_token',
-          refresh_token: user.refreshToken,
-        }).toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      });
 
-      const data = await response.json();
+      const { data } = await firstValueFrom(
+        this.httpService.request({
+          url: `${this.discordApiUrl}/oauth2/token/revoke`,
+          method: 'POST',
+          data: new URLSearchParams({
+            client_id: clientID,
+            client_secret: clientSecret,
+            grant_type: 'refresh_token',
+            refresh_token: user.refreshToken,
+          }),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept-Encoding': 'gzip,deflate,compress',
+          },
+        }),
+      );
+
       const validUntil = data.expires_in ? addSeconds(new Date(), data.expires_in * 1000) : null;
       await this.updateUser(
         user.id,

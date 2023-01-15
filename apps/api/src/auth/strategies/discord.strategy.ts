@@ -5,7 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 
-import { DiscordService } from '../../auth/providers/discord.service';
+import { DiscordService } from '../../discord/discord.service';
 import { UserContextDto } from '../../user/user.dto';
 
 @Injectable()

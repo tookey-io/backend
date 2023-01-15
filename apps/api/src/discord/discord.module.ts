@@ -1,3 +1,4 @@
+import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { TypeOrmExModule, UserDiscordRepository } from '@tookey/database';
 
@@ -8,7 +9,7 @@ import { DiscordService } from './discord.service';
 const DiscordRepositories = TypeOrmExModule.forCustomRepository([UserDiscordRepository]);
 
 @Module({
-  imports: [UserModule, DiscordRepositories],
+  imports: [UserModule, DiscordRepositories, HttpModule],
   controllers: [DiscordController],
   providers: [DiscordService],
   exports: [DiscordService],

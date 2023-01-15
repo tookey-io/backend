@@ -30,6 +30,8 @@
   "dependencies": {
     "@golevelup/nestjs-graphql-request": "^0.1.13",
     "@golevelup/nestjs-rabbitmq": "^3.4.0",
+    "@metamask/eth-sig-util": "^5.0.2",
+    "@nestjs/axios": "^1.0.1",
     "@nestjs/bull": "^0.6.2",
     "@nestjs/common": "^9.0.0",
     "@nestjs/config": "^2.2.0",
@@ -51,6 +53,7 @@
     "crypto": "^1.0.1",
     "date-fns": "^2.29.3",
     "discord.js": "^14.7.1",
+    "ethers": "^5.7.2",
     "graphql-request": "^5.1.0",
     "nestjs-ethers": "^1.0.3",
     "nestjs-pino": "^3.1.1",
