@@ -47,7 +47,7 @@ export class WalletController {
     @CurrentUser() user: UserContextDto,
     @Body() body: WalletTssCreateRequestDto,
   ): Promise<WalletResponseDto> {
-    return await this.walletService.joinWalletTss(body.roomId, 2);
+    return await this.walletService.joinWalletTss(body.roomId, user.id);
   }
 
   @JwtAuth()
