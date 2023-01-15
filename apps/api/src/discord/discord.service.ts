@@ -66,8 +66,6 @@ export class DiscordService {
             code,
             grant_type: 'authorization_code',
             redirect_uri: callbackURL,
-            // scope: this.scope.join(' '),
-            scope: 'identify email',
           }),
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -82,7 +80,7 @@ export class DiscordService {
         accessToken: data.access_token,
         expiresIn: data.expires_in,
         refreshToken: data.refresh_token,
-        scope: data.scope,
+        scopes: data.scopes,
         tokenType: data.token_type,
       };
     } catch (error) {
@@ -98,7 +96,10 @@ export class DiscordService {
       const { data } = await firstValueFrom(
         this.httpService.request({
           url: `${this.discordApiUrl}/users/@me`,
-          headers: { authorization },
+          headers: {
+            authorization,
+            'Accept-Encoding': 'gzip,deflate,compress',
+          },
         }),
       );
 
@@ -147,7 +148,10 @@ export class DiscordService {
     const { data } = await firstValueFrom(
       this.httpService.request({
         url: `${this.discordApiUrl}/users/@me/guilds/${guildId}/member`,
-        headers: { authorization },
+        headers: {
+          authorization,
+          'Accept-Encoding': 'gzip,deflate,compress',
+        },
       }),
     );
 

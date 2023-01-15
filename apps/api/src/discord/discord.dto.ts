@@ -163,7 +163,7 @@ export class DiscordTokenExchangeDto {
   @IsString()
   refreshToken: string;
   @IsString()
-  scope: string;
+  scopes: string;
   @IsString()
   tokenType: string;
 }
