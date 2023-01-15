@@ -1,3 +1,4 @@
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Observable, filter, fromEvent, map, tap } from 'rxjs';
 import { Server, Socket } from 'socket.io';
 
@@ -28,22 +29,37 @@ export class WalletGateway {
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly walletService: WalletService, private readonly eventEmitter: EventEmitter2) {}
+  constructor(
+    @InjectPinoLogger(WalletGateway.name) private readonly logger: PinoLogger,
+    private readonly walletService: WalletService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
+
+  @SubscribeMessage('ping')
+  ping(@WsCurrentUser() user: UserContextDto, @ConnectedSocket() socket: Socket): WsResponse<unknown> {
+    const roomId = `user-${user.id}`;
+    socket.join(`user-${user.id}`);
+    socket.to(roomId).emit('pong', user.id);
+    socket.leave(roomId);
+    return { event: 'pong', data: user.id };
+  }
 
   @SubscribeMessage('wallet-create')
   roomJoin(
     @MessageBody('roomId') roomId: string,
     @WsCurrentUser() user: UserContextDto,
     @ConnectedSocket() socket: Socket,
-  ): Observable<WsResponse<any>> {
+  ): Observable<WsResponse<unknown>> {
+    this.logger.info(`wallet-create ${roomId}:${user.id}`);
     this.walletService.createWalletTss(roomId, user.id);
     socket.join(roomId);
     return fromEvent(this.eventEmitter, KeyEvent.CREATE_FINISHED).pipe(
+      tap((data) => this.logger.info(`Event: ${data}`)),
       filter((it) => it[1] === user.id),
-      tap((data) => console.log(`${data}`)),
       map((data) => {
         const publicKey = data[0];
         socket.to(roomId).emit('wallet-create', publicKey);
+        socket.leave(roomId);
         return { event: 'wallet-create', data: publicKey };
       }),
     );
