@@ -305,10 +305,6 @@ export class KeysService {
     }
   }
 
-  createFinished(dto: KeyCreateFinishedDto): void {
-    this.eventEmitter.emit(KeyEvent.CREATE_FINISHED, dto.publicKey, dto.userId);
-  }
-
   async handleSignStatusUpdate(payload: AmqpPayloadDto): Promise<void> {
     try {
       const signs = await this.signs.find({ where: { roomId: payload.room_id }, relations: { key: true } });
