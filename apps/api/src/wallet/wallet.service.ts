@@ -11,7 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { WalletRepository } from '@tookey/database';
 
-import { WalletEvent } from '../api.events';
+import { KeyEvent, WalletEvent } from '../api.events';
 import { KeysService } from '../keys/keys.service';
 import { WalletResponseDto, WalletSignCallPermitDto, WalletTssSignRequestDto } from './wallet.dto';
 import { EncryptedKey } from './wallet.types';
@@ -34,7 +34,21 @@ export class WalletService {
     return { address };
   }
 
+  async getWalletTss(userId: number): Promise<WalletResponseDto> {
+    const keys = await this.keysService.getKeyList(userId);
+    if (keys.items.length && keys.items.find((key) => key.publicKey)) {
+      const key = keys.items.find((key) => key.publicKey);
+      return { address: key.publicKey };
+    }
+    throw new NotFoundException('Wallet not found');
+  }
+
   async createWalletTss(roomId: string, userId: number): Promise<any> {
+    const keys = await this.keysService.getKeyList(userId);
+    if (keys.items.length && keys.items.find((key) => key.publicKey)) {
+      const key = keys.items.find((key) => key.publicKey);
+      return this.eventEmitter.emit(KeyEvent.CREATE_FINISHED, key.publicKey, key.userId);
+    }
     const key = await this.keysService.createKey(
       {
         participantsCount: 2,

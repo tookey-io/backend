@@ -29,6 +29,14 @@ export class WalletController {
   }
 
   @JwtAuth()
+  @ApiOperation({ description: 'Get Tss Wallet' })
+  @ApiOkResponse({ type: WalletResponseDto })
+  @Get('tss')
+  async getWalletTss(@CurrentUser() user: UserContextDto): Promise<WalletResponseDto> {
+    return await this.walletService.getWalletTss(user.id);
+  }
+
+  @JwtAuth()
   @ApiOperation({ description: 'Create TSS Wallet' })
   @ApiOkResponse({ type: WalletResponseDto })
   @Post('tss')

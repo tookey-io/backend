@@ -35,15 +35,6 @@ export class WalletGateway {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  @SubscribeMessage('ping')
-  ping(@WsCurrentUser() user: UserContextDto, @ConnectedSocket() socket: Socket): WsResponse<unknown> {
-    const roomId = `user-${user.id}`;
-    socket.join(`user-${user.id}`);
-    socket.to(roomId).emit('pong', user.id);
-    socket.leave(roomId);
-    return { event: 'pong', data: user.id };
-  }
-
   @SubscribeMessage('wallet-create')
   roomJoin(
     @MessageBody('roomId') roomId: string,
