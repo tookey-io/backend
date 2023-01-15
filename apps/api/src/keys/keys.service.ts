@@ -1,8 +1,10 @@
+import { Queue } from 'bull';
 import { randomUUID } from 'crypto';
 import { addSeconds } from 'date-fns';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { DataSource, In, Not } from 'typeorm';
 
+import { InjectQueue } from '@nestjs/bull';
 import {
   ForbiddenException,
   Injectable,
@@ -18,7 +20,9 @@ import { AmqpKeygenJoinDto, AmqpPayloadDto, AmqpSignApproveDto } from '../ampq.d
 import { KeyEvent } from '../api.events';
 import { TelegramUserDto } from '../user/user-telegram.dto';
 import { UserService } from '../user/user.service';
+import { KEYS_QUEUE } from './keys.constants';
 import {
+  KeyCreateFinishedDto,
   KeyCreateRequestDto,
   KeyDeleteRequestDto,
   KeyDeleteResponseDto,
@@ -44,6 +48,7 @@ export class KeysService {
     private readonly signs: SignRepository,
     private readonly users: UserService,
     private readonly eventEmitter: EventEmitter2,
+    @InjectQueue(KEYS_QUEUE) private readonly keysQueue: Queue<KeyCreateFinishedDto>,
   ) {}
 
   async createKey(dto: KeyCreateRequestDto, userId: number, roomId?: string): Promise<KeyDto> {
@@ -288,7 +293,7 @@ export class KeysService {
           key.participantsActive = payload.active_indexes;
           key.publicKey = payload.public_key;
 
-          this.eventEmitter.emit(KeyEvent.CREATE_FINISHED, key.publicKey, key.userId);
+          this.keysQueue.add(KeyEvent.CREATE_FINISHED, { publicKey: key.publicKey, userId: key.userId });
         }
 
         await this.keys.createOrUpdateOne(key);
@@ -298,6 +303,10 @@ export class KeysService {
     } catch (error) {
       this.logger.error(`Keygen status update fail: ${error}`);
     }
+  }
+
+  createFinished(dto: KeyCreateFinishedDto): void {
+    this.eventEmitter.emit(KeyEvent.CREATE_FINISHED, dto.publicKey, dto.userId);
   }
 
   async handleSignStatusUpdate(payload: AmqpPayloadDto): Promise<void> {
@@ -314,7 +323,6 @@ export class KeysService {
         if (sign.status === TaskStatus.Finished) {
           sign.participantsConfirmations = payload.active_indexes;
           sign.result = payload.result;
-
           this.eventEmitter.emit(KeyEvent.SIGN_FINISHED, sign.key.name, sign.key.userId);
         }
 

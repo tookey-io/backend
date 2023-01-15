@@ -269,3 +269,14 @@ export class KeyListResponseDto {
   @Type(() => KeyDto)
   items: KeyDto[];
 }
+
+export class KeyCreateFinishedDto {
+  @ApiProperty()
+  @IsString()
+  @Length(66, 66)
+  publicKey: string;
+
+  @ApiProperty()
+  @IsNumber()
+  userId: number;
+}
