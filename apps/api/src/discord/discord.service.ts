@@ -2,13 +2,14 @@ import { UserEvent } from 'apps/api/src/api.events';
 import { UserDto } from 'apps/api/src/user/user.dto';
 import { UserService } from 'apps/api/src/user/user.service';
 import { AppConfiguration } from 'apps/app/src/app.config';
+import { Cache } from 'cache-manager';
 import { addSeconds } from 'date-fns';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { firstValueFrom } from 'rxjs';
 import { DataSource } from 'typeorm';
 
 import { HttpService } from '@nestjs/axios';
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, CACHE_MANAGER, ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserDiscordRepository } from '@tookey/database';
@@ -24,6 +25,15 @@ import {
   UpdateDiscordUserDto,
 } from './discord.dto';
 
+type GuildMembership = {
+  nick: string;
+  joined_at: string;
+  roles: string[];
+  pending: boolean;
+  mute: boolean;
+  deaf: boolean;
+};
+
 @Injectable()
 export class DiscordService {
   discordApiUrl = 'https://discord.com/api';
@@ -31,13 +41,33 @@ export class DiscordService {
 
   constructor(
     @InjectPinoLogger(DiscordService.name) private readonly logger: PinoLogger,
+    @Inject(CACHE_MANAGER) private cache: Cache,
     private readonly dataSource: DataSource,
     private readonly discordUsers: UserDiscordRepository,
     private readonly userService: UserService,
     private readonly eventEmitter: EventEmitter2,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService<AppConfiguration>,
-  ) {}
+  ) {
+    // const axios = this.httpService.axiosRef;
+    // axios.interceptors.response.use(
+    //   (response) => {
+    //     return response;
+    //   },
+    //   async (error) => {
+    //     if (error.response && error.response.status === 429) {
+    //       error.response.headers['x-ratelimit-bucket']; // 38d590a8409e2bc3ac60a6ad3878d6c1
+    //       error.response.headers['x-ratelimit-limit']; // 5
+    //       error.response.headers['x-ratelimit-remaining']; // 0
+    //       error.response.headers['x-ratelimit-reset-after']; // seconds
+    //       error.response.headers['x-ratelimit-scope']; // user
+    //       return error;
+    //     } else {
+    //       return error;
+    //     }
+    //   },
+    // );
+  }
 
   async getAuthLink(state?: string): Promise<DiscordAuthUrlResponseDto> {
     const discord = this.configService.get('discord', { infer: true });
@@ -141,42 +171,28 @@ export class DiscordService {
     }
   }
 
-  async getGuildRoles(userId: number, guildId: string) {
-    const user = await this.getUser({ userId }, null);
-    const authorization = `Bearer ${user.accessToken}`;
-
-    const { data } = await firstValueFrom(
-      this.httpService.request({
-        url: `${this.discordApiUrl}/users/@me/guilds/${guildId}/member`,
-        headers: {
-          authorization,
-          'Accept-Encoding': 'gzip,deflate,compress',
-        },
-      }),
-    );
-
-    console.log(data);
-  }
-
   async checkGuildMembership(userId: number, guildId: string): Promise<DiscordGuildMembershipResponseDto> {
     const user = await this.getUser({ userId }, null);
     const authorization = `Bearer ${user.accessToken}`;
 
-    const { data } = await firstValueFrom(
-      this.httpService.request<{
-        nick: string;
-        joined_at: string;
-        roles: string[];
-        pending: boolean;
-        mute: boolean;
-        deaf: boolean;
-      }>({
-        url: `${this.discordApiUrl}/users/@me/guilds/${guildId}/member`,
-        headers: {
-          authorization,
-          'Accept-Encoding': 'gzip,deflate,compress',
-        },
-      }),
+    const cacheKey = [user.accessToken, guildId, 'member'].join(':');
+    const cacheTtl = 60;
+
+    const data = await this.getCached(
+      cacheKey,
+      async () => {
+        const { data } = await firstValueFrom(
+          this.httpService.request<GuildMembership>({
+            url: `${this.discordApiUrl}/users/@me/guilds/${guildId}/member`,
+            headers: {
+              authorization,
+              'Accept-Encoding': 'gzip,deflate,compress',
+            },
+          }),
+        );
+        return data;
+      },
+      cacheTtl,
     );
 
     this.logger.debug('discord data', data);
@@ -264,5 +280,16 @@ export class DiscordService {
         null,
       );
     } catch (error) {}
+  }
+
+  private async getCached<T>(cacheKey: string, fn: () => Promise<T> | T, ttl?: number): Promise<T> {
+    const cached = await this.cache.get<T>(cacheKey);
+    if (cached) return cached;
+
+    const cachedValue = await fn();
+
+    if (ttl) this.cache.set(cacheKey, cachedValue, { ttl });
+    else this.cache.set(cacheKey, cachedValue);
+    return cachedValue;
   }
 }

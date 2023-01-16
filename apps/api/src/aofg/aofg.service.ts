@@ -45,7 +45,6 @@ export class AofgService {
       roles,
     });
 
-    // await this.discordService.getGuildRoles(dto.userId, this.guildId);
     const profile = await this.aofgProfiles.createOrUpdateOne({
       userId: dto.userId,
       title: this.bot.getUserTitle(discord.roles),
