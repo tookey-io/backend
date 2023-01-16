@@ -195,5 +195,5 @@ export class DiscordGuildMembershipResponseDto {
   username: string;
 
   @ApiProperty()
-  roles: string[]
+  roles: string[];
 }

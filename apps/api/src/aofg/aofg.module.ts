@@ -4,6 +4,7 @@ import { AofgProfileRepository } from '@tookey/database/entities/aofg-profile.en
 
 import { DiscordModule } from '../discord/discord.module';
 import { UserModule } from '../user/user.module';
+import { WalletModule } from '../wallet/wallet.module';
 import { AofgBot } from './aofg.bot';
 import { AofgController } from './aofg.controller';
 import { AofgService } from './aofg.service';
@@ -11,7 +12,7 @@ import { AofgService } from './aofg.service';
 const AofgRepositories = TypeOrmExModule.forCustomRepository([AofgProfileRepository]);
 
 @Module({
-  imports: [UserModule, DiscordModule, AofgRepositories],
+  imports: [UserModule, DiscordModule, AofgRepositories, WalletModule],
   controllers: [AofgController],
   providers: [AofgService, AofgBot],
   exports: [AofgService, AofgBot],

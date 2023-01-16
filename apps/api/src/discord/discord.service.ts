@@ -199,7 +199,8 @@ export class DiscordService {
 
     return {
       isMember: !!data.joined_at,
-      username: data.nick?.replace(/[^a-zA-Z ]/g, '').slice(0, 20),
+      // username: data.nick?.replace(/[^a-zA-Z ]/g, '').slice(0, 20),
+      username: user.discordTag.split('#')[0].slice(0, 20),
       roles: data.roles,
     };
   }
