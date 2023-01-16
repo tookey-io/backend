@@ -141,7 +141,7 @@ export class DiscordService {
     }
   }
 
-  async checkGuildMembership(userId: number, guildId: string): Promise<DiscordGuildMembershipResponseDto> {
+  async getGuildRoles(userId: number, guildId: string) {
     const user = await this.getUser({ userId }, null);
     const authorization = `Bearer ${user.accessToken}`;
 
@@ -155,7 +155,32 @@ export class DiscordService {
       }),
     );
 
-    return { isMember: !!data.joined_at };
+    console.log(data)
+  }
+
+  async checkGuildMembership(userId: number, guildId: string): Promise<DiscordGuildMembershipResponseDto> {
+    const user = await this.getUser({ userId }, null);
+    const authorization = `Bearer ${user.accessToken}`;
+    const result = await fetch(`${this.discordApiUrl}/users/@me/guilds/${guildId}/member`, {
+      headers: { authorization },
+    });
+
+    const data = await result.json() as {
+      nick: string,
+      joined_at: string,
+      roles: string[],
+      pending: boolean,
+      mute: boolean,
+      deaf: boolean
+    };
+
+    console.log('discord data', data)
+
+    return { 
+      isMember: !!data.joined_at,
+      username: data.nick?.replace(/[^a-zA-Z ]/g, "").slice(0, 20),
+      roles: data.roles
+    };
   }
 
   async getUser(dto: DiscordUserRequestDto, relations?: ['user']): Promise<DiscordUserDto | null> {

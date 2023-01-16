@@ -12,6 +12,7 @@ import { DatabaseModule, DatabaseService } from '@tookey/database';
 
 import { AppConfiguration, configuration } from './app.config';
 import { AppController } from './app.controller';
+import { AofgModule } from 'apps/api/src/aofg/aofg.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { AppController } from './app.controller';
     ApiModule,
     AccessModule,
     RpsModule,
+    AofgModule
   ],
   controllers: [AppController],
   providers: [],
