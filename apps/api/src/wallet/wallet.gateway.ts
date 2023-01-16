@@ -22,7 +22,7 @@ import { WalletService } from './wallet.service';
 @UseGuards(WsJwtGuard)
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',
   },
 })
 export class WalletGateway {
