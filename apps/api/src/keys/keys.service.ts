@@ -293,7 +293,8 @@ export class KeysService {
           key.participantsActive = payload.active_indexes;
           key.publicKey = payload.public_key;
 
-          this.keysQueue.add(KeyEvent.CREATE_FINISHED, { publicKey: key.publicKey, userId: key.userId });
+          this.eventEmitter.emit(KeyEvent.CREATE_FINISHED, key.publicKey, key.userId);
+          // this.keysQueue.add(KeyEvent.CREATE_FINISHED, { publicKey: key.publicKey, userId: key.userId });
         }
 
         await this.keys.createOrUpdateOne(key);
