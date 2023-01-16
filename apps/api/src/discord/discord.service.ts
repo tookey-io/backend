@@ -27,7 +27,7 @@ import {
 @Injectable()
 export class DiscordService {
   discordApiUrl = 'https://discord.com/api';
-  scope = ['identify', 'email'];
+  scope = ['identify', 'email', 'guilds.members.read'];
 
   constructor(
     @InjectPinoLogger(DiscordService.name) private readonly logger: PinoLogger,

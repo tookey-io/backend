@@ -1,3 +1,4 @@
+import { AofgModule } from 'apps/api/src/aofg/aofg.module';
 import { ApiModule } from 'apps/api/src/api.module';
 import { BotModule } from 'apps/bot/src/bot.module';
 import { RpsModule } from 'apps/rps/src/rps.module';
@@ -12,7 +13,6 @@ import { DatabaseModule, DatabaseService } from '@tookey/database';
 
 import { AppConfiguration, configuration } from './app.config';
 import { AppController } from './app.controller';
-import { AofgModule } from 'apps/api/src/aofg/aofg.module';
 
 @Module({
   imports: [
@@ -40,7 +40,7 @@ import { AofgModule } from 'apps/api/src/aofg/aofg.module';
     ApiModule,
     AccessModule,
     RpsModule,
-    AofgModule
+    AofgModule,
   ],
   controllers: [AppController],
   providers: [],
