@@ -1,18 +1,7 @@
+import { Matches } from 'class-validator';
+import { Column, DeepPartial, Entity, EntityManager, Index, JoinColumn, OneToOne, Repository } from 'typeorm';
+
 import { BadRequestException } from '@nestjs/common';
-import { plainToClass } from 'class-transformer';
-import { Matches, MaxLength, MinLength } from 'class-validator';
-import {
-  Column,
-  DeepPartial,
-  Entity,
-  EntityManager,
-  Index,
-  JoinColumn,
-  ManyToOne,
-  OneToOne,
-  Repository,
-  SelectQueryBuilder,
-} from 'typeorm';
 
 import { CustomRepository } from '../typeorm-ex.decorator';
 import { MetaEntity } from './base';
@@ -43,20 +32,20 @@ export class AofgProfile extends MetaEntity {
 @CustomRepository(AofgProfile)
 export class AofgProfileRepository extends Repository<AofgProfile> {
   async createOrUpdateOne(entityLike: DeepPartial<AofgProfile>, entityManager?: EntityManager) {
-    const userId = entityLike.userId
+    const userId = entityLike.userId;
     if (typeof userId === 'undefined') {
-      throw new BadRequestException("userId is required to create or update entity")
+      throw new BadRequestException('userId is required to create or update entity');
     }
 
-    let entity = await (entityManager ? entityManager.findOneBy(AofgProfile, { userId }) : this.findOneBy({ userId }))
+    let entity = await (entityManager ? entityManager.findOneBy(AofgProfile, { userId }) : this.findOneBy({ userId }));
     if (!entity) {
-      entity = this.create(entityLike)
+      entity = this.create(entityLike);
     }
 
-    entity.name = entityLike.name || entity.name
-    entity.multisigAddress = entityLike.multisigAddress || entity.multisigAddress
-    entity.title = entityLike.title || entity.title
-    
-    return entityManager ? entityManager.save(entity) : this.save(entity)
+    entity.name = entityLike.name || entity.name;
+    entity.multisigAddress = entityLike.multisigAddress || entity.multisigAddress;
+    entity.title = entityLike.title || entity.title;
+
+    return entityManager ? entityManager.save(entity) : this.save(entity);
   }
 }

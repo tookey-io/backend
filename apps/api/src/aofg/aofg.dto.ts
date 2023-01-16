@@ -1,6 +1,7 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 import { IsNumber, Matches } from 'class-validator';
+
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class GetOrCreateAofgProfileDto {
   @ApiProperty()
@@ -27,7 +28,6 @@ export class UpdateAofgProfileMultisigDto {
   @Matches(/[a-f0-9]{40}/)
   multisigAddress: string;
 }
-
 
 export class AofgProfileDto {
   @Expose()

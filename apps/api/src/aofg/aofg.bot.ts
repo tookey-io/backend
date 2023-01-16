@@ -1,6 +1,8 @@
-import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Client, GatewayIntentBits, Guild, Message, PermissionResolvable, PermissionsBitField, Role } from 'discord.js';
 import * as tinycolor from 'tinycolor2';
+
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+
 import { retry } from './aofg.helpers';
 
 const DEFAULT_ROLE_PERMISSION: PermissionResolvable = [
@@ -33,31 +35,28 @@ const ROLES = [
   },
 ] as const;
 
-const LEVELS = [
-    'Legendary',
-    'Master', 
-    'Expert', 
-    'Novice', 
-] as const;
+const LEVELS = ['Legendary', 'Master', 'Expert', 'Novice'] as const;
 
 @Injectable()
 export class AofgBot implements OnApplicationBootstrap {
   private client: Client<boolean>;
   guild: Guild;
-  roles: Partial<Record<typeof ROLES[number]['title'], Partial<Record<typeof LEVELS[number], Role>>>> = {}
+  roles: Partial<Record<typeof ROLES[number]['title'], Partial<Record<typeof LEVELS[number], Role>>>> = {};
 
   get allRoles() {
-    return Object.values(this.roles).map(dict => Object.values(dict)).flat()
+    return Object.values(this.roles)
+      .map((dict) => Object.values(dict))
+      .flat();
   }
 
   public getUserRole(roles: string[]) {
-    return this.allRoles.find(role => roles.includes(role.id))
+    return this.allRoles.find((role) => roles.includes(role.id));
   }
 
   public getUserTitle(roles: string[]) {
     const role = this.getUserRole(roles);
-    
-    return role ? role.name : "Untitled"
+
+    return role ? role.name : 'Untitled';
   }
 
   async onApplicationBootstrap() {
@@ -69,17 +68,17 @@ export class AofgBot implements OnApplicationBootstrap {
 
     await this.client.login(process.env.DISCORD_BOT_TOKEN);
 
-    await this.setupClient()
+    await this.setupClient();
   }
 
   async setupClient() {
-    await this.client.guilds.fetch()
+    await this.client.guilds.fetch();
     this.guild = this.client.guilds.cache.get(process.env.DISCORD_GUILD);
     if (typeof this.guild === 'undefined') {
       throw new Error('Looks like bot not added to proper channel');
     }
 
-    return this.setupRoles()
+    return this.setupRoles();
   }
 
   async setupRoles() {
@@ -116,11 +115,11 @@ export class AofgBot implements OnApplicationBootstrap {
             }),
           );
         } else if (!found.permissions.equals(DEFAULT_ROLE_PERMISSION)) {
-            console.log(`change permision for ${found.name}`)
-            await found.setPermissions(DEFAULT_ROLE_PERMISSION)
+          console.log(`change permision for ${found.name}`);
+          await found.setPermissions(DEFAULT_ROLE_PERMISSION);
         }
 
-        this.roles[role.title] = this.roles[role.title] || {}
+        this.roles[role.title] = this.roles[role.title] || {};
         this.roles[role.title][LEVELS[level]] = found;
       }
     }

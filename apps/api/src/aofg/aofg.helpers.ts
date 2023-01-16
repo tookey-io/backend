@@ -17,8 +17,6 @@ export function retry<T>(fn: () => Promise<T>, count = 100, timeout = 200): Prom
   });
 }
 
-
-
 export function wait(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

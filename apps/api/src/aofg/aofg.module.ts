@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmExModule, UserDiscordRepository } from '@tookey/database';
+import { TypeOrmExModule } from '@tookey/database';
 import { AofgProfileRepository } from '@tookey/database/entities/aofg-profile.entity';
-import { DiscordModule } from '../discord/discord.module';
 
+import { DiscordModule } from '../discord/discord.module';
 import { UserModule } from '../user/user.module';
 import { AofgBot } from './aofg.bot';
 import { AofgController } from './aofg.controller';

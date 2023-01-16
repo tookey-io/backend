@@ -155,31 +155,36 @@ export class DiscordService {
       }),
     );
 
-    console.log(data)
+    console.log(data);
   }
 
   async checkGuildMembership(userId: number, guildId: string): Promise<DiscordGuildMembershipResponseDto> {
     const user = await this.getUser({ userId }, null);
     const authorization = `Bearer ${user.accessToken}`;
-    const result = await fetch(`${this.discordApiUrl}/users/@me/guilds/${guildId}/member`, {
-      headers: { authorization },
-    });
 
-    const data = await result.json() as {
-      nick: string,
-      joined_at: string,
-      roles: string[],
-      pending: boolean,
-      mute: boolean,
-      deaf: boolean
-    };
+    const { data } = await firstValueFrom(
+      this.httpService.request<{
+        nick: string;
+        joined_at: string;
+        roles: string[];
+        pending: boolean;
+        mute: boolean;
+        deaf: boolean;
+      }>({
+        url: `${this.discordApiUrl}/users/@me/guilds/${guildId}/member`,
+        headers: {
+          authorization,
+          'Accept-Encoding': 'gzip,deflate,compress',
+        },
+      }),
+    );
 
-    console.log('discord data', data)
+    this.logger.debug('discord data', data);
 
-    return { 
+    return {
       isMember: !!data.joined_at,
-      username: data.nick?.replace(/[^a-zA-Z ]/g, "").slice(0, 20),
-      roles: data.roles
+      username: data.nick?.replace(/[^a-zA-Z ]/g, '').slice(0, 20),
+      roles: data.roles,
     };
   }
 
