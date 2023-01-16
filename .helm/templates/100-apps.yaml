@@ -37,8 +37,6 @@ spec:
               value: "-1001803593182"
             - name: DISCORD_CALLBACK_URL
               value: "https://tookey.io/auth/discord"
-            - name: CORS_ORIGINS
-              value: "https://tookey.io"
             - name: CORS_ALLOWED_HEADERS
               value: "Content-Type,Authorization"
             - name: NODE_ENV
