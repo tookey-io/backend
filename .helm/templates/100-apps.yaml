@@ -41,6 +41,8 @@ spec:
               value: "https://tookey.io"
             - name: CORS_ALLOWED_HEADERS
               value: "Content-Type,Authorization"
+            - name: APP_URL
+              value: "https://tookey.io"
             - name: NODE_ENV
               value: "production"
           envFrom:
