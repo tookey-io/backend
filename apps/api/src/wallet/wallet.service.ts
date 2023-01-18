@@ -40,7 +40,7 @@ export class WalletService {
       const key = keys.items.find((key) => key.publicKey);
       return { address: key.publicKey };
     }
-    throw new NotFoundException('Wallet not found');
+    return undefined;
   }
 
   async createWalletTss(roomId: string, userId: number): Promise<any> {
