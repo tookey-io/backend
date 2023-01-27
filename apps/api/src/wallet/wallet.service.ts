@@ -34,6 +34,13 @@ export class WalletService {
     return { address };
   }
 
+  async getPublicKey(userId: number): Promise<string> {
+    const wallet = await this.keysService.getKeyList(userId);
+    if (!wallet.items.length) throw new NotFoundException('Key not found');
+    const key = wallet.items.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()).find((it) => it.publicKey);
+    return key.publicKey;
+  }
+
   async getWalletTss(userId: number): Promise<WalletResponseDto> {
     const keys = await this.keysService.getKeyList(userId);
     if (keys.items.length && keys.items.find((key) => key.publicKey)) {

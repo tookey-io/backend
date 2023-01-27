@@ -320,7 +320,7 @@ export class KeysService {
         if (sign.status === TaskStatus.Finished) {
           sign.participantsConfirmations = payload.active_indexes;
           sign.result = payload.result;
-          this.eventEmitter.emit(KeyEvent.SIGN_FINISHED, sign.key.name, sign.key.userId);
+          this.eventEmitter.emit(KeyEvent.SIGN_FINISHED, sign.key.name, sign.key.userId, sign.result);
         }
 
         await this.signs.createOrUpdateOne(sign);

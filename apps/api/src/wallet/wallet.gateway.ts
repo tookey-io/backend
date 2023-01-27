@@ -36,7 +36,7 @@ export class WalletGateway {
   ) {}
 
   @SubscribeMessage('wallet-create')
-  roomJoin(
+  walletCreate(
     @MessageBody('roomId') roomId: string,
     @WsCurrentUser() user: UserContextDto,
     @ConnectedSocket() socket: Socket,
@@ -52,6 +52,37 @@ export class WalletGateway {
         socket.to(roomId).emit('wallet-create', publicKey);
         socket.leave(roomId);
         return { event: 'wallet-create', data: publicKey };
+      }),
+    );
+  }
+
+  @SubscribeMessage('wallet-sign')
+  walletSign(
+    @MessageBody('roomId') roomId: string,
+    @MessageBody('data') data: string,
+    @WsCurrentUser() user: UserContextDto,
+    @ConnectedSocket() socket: Socket,
+  ): Observable<WsResponse<unknown>> {
+    this.logger.info(`wallet-sign ${roomId}:${user.id}`);
+    this.walletService.getPublicKey(user.id).then((publicKey) => {
+      this.walletService.signTSS(
+        {
+          roomId,
+          data,
+          publicKey,
+        },
+        user.id,
+      );
+    });
+    socket.join(roomId);
+    return fromEvent(this.eventEmitter, KeyEvent.SIGN_FINISHED).pipe(
+      tap((data) => this.logger.info(`Event: ${data}`)),
+      filter((it) => it[1] === user.id),
+      map((data) => {
+        const signature = data[2];
+        socket.to(roomId).emit('wallet-sign', signature);
+        socket.leave(roomId);
+        return { event: 'wallet-sign', data: signature };
       }),
     );
   }
