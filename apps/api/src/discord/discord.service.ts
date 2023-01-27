@@ -178,31 +178,39 @@ export class DiscordService {
     const cacheKey = [user.accessToken, guildId, 'member'].join(':');
     const cacheTtl = 60;
 
-    const data = await this.getCached(
-      cacheKey,
-      async () => {
-        const { data } = await firstValueFrom(
-          this.httpService.request<GuildMembership>({
-            url: `${this.discordApiUrl}/users/@me/guilds/${guildId}/member`,
-            headers: {
-              authorization,
-              'Accept-Encoding': 'gzip,deflate,compress',
-            },
-          }),
-        );
-        return data;
-      },
-      cacheTtl,
-    );
+    try {
+      const data = await this.getCached(
+        cacheKey,
+        async () => {
+          const { data } = await firstValueFrom(
+            this.httpService.request<GuildMembership>({
+              url: `${this.discordApiUrl}/users/@me/guilds/${guildId}/member`,
+              headers: {
+                authorization,
+                'Accept-Encoding': 'gzip,deflate,compress',
+              },
+            }),
+          );
+          return data;
+        },
+        cacheTtl,
+      );
 
-    this.logger.debug('discord data', data);
+      this.logger.debug('discord data', data);
 
-    return {
-      isMember: !!data.joined_at,
-      // username: data.nick?.replace(/[^a-zA-Z ]/g, '').slice(0, 20),
-      username: user.discordTag.split('#')[0].slice(0, 20),
-      roles: data.roles,
-    };
+      return {
+        isMember: !!data.joined_at,
+        username: data.nick?.replace(/[^a-zA-Z ]/g, '').slice(0, 20),
+        // username: user.discordTag.split('#')[0].slice(0, 20),
+        roles: data.roles,
+      };
+    } catch {
+      return {
+        isMember: false,
+        username: 'Unnamed',
+        roles: [],
+      };
+    }
   }
 
   async getUser(dto: DiscordUserRequestDto, relations?: ['user']): Promise<DiscordUserDto | null> {
