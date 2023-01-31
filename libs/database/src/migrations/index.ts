@@ -10,3 +10,4 @@ export * from './1673044747005-pipefy';
 export * from './1673116508305-wallet';
 export * from './1673342597388-discord-expiration';
 export * from './1673812120168-aofg-profiles';
+export * from './1675070482800-user-uuid';

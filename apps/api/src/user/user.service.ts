@@ -35,7 +35,7 @@ export class UserService {
     const parent = dto.invitedBy ? await this.getParentUser(dto.invitedBy) : await this.users.findRoot();
     const user = await this.users.createOrUpdateOne({ ...dto, parent }, entityManager);
     const userDto = new UserDto(user);
-    this.eventEmitter.emit(UserEvent.CREATE, userDto);
+    // this.eventEmitter.emit(UserEvent.CREATE, userDto);
     return userDto;
   }
 

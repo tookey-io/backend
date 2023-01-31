@@ -117,10 +117,11 @@ export class KeysService {
         where: { id },
         relations: { participants: true },
       });
+      const user = await this.users.getUser({ id: userId });
 
       this.amqp.publish<AmqpKeygenJoinDto>('amq.topic', 'manager', {
         action: 'keygen_join',
-        user_id: `${userId}`,
+        user_id: `${user.uuid || userId}`,
         room_id: key.roomId,
         key_id: `${key.id}`,
         participant_index: key.participantIndex,
@@ -264,10 +265,11 @@ export class KeysService {
     });
 
     const sign = await this.signs.findOneBy({ id });
+    const user = await this.users.getUser({ id: userId });
 
     this.amqp.publish<AmqpSignApproveDto>('amq.topic', 'manager', {
       action: 'sign_approve',
-      user_id: `${userId}`,
+      user_id: `${user.uuid || userId}`,
       room_id: sign.roomId,
       key_id: `${dto.keyId}`,
       participants_indexes: sign.participantsConfirmations,

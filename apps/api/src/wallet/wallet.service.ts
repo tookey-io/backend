@@ -12,6 +12,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { WalletRepository } from '@tookey/database';
 
 import { KeyEvent, WalletEvent } from '../api.events';
+import { KeyDto } from '../keys/keys.dto';
 import { KeysService } from '../keys/keys.service';
 import { WalletResponseDto, WalletSignCallPermitDto, WalletTssSignRequestDto } from './wallet.dto';
 import { EncryptedKey } from './wallet.types';
@@ -50,14 +51,21 @@ export class WalletService {
     return undefined;
   }
 
-  async createWalletTss(roomId: string, userId: number): Promise<any> {
+  async createWalletTss(roomId: string, userId: number): Promise<KeyDto> {
     const keys = await this.keysService.getKeyList(userId);
-    if (keys.items.length && keys.items.find((key) => key.publicKey)) {
+    if (keys.items.find((key) => key.roomId === roomId)) {
+      const key = keys.items.find((key) => key.roomId === roomId);
+      this.eventEmitter.emit(KeyEvent.CREATE_FINISHED, key.publicKey, key.userId);
+      return key;
+    }
+    if (keys.items.find((key) => key.publicKey)) {
       const key = keys.items.find((key) => key.publicKey);
-      return this.eventEmitter.emit(KeyEvent.CREATE_FINISHED, key.publicKey, key.userId);
+      this.eventEmitter.emit(KeyEvent.CREATE_FINISHED, key.publicKey, key.userId);
+      return key;
     }
     const key = await this.keysService.createKey(
       {
+        participantIndex: 2, // for TB only
         participantsCount: 2,
         participantsThreshold: 2,
         timeoutSeconds: 60,
@@ -66,7 +74,7 @@ export class WalletService {
       roomId,
     );
 
-    return { key };
+    return key;
   }
 
   async joinWalletTss(roomId: string, userId: number): Promise<any> {
@@ -85,10 +93,15 @@ export class WalletService {
   }
 
   async signTSS(dto: WalletTssSignRequestDto, userId: number): Promise<any> {
+    const keys = await this.keysService.getKeyList(userId);
+    let publicKey = dto.publicKey;
+    if (!publicKey) {
+      publicKey = keys.items.find((key) => key.publicKey).publicKey;
+    }
     const key = await this.keysService.signKey(
       {
         data: dto.data,
-        publicKey: dto.publicKey,
+        publicKey,
         metadata: {},
         participantsConfirmations: [1, 2],
       },

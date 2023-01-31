@@ -4,6 +4,7 @@ import {
   DeepPartial,
   Entity,
   EntityManager,
+  Generated,
   Index,
   OneToMany,
   Tree,
@@ -19,6 +20,11 @@ import { Key } from './key.entity';
 @Entity()
 @Tree('nested-set')
 export class User extends MetaEntity {
+  @Index()
+  @Column({ nullable: true })
+  @Generated('uuid')
+  uuid?: string | null;
+
   @Index()
   @Column({ default: true })
   fresh: boolean;

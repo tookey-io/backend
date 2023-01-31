@@ -23,9 +23,10 @@ export class WalletTssSignRequestDto {
   @IsString()
   data: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @IsString()
-  publicKey: string;
+  @IsOptional()
+  publicKey?: string;
 }
 
 export class WalletResponseDto {

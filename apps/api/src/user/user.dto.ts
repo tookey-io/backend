@@ -1,5 +1,5 @@
 import { Exclude, Expose, Transform } from 'class-transformer';
-import { IsBoolean, IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDate, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
 import { formatISO } from 'date-fns';
 
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
@@ -24,6 +24,12 @@ export class UserDto {
   @Expose()
   @IsNumber()
   id: number;
+
+  @ApiPropertyOptional()
+  @IsUUID()
+  @Expose()
+  @IsOptional()
+  uuid?: string;
 
   @ApiProperty()
   @Expose()

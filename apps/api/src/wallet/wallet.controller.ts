@@ -5,6 +5,7 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { JwtAuth } from '../decorators/jwt-auth.decorator';
+import { KeyDto } from '../keys/keys.dto';
 import { UserContextDto } from '../user/user.dto';
 import {
   WalletResponseDto,
@@ -38,12 +39,9 @@ export class WalletController {
 
   @JwtAuth()
   @ApiOperation({ description: 'Create TSS Wallet' })
-  @ApiOkResponse({ type: WalletResponseDto })
+  @ApiOkResponse({ type: KeyDto })
   @Post('tss')
-  async createWalletTss(
-    @CurrentUser() user: UserContextDto,
-    @Body() body: WalletTssCreateRequestDto,
-  ): Promise<WalletResponseDto> {
+  async createWalletTss(@CurrentUser() user: UserContextDto, @Body() body: WalletTssCreateRequestDto): Promise<KeyDto> {
     return await this.walletService.createWalletTss(body.roomId, user.id);
   }
 

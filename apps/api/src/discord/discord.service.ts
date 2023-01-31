@@ -1,4 +1,3 @@
-import { UserEvent } from 'apps/api/src/api.events';
 import { UserDto } from 'apps/api/src/user/user.dto';
 import { UserService } from 'apps/api/src/user/user.service';
 import { AppConfiguration } from 'apps/app/src/app.config';
@@ -236,6 +235,7 @@ export class DiscordService {
   }
 
   async createDiscordUser(dto: CreateDiscordUserDto): Promise<DiscordUserDto> {
+    this.logger.debug('createDiscordUser');
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
@@ -250,7 +250,7 @@ export class DiscordService {
       await queryRunner.commitTransaction();
 
       const userDiscordDto = new DiscordUserDto({ ...userDiscord });
-      this.eventEmitter.emit(UserEvent.CREATE_DISCORD, userDiscordDto);
+      // this.eventEmitter.emit(UserEvent.CREATE_DISCORD, userDiscordDto);
       return userDiscordDto;
     } catch (error) {
       queryRunner.isTransactionActive && (await queryRunner.rollbackTransaction());
