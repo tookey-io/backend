@@ -38,7 +38,7 @@ spec:
             - name: DISCORD_CALLBACK_URL
               value: "https://tookey.io/auth/discord"
             - name: CORS_ORIGINS
-              value: "https://tookey.io,https://wallet.tookey.io/"
+              value: "https://tookey.io,https://wallet.tookey.io"
             - name: CORS_ALLOWED_HEADERS
               value: "Content-Type,Authorization"
             - name: APP_URL
