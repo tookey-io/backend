@@ -65,7 +65,6 @@ export class WalletService {
     }
     const key = await this.keysService.createKey(
       {
-        participantIndex: 2, // for TB only
         participantsCount: 2,
         participantsThreshold: 2,
         timeoutSeconds: 60,
