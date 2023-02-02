@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import {
+  AofgProfileRepository,
   KeyRepository,
   SignRepository,
   TypeOrmExModule,
@@ -16,6 +17,7 @@ const AdminRepositories = TypeOrmExModule.forCustomRepository([
   UserDiscordRepository,
   KeyRepository,
   SignRepository,
+  AofgProfileRepository,
 ]);
 
 @Module({
