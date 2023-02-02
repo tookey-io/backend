@@ -118,9 +118,11 @@ export class KeysService {
         relations: { participants: true },
       });
 
+      const user = await this.users.getUser({ id: userId });
+
       this.amqp.publish<AmqpKeygenJoinDto>('amq.topic', 'manager', {
         action: 'keygen_join',
-        user_id: `${userId}`,
+        user_id: `${user.uuid || userId}`,
         room_id: key.roomId,
         key_id: `${key.id}`,
         participant_index: key.participantIndex,
