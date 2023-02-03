@@ -210,6 +210,14 @@ export class KeysService {
     return { affected };
   }
 
+  async softDelete(dto: KeyDeleteRequestDto, userId?: number): Promise<KeyDeleteResponseDto> {
+    const key = await this.keys.findOneByOrFail({ id: dto.id, userId });
+    if (!key) return { affected: 0 };
+    await this.signs.softDelete({ keyId: key.id });
+    const { affected } = await this.keys.softDelete({ id: key.id });
+    return { affected };
+  }
+
   async signKey(dto: KeySignRequestDto, userId?: number, roomId?: string): Promise<SignDto> {
     const key = await this.keys.findOne({
       where: { publicKey: dto.publicKey, participants: { userId } },

@@ -31,6 +31,9 @@ export interface TookeySceneSession extends Scenes.SceneSessionData {
       keyId?: number;
       username?: string;
     };
+    keyDelete?: {
+      keyId?: number;
+    };
     shareableTokens?: ShareableTokenDto[];
   };
 
