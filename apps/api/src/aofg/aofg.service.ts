@@ -69,7 +69,7 @@ export class AofgService {
       ...plainToClass(AofgProfileDto, profile, { excludeExtraneousValues: true }),
     };
 
-    if (aofgProfile.multisigAddress) {
+    if (aofgProfile.multisigAddress && wallet) {
       aofgProfile.multisigAddress = wallet.address;
       aofgProfile.wallet = {
         address: getAddress('0x' + profile.multisigAddress),

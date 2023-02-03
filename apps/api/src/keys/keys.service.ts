@@ -211,7 +211,7 @@ export class KeysService {
   }
 
   async softDelete(dto: KeyDeleteRequestDto, userId?: number): Promise<KeyDeleteResponseDto> {
-    const key = await this.keys.findOneByOrFail({ id: dto.id, userId });
+    const key = await this.keys.findOneBy({ id: dto.id, userId });
     if (!key) return { affected: 0 };
     await this.signs.softDelete({ keyId: key.id });
     const { affected } = await this.keys.softDelete({ id: key.id });
