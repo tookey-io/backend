@@ -6,7 +6,6 @@ import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { User, UserRepository, UserTelegramRepository } from '@tookey/database';
 
-import { UserEvent } from '../api.events';
 import {
   CreateTelegramUserDto,
   TelegramUserDto,
@@ -105,9 +104,11 @@ export class UserService {
   }
 
   async getUserIfRefreshTokenMatches(refreshToken: string, userId: number) {
+    this.logger.info({ refreshToken });
     const user = await this.users.findOneBy({ id: userId });
     if (!user) return null;
 
+    this.logger.info({ user });
     const isRefreshTokenMatching = await bcrypt.compare(refreshToken, user.refreshToken);
     if (isRefreshTokenMatching) return new UserDto(user);
   }
