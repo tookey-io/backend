@@ -1,4 +1,4 @@
-import { AuthEvent } from 'apps/api/src/auth/auth.types';
+import { AuthEvent } from 'apps/api/src/api.events';
 import { UserService } from 'apps/api/src/user/user.service';
 import { TelegrafExceptionFilter } from 'apps/app/src/filters/telegraf-exception.filter';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';

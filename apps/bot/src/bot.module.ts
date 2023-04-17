@@ -15,6 +15,7 @@ import { TelegramSessionMiddleware } from './middlewares/telegram-session.middle
 import { TelegramUserMiddleware } from './middlewares/telegram-user.middleware';
 import { AuthScene } from './scenes/auth.scene';
 import { InitScene } from './scenes/init.scene';
+import { KeyDeleteScene } from './scenes/key-delete.scene';
 import { KeyShareScene } from './scenes/key-share.scene';
 import { ShareableTokenCreateScene } from './scenes/shareable-token-create.scene';
 import { KeysUpdate } from './updates/keys.update';
@@ -41,6 +42,7 @@ import { ShareableTokensUpdate } from './updates/shareable-tokens.update';
     InitScene,
     AuthScene,
     KeyShareScene,
+    KeyDeleteScene,
     ShareableTokenCreateScene,
   ],
   exports: [TelegramUserMiddleware, DefaultStateMiddleware, TelegramSessionMiddleware],

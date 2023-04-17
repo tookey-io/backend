@@ -3,6 +3,7 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { DataSource, EntityManager } from 'typeorm';
 
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { User, UserRepository, UserTelegramRepository } from '@tookey/database';
 
 import {
@@ -20,6 +21,7 @@ export class UserService {
     private readonly dataSource: DataSource,
     private readonly users: UserRepository,
     private readonly telegramUsers: UserTelegramRepository,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async getUser(dto: UserRequestDto): Promise<UserDto | null> {
@@ -31,7 +33,9 @@ export class UserService {
   async createUser(dto: CreateUserDto, entityManager?: EntityManager): Promise<UserDto> {
     const parent = dto.invitedBy ? await this.getParentUser(dto.invitedBy) : await this.users.findRoot();
     const user = await this.users.createOrUpdateOne({ ...dto, parent }, entityManager);
-    return new UserDto(user);
+    const userDto = new UserDto(user);
+    // this.eventEmitter.emit(UserEvent.CREATE, userDto);
+    return userDto;
   }
 
   async updateUser(id: number, dto: UpdateUserDto): Promise<UserDto | null> {
@@ -100,9 +104,11 @@ export class UserService {
   }
 
   async getUserIfRefreshTokenMatches(refreshToken: string, userId: number) {
+    this.logger.info({ refreshToken });
     const user = await this.users.findOneBy({ id: userId });
     if (!user) return null;
 
+    this.logger.info({ user });
     const isRefreshTokenMatching = await bcrypt.compare(refreshToken, user.refreshToken);
     if (isRefreshTokenMatching) return new UserDto(user);
   }

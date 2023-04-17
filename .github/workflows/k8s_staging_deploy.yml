@@ -1,0 +1,69 @@
+name: k8s_staging_deploy
+
+on:
+  push:
+    branches:
+      - feature/too-203-backend-tss-wallet-solution
+      - feature/too-193-staging-deploy-k8n
+
+jobs:
+  build_and_deploy:
+    permissions:
+      # The "id-token: write" permission is required or Machine ID will not be able to authenticate with the cluster.
+      id-token: write
+      contents: read
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 3
+
+      - name: Set environment variables
+        run: |
+          # Short name for current branch. For PRs, use target branch (base ref)
+          GIT_BRANCH=${GITHUB_BASE_REF:-${GITHUB_REF#refs/heads/}}
+          GIT_BRANCH=${GIT_BRANCH//\//-} # Replace / with -
+          GIT_BRANCH=${GIT_BRANCH//_/-} # Replace _ with -
+          GIT_BRANCH=${GIT_BRANCH,,} # Lower case
+          HELM_SHORT=`echo "${{ github.event.repository.name }}-staging" | cut -c -52`
+          echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
+          echo "HELM_SHORT=$HELM_SHORT" >> $GITHUB_ENV
+
+      - name: Install doctl and Authorize to Digital Ocean
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      - name: Login to registry
+        run: doctl registry login --expiry-seconds 3600
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build, cache and push docker image
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          tags: registry.digitalocean.com/tookey/staging-${{ github.event.repository.name }}:${{ env.GIT_BRANCH }}-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Fetch Teleport binaries
+        uses: teleport-actions/setup@v1
+        with:
+          version: 11.1.4
+      - name: Login to Kubernetes
+        id: auth
+        uses: teleport-actions/auth-k8s@v1
+        with:
+          proxy: teleport.tookey.cloud:443
+          token: kube-github-ci-cd-token
+          certificate-ttl: 1h
+          kubernetes-cluster: teleport.tookey.cloud
+      - name: Deploy
+        run: |
+          sed -i -e 's/server: https:\/\/teleport.tookey.cloud:443/server: https:\/\/teleport.tookey.cloud:3026/' $KUBECONFIG
+          helm upgrade --install $HELM_SHORT ./.helm --namespace apps-staging --set image=${{ env.REPO_IMAGE }} --set branch=$GIT_BRANCH --dry-run
+          helm upgrade --install $HELM_SHORT ./.helm --namespace apps-staging --set image=${{ env.REPO_IMAGE }} --set branch=$GIT_BRANCH --wait
+        env:
+          REPO_IMAGE: registry.digitalocean.com/tookey/staging-${{ github.event.repository.name }}:${{ env.GIT_BRANCH }}-${{ github.sha }}

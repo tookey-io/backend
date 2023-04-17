@@ -1,0 +1,1 @@
+export const AOFG_CUSTOMER_PIPE_ID = 302895175;

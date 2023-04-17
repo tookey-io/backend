@@ -1,5 +1,5 @@
+import { KeyEvent } from 'apps/api/src/api.events';
 import { KeyCreateRequestDto, KeyDto, KeySignEventRequestDto } from 'apps/api/src/keys/keys.dto';
-import { KeyEvent } from 'apps/api/src/keys/keys.types';
 import { UserService } from 'apps/api/src/user/user.service';
 import { addSeconds } from 'date-fns';
 import { InjectBot } from 'nestjs-telegraf';
