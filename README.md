@@ -27,6 +27,14 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
+# Migrations
+
+```bash
+$ npm run typeorm:generate libs/database/src/migrations/<NAME>
+```
+
+Then update `libs/database/src/migrations/index.ts`
+
 # Contribution
 
 To manage releases, please follow the workflow listed below:

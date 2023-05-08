@@ -84,7 +84,7 @@ export class KeysController {
   @ApiOkResponse({ type: KeyDeleteResponseDto })
   @Delete()
   deleteKey(@Body() dto: KeyDeleteRequestDto, @CurrentUser() user: UserContextDto): Promise<KeyDeleteResponseDto> {
-    return this.keysService.delete(dto, user.id);
+    return this.keysService.softDelete(dto, user.id);
   }
 
   @ShareableKeyJwtAuth()

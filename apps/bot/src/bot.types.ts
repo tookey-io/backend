@@ -24,12 +24,20 @@ export interface TookeySceneSession extends Scenes.SceneSessionData {
   // custom scene session props
   state: {
     appAuth?: boolean;
-    authCode?: tg.Message.PhotoMessage;
+    auth?: {
+      token: string;
+      code: tg.Message.PhotoMessage;
+      showText: boolean;
+      timeLeft: number;
+    };
     invitedBy?: string;
     keys?: KeyParticipationDto[];
     keyShare?: {
       keyId?: number;
       username?: string;
+    };
+    keyDelete?: {
+      keyId?: number;
     };
     shareableTokens?: ShareableTokenDto[];
   };

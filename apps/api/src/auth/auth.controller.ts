@@ -6,22 +6,25 @@ import {
   Get,
   HttpCode,
   Post,
+  Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AccessService } from '@tookey/access';
 
+import { AuthEvent } from '../api.events';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { JwtRefreshAuth } from '../decorators/jwt-refresh-auth.decorator';
 import { SigninKeyAuth } from '../decorators/signin-key-auth.decorator';
+import { DiscordAccessTokenRequestDto, DiscordAuthUrlResponseDto } from '../discord/discord.dto';
+import { DiscordService } from '../discord/discord.service';
 import { TwitterAuthUrlResponseDto } from '../twitter/twitter.dto';
 import { TwitterService } from '../twitter/twitter.service';
 import { UserContextDto } from '../user/user.dto';
 import { UserService } from '../user/user.service';
 import { AuthTokenDto, AuthTokensResponseDto, AuthTwitterCallbackDto } from './auth.dto';
 import { AuthService } from './auth.service';
-import { AuthEvent } from './auth.types';
 
 @Controller('api/auth')
 @ApiTags('Authentication')
@@ -33,6 +36,7 @@ export class AuthController {
     private readonly accessService: AccessService,
     private readonly eventEmitter: EventEmitter2,
     private readonly twitterService: TwitterService,
+    private readonly discordService: DiscordService,
   ) {}
 
   @SigninKeyAuth()
@@ -78,6 +82,24 @@ export class AuthController {
     if (!session) throw new BadRequestException('Session not found');
 
     const user = await this.twitterService.requestUser({ code: body.code, codeVerifier: session.codeVerifier });
+    const access = this.authService.getJwtAccessToken(user.userId);
+    const refresh = this.authService.getJwtRefreshToken(user.userId);
+    await this.userService.setCurrentRefreshToken(refresh.token, user.id);
+    return { access, refresh };
+  }
+
+  @ApiOperation({ description: 'Get discord auth url' })
+  @ApiOkResponse({ type: DiscordAuthUrlResponseDto })
+  @Get('discord')
+  async discordAuthUrl(@Query('state') state?: string): Promise<DiscordAuthUrlResponseDto> {
+    return await this.discordService.getAuthLink(state);
+  }
+
+  @ApiOperation({ description: 'Get access and refresh tokens with discord' })
+  @ApiOkResponse({ type: AuthTokensResponseDto })
+  @Post('discord')
+  async discordAuthCallback(@Body() { code }: DiscordAccessTokenRequestDto): Promise<AuthTokensResponseDto> {
+    const user = await this.discordService.requestUser({ code });
     const access = this.authService.getJwtAccessToken(user.userId);
     const refresh = this.authService.getJwtRefreshToken(user.userId);
     await this.userService.setCurrentRefreshToken(refresh.token, user.id);

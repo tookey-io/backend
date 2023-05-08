@@ -1,6 +1,6 @@
+import { KeyEvent } from 'apps/api/src/api.events';
 import { KeyParticipationDto } from 'apps/api/src/keys/keys.dto';
 import { KeysService } from 'apps/api/src/keys/keys.service';
-import { KeyEvent } from 'apps/api/src/keys/keys.types';
 import { UserService } from 'apps/api/src/user/user.service';
 import { TelegrafExceptionFilter } from 'apps/app/src/filters/telegraf-exception.filter';
 import { formatDistanceToNow } from 'date-fns';
@@ -132,7 +132,10 @@ export class KeysUpdate extends BaseScene {
     await ctx.replyWithHTML(
       message.join('\n'),
       isOwner
-        ? Markup.inlineKeyboard([Markup.button.callback('🔁 Share with thirdparty', `${BotAction.KEY_SHARE}${keyId}`)])
+        ? Markup.inlineKeyboard([
+            [Markup.button.callback('🔁 Share with thirdparty', `${BotAction.KEY_SHARE}${keyId}`)],
+            [Markup.button.callback('❌ Delete', `${BotAction.KEY_DELETE}${keyId}`)],
+          ])
         : undefined,
     );
   }
@@ -141,6 +144,12 @@ export class KeysUpdate extends BaseScene {
   async onKeyShare(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
     const keyId = +this.getCallbackPayload(ctx, BotAction.KEY_SHARE);
     ctx.scene.enter(BotScene.KEY_SHARE, { keyShare: { keyId } });
+  }
+
+  @Action(new RegExp(`^${BotAction.KEY_DELETE}\\d+$`))
+  async onKeyDelete(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
+    const keyId = +this.getCallbackPayload(ctx, BotAction.KEY_DELETE);
+    ctx.scene.enter(BotScene.KEY_DELETE, { keyDelete: { keyId } });
   }
 
   @Action(new RegExp(`^${BotAction.KEY_PAGE}\\d+$`))

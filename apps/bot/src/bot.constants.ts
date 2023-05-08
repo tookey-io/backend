@@ -4,6 +4,7 @@ export enum BotScene {
   INIT = 'init',
   AUTH = 'auth',
   KEY_SHARE = 'keyShare',
+  KEY_DELETE = 'keyDelete',
   SHAREABLE_TOKEN_CREATE = 'shareableTokenCreate',
 }
 
@@ -21,11 +22,16 @@ export enum BotAction {
   KEY_CREATE_REQUEST = 'key:create:request:',
   KEY_SIGN_REQUEST = 'key:sign:request:',
   KEY_SHARE = 'key:share:',
+  KEY_DELETE = 'key:delete:',
+  KEY_DELETE_APPROVE = 'key:delete:approve:',
+  KEY_DELETE_REJECT = 'key:delete:reject:',
   KEY_SHARE_USER = 'key:share:user:',
   SHAREABLE_TOKEN_CREATE = 'shareable:create',
   SHAREABLE_TOKEN_MANAGE = 'shareable:manage:',
   SHAREABLE_TOKEN_PAGE = 'shareable:page:',
   SHAREABLE_TOKEN_DELETE = 'shareable:delete:',
+
+  AUTH_SHOW_TOKEN_TOGGLE = 'auth:show:toggle',
 }
 
 export enum BotMenu {

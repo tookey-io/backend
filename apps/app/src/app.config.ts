@@ -25,10 +25,31 @@ export type TwitterConfig = {
   callbackUrl: string;
 };
 
+export type DiscordConfig = {
+  clientID: string;
+  clientSecret: string;
+  callbackURL: string;
+};
+
 export type CorsConfig = {
   origin: string | string[];
   allowedHeaders: string;
   methods: string;
+};
+
+export type RedisConfig = {
+  host: string;
+  port: number;
+};
+
+export type PipefyConfig = {
+  endpoint: string;
+  authorization: string;
+};
+
+export type EthersConfig = {
+  network?: string;
+  secret: string;
 };
 
 export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig, AmpqConfig {
@@ -42,10 +63,14 @@ export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig
   isProduction: boolean;
   jwt: JWTConfig;
   twitter: TwitterConfig;
+  discord: DiscordConfig;
   db: DatabaseConnection;
   amqp: AmpqConnection;
   healthTimeout: number;
   cors: CorsConfig;
+  redis: RedisConfig;
+  pipefy: PipefyConfig;
+  ethers: EthersConfig;
 }
 
 export function configuration(): AppConfiguration {
@@ -69,6 +94,11 @@ export function configuration(): AppConfiguration {
       clientSecret: process.env.TWITTER_CLIENT_SECRET,
       callbackUrl: process.env.TWITTER_CALLBACK_URL,
     },
+    discord: {
+      clientID: process.env.DISCORD_CLIENT_ID,
+      clientSecret: process.env.DISCORD_CLIENT_SECRET,
+      callbackURL: process.env.DISCORD_CALLBACK_URL,
+    },
     db: {
       host: process.env.PG_HOST,
       port: parseInt(process.env.PG_PORT, 10),
@@ -86,6 +116,18 @@ export function configuration(): AppConfiguration {
       origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',
       allowedHeaders: process.env.CORS_ALLOWED_HEADERS ? process.env.CORS_ALLOWED_HEADERS : '*',
       methods: process.env.CORS_METHODS ? process.env.CORS_METHODS : '*',
+    },
+    redis: {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6379,
+    },
+    pipefy: {
+      endpoint: process.env.PIPEFY_ENDPOINT || 'https://api.pipefy.com/graphql',
+      authorization: process.env.PIPEFY_AUTH || '',
+    },
+    ethers: {
+      network: process.env.ETHERS_NETWORK,
+      secret: process.env.ETHERS_SECRET || 'ethers_secret',
     },
   };
 }
