@@ -3,8 +3,7 @@ name: k8s_staging_deploy
 on:
   push:
     branches:
-      - feature/too-203-backend-tss-wallet-solution
-      - feature/too-193-staging-deploy-k8n
+      - master
 
 jobs:
   build_and_deploy:

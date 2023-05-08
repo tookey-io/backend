@@ -30,6 +30,8 @@ export enum BotAction {
   SHAREABLE_TOKEN_MANAGE = 'shareable:manage:',
   SHAREABLE_TOKEN_PAGE = 'shareable:page:',
   SHAREABLE_TOKEN_DELETE = 'shareable:delete:',
+
+  AUTH_SHOW_TOKEN_TOGGLE = 'auth:show:toggle',
 }
 
 export enum BotMenu {
