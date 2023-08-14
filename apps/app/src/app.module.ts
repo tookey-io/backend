@@ -1,4 +1,3 @@
-import { AofgModule } from 'apps/api/src/aofg/aofg.module';
 import { ApiModule } from 'apps/api/src/api.module';
 import { BotModule } from 'apps/bot/src/bot.module';
 import { RpsModule } from 'apps/rps/src/rps.module';
@@ -42,7 +41,6 @@ import { FlowsModule } from '@tookey/flows';
     AccessModule,
     FlowsModule,
     RpsModule,
-    AofgModule,
   ],
   controllers: [AppController],
   providers: [],
