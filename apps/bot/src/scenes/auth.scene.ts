@@ -13,7 +13,7 @@ import { AccessService } from '@tookey/access';
 
 import { BotAction, BotScene } from '../bot.constants';
 import { TookeyContext } from '../bot.types';
- 
+import { FlowsService } from '@tookey/flows';
 
 @Scene(BotScene.AUTH)
 @UseFilters(TelegrafExceptionFilter)
@@ -23,6 +23,7 @@ export class AuthScene {
     @InjectPinoLogger(AuthScene.name) private readonly logger: PinoLogger,
     private readonly accessService: AccessService,
     private readonly userService: UserService,
+    private readonly flowsService: FlowsService,
   ) {}
 
   @SceneEnter()
@@ -53,13 +54,17 @@ export class AuthScene {
   }
 
   @OnEvent(AuthEvent.SIGNIN)
-  async onKeyCreateFinished(userId: number) {
+  async onKeyCreateFinished(userId: number, environment?: string) {
     const telegramUser = await this.userService.getTelegramUser({ userId });
     if (!telegramUser) return;
 
-    await this.bot.telegram.sendMessage(telegramUser.chatId, '✅ Successfully authenticated in <b>Tookey Signer</b>!', {
-      parse_mode: 'HTML',
-    });
+    await this.bot.telegram.sendMessage(
+      telegramUser.chatId,
+      `✅ Successfully authenticated in <b>${environment || 'Mobile Signer'}</b>!`,
+      {
+        parse_mode: 'HTML',
+      },
+    );
   }
 
   private async deleteAuthCode(@Ctx() ctx: TookeyContext): Promise<void> {
@@ -85,10 +90,7 @@ export class AuthScene {
         state.code.chat.id,
         state.code.message_id,
         undefined,
-        [
-          show ? `<code>${state.token}</code>` : undefined,
-          'Scan QR code in <b>Tookey Signer</b> to authenticate',
-        ]
+        [show ? `<code>${state.token}</code>` : undefined, 'Scan QR code in <b>Tookey Signer</b> to authenticate']
           .filter((s) => typeof s !== 'undefined')
           .join('\n'),
         {
@@ -96,6 +98,7 @@ export class AuthScene {
           reply_markup: {
             inline_keyboard: [
               [{ text: show ? 'Hide token' : 'Show as text', callback_data: BotAction.AUTH_SHOW_TOKEN_TOGGLE }],
+              [{ text: 'Auth in Automation', url: this.flowsService.getAuthUrl(state.token) }],
             ],
           },
         },

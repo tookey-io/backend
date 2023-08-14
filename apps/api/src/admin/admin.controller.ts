@@ -5,6 +5,7 @@ import { CurrentUser } from '../decorators/current-user.decorator';
 import { JwtAuth } from '../decorators/jwt-auth.decorator';
 import { UserContextDto, UserDto } from '../user/user.dto';
 import { AdminService } from './admin.service';
+import { AnyRoles } from '../decorators/any-role.decorator';
 
 @Controller('api/admin')
 @ApiTags('Admin')
@@ -13,6 +14,7 @@ import { AdminService } from './admin.service';
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
+  @AnyRoles('user.write')
   @ApiOperation({ description: 'Remove user data' })
   @ApiOkResponse({ type: UserDto })
   @ApiNotFoundResponse()

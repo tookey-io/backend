@@ -8,6 +8,6 @@ import { ApiTags } from '@nestjs/swagger';
 export class AppController {
   @Get('token/:token')
   auth(@Param('token') token: string, @Res() res: Response) {
-    res.redirect(`tookey://access/${token}`, 302);
+    res.redirect(302, `tookey://access/${token}`);
   }
 }

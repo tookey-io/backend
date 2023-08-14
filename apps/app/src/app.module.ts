@@ -13,6 +13,7 @@ import { DatabaseModule, DatabaseService } from '@tookey/database';
 
 import { AppConfiguration, configuration } from './app.config';
 import { AppController } from './app.controller';
+import { FlowsModule } from '@tookey/flows';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { AppController } from './app.controller';
     BotModule,
     ApiModule,
     AccessModule,
+    FlowsModule,
     RpsModule,
     AofgModule,
   ],

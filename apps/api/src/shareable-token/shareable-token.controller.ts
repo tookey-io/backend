@@ -20,6 +20,7 @@ import {
   ShareableTokenDto,
 } from './shareable-token.dto';
 import { ShareableTokenService } from './shareable-token.service';
+import { AnyRoles } from '../decorators/any-role.decorator';
 
 @Controller('api/shareable-tokens')
 @ApiTags('Shareable Tokens')
@@ -27,6 +28,7 @@ import { ShareableTokenService } from './shareable-token.service';
 export class ShareableTokenController {
   constructor(private readonly shareableTokenService: ShareableTokenService) {}
 
+  @AnyRoles('user.tokens.write')
   @JwtAuth()
   @ApiOperation({ description: 'Create Shareable Token' })
   @ApiOkResponse({ type: ShareableTokenDto })
@@ -40,14 +42,16 @@ export class ShareableTokenController {
     return await this.shareableTokenService.createShareableToken(user.id, dto);
   }
 
+  @AnyRoles('user.tokens.read')
   @JwtAuth()
   @ApiOperation({ description: 'Get Shareable Tokens by User' })
-  @ApiOkResponse({ type: ShareableTokenDto })
+  @ApiOkResponse({ type: ShareableTokenDto, isArray: true })
   @Get('my')
   async getShareableTokensByUser(@CurrentUser() user: UserContextDto): Promise<ShareableTokenDto[]> {
     return await this.shareableTokenService.getShareableTokensByUser(user.id);
   }
 
+  @AnyRoles('user.tokens.write')
   @JwtAuth()
   @ApiOperation({ description: 'Delete Shareable Token' })
   @ApiOkResponse({ type: ShareableTokenDeleteResponseDto })

@@ -30,7 +30,13 @@
       ],
       "@tookey/amqp/*": [
         "libs/amqp/src/*"
-      ]
+      ],
+      "@tookey/flows": [
+        "libs/flows/src"
+      ],
+      "@tookey/flows/*": [
+        "libs/flows/src/*"
+      ],
     }
   },
   "reflection": true

@@ -39,6 +39,10 @@ export interface TookeySceneSession extends Scenes.SceneSessionData {
     keyDelete?: {
       keyId?: number;
     };
+    keyVerification?: {
+      message: tg.Message;
+      keyId?: number;
+    };
     shareableTokens?: ShareableTokenDto[];
   };
 
@@ -52,6 +56,7 @@ export interface TookeyWizardSession extends WizardSessionData {
       tokenName?: string;
       selectedKeys?: number[];
       ttl?: number;
+      previous?: tg.Message.CommonMessage[];
     };
     keys?: KeyParticipationDto[];
   };

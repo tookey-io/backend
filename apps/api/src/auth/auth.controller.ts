@@ -5,7 +5,9 @@ import {
   Controller,
   Get,
   HttpCode,
+  NotFoundException,
   Post,
+  Put,
   Query,
   UseInterceptors,
 } from '@nestjs/common';
@@ -15,7 +17,6 @@ import { AccessService } from '@tookey/access';
 
 import { AuthEvent } from '../api.events';
 import { CurrentUser } from '../decorators/current-user.decorator';
-import { JwtRefreshAuth } from '../decorators/jwt-refresh-auth.decorator';
 import { SigninKeyAuth } from '../decorators/signin-key-auth.decorator';
 import { DiscordAccessTokenRequestDto, DiscordAuthUrlResponseDto } from '../discord/discord.dto';
 import { DiscordService } from '../discord/discord.service';
@@ -25,6 +26,9 @@ import { UserContextDto } from '../user/user.dto';
 import { UserService } from '../user/user.service';
 import { AuthTokenDto, AuthTokensResponseDto, AuthTwitterCallbackDto } from './auth.dto';
 import { AuthService } from './auth.service';
+import { FlowsService } from '@tookey/flows';
+import { JwtAuth } from '../decorators/jwt-auth.decorator';
+import { AnyRoles } from '../decorators/any-role.decorator';
 
 @Controller('api/auth')
 @ApiTags('Authentication')
@@ -37,7 +41,46 @@ export class AuthController {
     private readonly eventEmitter: EventEmitter2,
     private readonly twitterService: TwitterService,
     private readonly discordService: DiscordService,
+    private readonly flowsService: FlowsService,
   ) {}
+
+  @ApiOperation({ description: 'Storing new or skip device firebase token' })
+  @ApiOkResponse({ type: AuthTokensResponseDto })
+  @HttpCode(200)
+  @Put('firebase-token')
+  async addUserDeviceToken(@CurrentUser() user: UserContextDto, @Body() body: { token: string }) {
+    throw new BadRequestException('Not implemented');
+    // await this.userService.addUserDeviceToken({ userId: user.id, token: body.token });
+  }
+
+  @SigninKeyAuth()
+  @ApiOperation({ description: 'Get access and refresh tokens' })
+  @ApiOkResponse({ type: AuthTokensResponseDto })
+  @HttpCode(200)
+  @Post('flows')
+  async signinFlow(@CurrentUser() user: UserContextDto) {
+    const telegramUser = await this.userService.getTelegramUser({ userId: user.id });
+    if (!telegramUser) throw new NotFoundException('Telegram user not found');
+
+    const userRequest = {
+      id: user.id.toString(),
+      firstName: telegramUser.firstName,
+      lastName: telegramUser.lastName,
+      trackEvents: true,
+      newsLetter: true,
+    };
+    await this.flowsService.injectUser(userRequest);
+    const flowUser = await this.flowsService.authUser({
+      id: userRequest.id,
+      token: this.authService.getJwtServiceToken({
+        id: user.id,
+        roles: ['user', 'flows'],
+      }).token,
+    });
+
+    this.eventEmitter.emit(AuthEvent.SIGNIN, user.id, 'Automation');
+    return flowUser;
+  }
 
   @SigninKeyAuth()
   @ApiOperation({ description: 'Get access and refresh tokens' })
@@ -45,8 +88,8 @@ export class AuthController {
   @HttpCode(200)
   @Post('signin')
   async signin(@CurrentUser() user: UserContextDto): Promise<AuthTokensResponseDto> {
-    const access = this.authService.getJwtAccessToken(user.id);
-    const refresh = this.authService.getJwtRefreshToken(user.id);
+    const access = this.authService.getJwtAccessToken({ id: user.id, roles: ['user', 'otp'] });
+    const refresh = this.authService.getJwtRefreshToken({ id: user.id, roles: ['user', 'otp'] });
 
     await this.userService.setCurrentRefreshToken(refresh.token, user.id);
 
@@ -56,13 +99,14 @@ export class AuthController {
     return { access, refresh };
   }
 
-  @JwtRefreshAuth()
+  @AnyRoles('refresh')
+  @JwtAuth()
   @ApiOperation({ description: 'Refresh access token' })
   @ApiOkResponse({ type: AuthTokenDto })
   @HttpCode(200)
   @Post('refresh')
   refresh(@CurrentUser() user: UserContextDto): AuthTokenDto {
-    return this.authService.getJwtAccessToken(user.id);
+    return this.authService.getJwtAccessToken({ id: user.id, roles: ['user', 'discord'] });
   }
 
   @ApiOperation({ description: 'Get twitter auth url' })
@@ -82,8 +126,8 @@ export class AuthController {
     if (!session) throw new BadRequestException('Session not found');
 
     const user = await this.twitterService.requestUser({ code: body.code, codeVerifier: session.codeVerifier });
-    const access = this.authService.getJwtAccessToken(user.userId);
-    const refresh = this.authService.getJwtRefreshToken(user.userId);
+    const access = this.authService.getJwtAccessToken({ id: user.userId, roles: ['user', 'twitter'] });
+    const refresh = this.authService.getJwtRefreshToken({ id: user.userId, roles: ['user', 'twitter'] });
     await this.userService.setCurrentRefreshToken(refresh.token, user.id);
     return { access, refresh };
   }
@@ -100,8 +144,8 @@ export class AuthController {
   @Post('discord')
   async discordAuthCallback(@Body() { code }: DiscordAccessTokenRequestDto): Promise<AuthTokensResponseDto> {
     const user = await this.discordService.requestUser({ code });
-    const access = this.authService.getJwtAccessToken(user.userId);
-    const refresh = this.authService.getJwtRefreshToken(user.userId);
+    const access = this.authService.getJwtAccessToken({ id: user.userId, roles: ['user', 'discord'] });
+    const refresh = this.authService.getJwtRefreshToken({ id: user.userId, roles: ['user', 'discord'] });
     await this.userService.setCurrentRefreshToken(refresh.token, user.id);
     return { access, refresh };
   }

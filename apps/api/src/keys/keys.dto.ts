@@ -1,5 +1,6 @@
 import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsEnum,
   IsNumber,
@@ -8,6 +9,7 @@ import {
   IsString,
   IsUUID,
   Length,
+  Matches,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
@@ -15,6 +17,7 @@ import { formatISO } from 'date-fns';
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TaskStatus } from '@tookey/database';
+import { type } from 'os';
 
 @Exclude()
 export class KeyDto {
@@ -84,6 +87,15 @@ export class KeyDto {
   @IsString()
   @Transform(({ value }) => formatISO(new Date(value)))
   createdAt: Date;
+
+  @ApiPropertyOptional()
+  @IsString()
+  verificationHook: string | null;
+
+  @ApiProperty()
+  @Expose()
+  @Matches(/^(0x)?[0-9a-fA-F]{40}$/)
+  publicAddress: string;
 
   constructor(partial: Partial<KeyDto>) {
     Object.assign(this, partial);
@@ -178,6 +190,12 @@ export class KeyEventResponseDto {
 
   @IsBoolean()
   isApproved: boolean;
+}
+
+export class GetKeysByPublicKeysRequestDto {
+  @ApiProperty()
+  @IsString({ each: true })
+  publicKeys: string[];
 }
 
 export class KeyGetRequestDto {

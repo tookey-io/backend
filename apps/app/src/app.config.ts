@@ -2,6 +2,7 @@ import { BotConfig } from 'apps/bot/src/bot.types';
 
 import { AccessConfig } from '@tookey/access';
 import { DatabaseConfig, DatabaseConnection } from '@tookey/database';
+import { FlowsConfig } from '@tookey/flows';
 
 export type AmpqConnection = {
   uri: string | string[];
@@ -13,8 +14,7 @@ export type AmpqConfig = {
 };
 
 export type JWTConfig = {
-  accessTokenSecret: string;
-  refreshTokenSecret: string;
+  secret: string;
   accessTokenTTL: number;
   refreshTokenTTL: number;
 };
@@ -53,6 +53,7 @@ export type EthersConfig = {
 };
 
 export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig, AmpqConfig {
+  flows: FlowsConfig;
   defaultTtl: number;
   telegramToken: string;
   telegramBotName: string;
@@ -83,10 +84,15 @@ export function configuration(): AppConfiguration {
     appUrl: process.env.APP_URL,
     port: parseInt(process.env.PORT, 10),
     isProduction: process.env.NODE_ENV === 'production',
+    flows: {
+      backendUrl: process.env.FLOWS_BACKEND_URL || "http://127.0.0.1:3000",
+      frontendUrl: process.env.FLOWS_FRONTEND_URL || "http://127.0.0.1:4200",
+      password: process.env.FLOWS_PASSWORD || "super-secret",
+    },
     jwt: {
-      accessTokenSecret: process.env.JWT_ACCESS_TOKEN_SECRET || 'secret_access',
+      // TODO: rename to JWT_SECRET
+      secret: process.env.JWT_REFRESH_TOKEN_SECRET || 'secret_refresh',
       accessTokenTTL: parseInt(process.env.JWT_ACCESS_TOKEN_TTL) || 60 * 15, // 15 min
-      refreshTokenSecret: process.env.JWT_REFRESH_TOKEN_SECRET || 'secret_refresh',
       refreshTokenTTL: parseInt(process.env.JWT_REFRESH_TOKEN_TTL) || 60 * 60 * 24 * 7, // 7 days
     },
     twitter: {

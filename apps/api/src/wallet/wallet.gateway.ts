@@ -15,11 +15,11 @@ import {
 
 import { KeyEvent } from '../api.events';
 import { WsCurrentUser } from '../decorators/current-user.decorator';
-import { WsJwtGuard } from '../guards/ws-jwt.guard';
 import { UserContextDto } from '../user/user.dto';
 import { WalletService } from './wallet.service';
+import { JwtAuth } from '../decorators/jwt-auth.decorator';
 
-@UseGuards(WsJwtGuard)
+@UseGuards(JwtAuth)
 @WebSocketGateway({
   cors: {
     origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',

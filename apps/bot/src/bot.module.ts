@@ -20,6 +20,8 @@ import { KeyShareScene } from './scenes/key-share.scene';
 import { ShareableTokenCreateScene } from './scenes/shareable-token-create.scene';
 import { KeysUpdate } from './updates/keys.update';
 import { ShareableTokensUpdate } from './updates/shareable-tokens.update';
+import { FlowsModule } from '@tookey/flows';
+import { keyVerificationScene } from './scenes/key-verification.scene';
 
 @Module({
   imports: [
@@ -29,6 +31,7 @@ import { ShareableTokensUpdate } from './updates/shareable-tokens.update';
     UserModule,
     KeyModule,
     ShareableTokenModule,
+    FlowsModule,
   ],
   providers: [
     TelegramUserMiddleware,
@@ -43,6 +46,7 @@ import { ShareableTokensUpdate } from './updates/shareable-tokens.update';
     AuthScene,
     KeyShareScene,
     KeyDeleteScene,
+    keyVerificationScene,
     ShareableTokenCreateScene,
   ],
   exports: [TelegramUserMiddleware, DefaultStateMiddleware, TelegramSessionMiddleware],

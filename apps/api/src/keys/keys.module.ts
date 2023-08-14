@@ -4,6 +4,7 @@ import { AccessModule } from '@tookey/access';
 import { AmqpModule } from '@tookey/amqp';
 import { KeyParticipantRepository, KeyRepository, SignRepository, TypeOrmExModule } from '@tookey/database';
 
+import { FlowsModule } from '@tookey/flows';
 import { UserModule } from '../user/user.module';
 import { KEYS_QUEUE } from './keys.constants';
 import { KeysController } from './keys.controller';
@@ -13,7 +14,14 @@ import { KeysService } from './keys.service';
 const KeysRepositories = TypeOrmExModule.forCustomRepository([KeyRepository, KeyParticipantRepository, SignRepository]);
 
 @Module({
-  imports: [KeysRepositories, AmqpModule, AccessModule, UserModule, BullModule.registerQueue({ name: KEYS_QUEUE })],
+  imports: [
+    KeysRepositories,
+    AmqpModule,
+    AccessModule,
+    UserModule,
+    BullModule.registerQueue({ name: KEYS_QUEUE }),
+    FlowsModule,
+  ],
   controllers: [KeysController],
   providers: [KeysService, KeysProcessor],
   exports: [KeysRepositories, KeysService],

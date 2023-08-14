@@ -1,10 +1,10 @@
 version: "3.9"
 services:
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    ports:
-      - '127.0.0.1:5672:5672'
-      - '127.0.0.1:15672:15672'
+  # rabbitmq:
+  #   image: rabbitmq:3-management-alpine
+  #   ports:
+  #     - '127.0.0.1:5672:5672'
+  #     - '127.0.0.1:15672:15672'
   postgres:
     image: postgres:13.3
     environment:
@@ -12,7 +12,7 @@ services:
       POSTGRES_USER: "user"
       POSTGRES_PASSWORD: "password"
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres:/var/lib/postgresql/data
 
@@ -20,7 +20,7 @@ services:
     image: redis:6.2-alpine
     restart: always
     ports:
-      - '6379:6379'
+      - '6380:6379'
     command: redis-server --save 20 1 --loglevel warning
     volumes: 
       - redis:/data

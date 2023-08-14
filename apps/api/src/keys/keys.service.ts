@@ -2,19 +2,23 @@ import { Queue } from 'bull';
 import { randomUUID } from 'crypto';
 import { addSeconds } from 'date-fns';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { DataSource, In, Not } from 'typeorm';
+import { DataSource, FindOptionsWhere, In, Not } from 'typeorm';
 
 import { InjectQueue } from '@nestjs/bull';
 import {
+  BadGatewayException,
+  BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
   RequestTimeoutException,
+  forwardRef,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AmqpService } from '@tookey/amqp';
-import { KeyParticipantRepository, KeyRepository, SignRepository, TaskStatus } from '@tookey/database';
+import { Key, KeyParticipantRepository, KeyRepository, SignRepository, TaskStatus, UserDevice } from '@tookey/database';
 
 import { AmqpKeygenJoinDto, AmqpPayloadDto, AmqpSignApproveDto } from '../ampq.dto';
 import { KeyEvent } from '../api.events';
@@ -22,6 +26,7 @@ import { TelegramUserDto } from '../user/user-telegram.dto';
 import { UserService } from '../user/user.service';
 import { KEYS_QUEUE } from './keys.constants';
 import {
+  GetKeysByPublicKeysRequestDto,
   KeyCreateFinishedDto,
   KeyCreateRequestDto,
   KeyDeleteRequestDto,
@@ -36,6 +41,10 @@ import {
   KeySignRequestDto,
   SignDto,
 } from './keys.dto';
+import { FlowsService } from '@tookey/flows';
+import { UserContextDto } from '../user/user.dto';
+import { DevicesService } from '../devices/devices.service';
+import { publicKeyToEthereumAddress } from '@tookey-io/libtss-ethereum';
 
 @Injectable()
 export class KeysService {
@@ -48,6 +57,7 @@ export class KeysService {
     private readonly signs: SignRepository,
     private readonly users: UserService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly flowsService: FlowsService,
     @InjectQueue(KEYS_QUEUE) private readonly keysQueue: Queue<KeyCreateFinishedDto>,
   ) {}
 
@@ -74,6 +84,10 @@ export class KeysService {
     this.logger.debug(`Key generation approved: ${uuid}`);
 
     return this.saveKey(dto, userId);
+  }
+
+  async updateVerification(dto: KeyGetRequestDto, verificationHook?: string) {
+    await this.keys.update({ id: dto.id }, { verificationHook: verificationHook || null });
   }
 
   async saveKey(dto: KeyCreateRequestDto, userId: number, roomId?: string): Promise<KeyDto> {
@@ -146,6 +160,16 @@ export class KeysService {
     }
   }
 
+  async getKeysByPublicKeys(keys: GetKeysByPublicKeysRequestDto) {
+    return this.keys.find({
+      where: { publicKey: In(keys.publicKeys), status: Not(In([TaskStatus.Timeout, TaskStatus.Error])) },
+    });
+  }
+
+  getKeyByPublicKey(publicKey: string) {
+    return this.keys.findOne({ relations: ['devices', 'user'], where: { publicKey } });
+  }
+
   async getKey(dto: KeyGetRequestDto, userId?: number): Promise<KeyDto> {
     const participants = await this.participants.findBy({ keyId: dto.id });
     const participation = participants.findIndex((participant) => participant.userId === userId);
@@ -167,7 +191,7 @@ export class KeysService {
       return acc;
     }, []);
     const keys = await this.keys.find({
-      where: { id: In(keyIds), status: Not(In([TaskStatus.Timeout, TaskStatus.Error])) },
+      where: { id: In(keyIds), status: TaskStatus.Finished },
       relations: { participants: true },
     });
 
@@ -177,6 +201,7 @@ export class KeysService {
             ({ participants, ...key }) =>
               new KeyDto({
                 ...key,
+                publicAddress: publicKeyToEthereumAddress(key.publicKey).result,
                 participants: participants.map((participant) => participant.index),
               }),
           )
@@ -219,13 +244,26 @@ export class KeysService {
   }
 
   async signKey(dto: KeySignRequestDto, userId?: number, roomId?: string): Promise<SignDto> {
-    const key = await this.keys.findOne({
-      where: { publicKey: dto.publicKey, participants: { userId } },
-      relations: { participants: true },
-    });
+    const key = await this.findKey({ publicKey: dto.publicKey, participants: { userId } });
     if (!key) throw new NotFoundException('Key not found');
 
-    if (roomId) return this.saveSign({ ...dto, keyId: key.id, timeoutSeconds: key.timeoutSeconds }, userId, roomId);
+    const flow = key.verificationHook;
+
+    this.logger.info(`Key sign request: \nkey: ${key.id} \nname: ${key.name} \nuser: ${key.userId} with flow ${flow}`);
+
+    if (flow) {
+      try {
+        if (await this.flowsService.call(userId, flow).then((response) => response.data.result as boolean)) {
+          return this.saveSign({ ...dto, keyId: key.id, timeoutSeconds: key.timeoutSeconds }, key.userId);
+        }
+        throw new ForbiddenException('Rejected by verification flow');
+      } catch (e) {
+        this.logger.error(`Verification flow error: ${e.message}`);
+        throw new BadGatewayException(e, 'Throwed by verification flow');
+      }
+    }
+
+    if (roomId) return this.saveSign({ ...dto, keyId: key.id, timeoutSeconds: key.timeoutSeconds }, key.userId, roomId);
 
     const signEventDto: KeySignEventRequestDto = {
       ...dto,
@@ -242,6 +280,38 @@ export class KeysService {
     this.logger.debug(`Key sign approved: ${uuid}`);
 
     return this.saveSign({ ...dto, keyId: key.id, timeoutSeconds: key.timeoutSeconds }, key.userId);
+  }
+
+  async findKey(conditions: FindOptionsWhere<Key> | FindOptionsWhere<Key>[]) {
+    return await this.keys.findOne({
+      where: conditions,
+      relations: { participants: true },
+    });
+  }
+  async waitForSignature(roomId: string, timeout?: number): Promise<string> {
+    return this.eventEmitter
+      .waitFor(KeyEvent.SIGN_FINISHED, {
+        handleError: false,
+        timeout,
+        filter: (name: string, userId: number, result: string, eventRoomId: string) => eventRoomId == roomId,
+        Promise,
+        overload: false,
+      })
+      .then(([name, userId, result, eventRoomId]: [string, number, string, string]) => {
+        console.log({
+          name,
+          userId,
+          result,
+          eventRoomId
+        })
+        
+        return JSON.parse(result)
+      })
+      .catch((error) => {
+        if (error.message === 'timeout') throw new RequestTimeoutException('Timeout');
+        this.logger.error(error);
+        throw new InternalServerErrorException(error.message);
+      });
   }
 
   async waitForApprove(keyEvent: KeyEvent, uuid: string, timeout?: number): Promise<boolean> {
@@ -331,7 +401,7 @@ export class KeysService {
         if (sign.status === TaskStatus.Finished) {
           sign.participantsConfirmations = payload.active_indexes;
           sign.result = payload.result;
-          this.eventEmitter.emit(KeyEvent.SIGN_FINISHED, sign.key.name, sign.key.userId, sign.result);
+          this.eventEmitter.emit(KeyEvent.SIGN_FINISHED, sign.key.name, sign.key.userId, sign.result, sign.roomId);
         }
 
         await this.signs.createOrUpdateOne(sign);
