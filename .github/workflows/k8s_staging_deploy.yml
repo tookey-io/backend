@@ -59,15 +59,21 @@ jobs:
       #     token: kube-github-ci-cd-token
       #     certificate-ttl: 1h
       #     kubernetes-cluster: teleport.tookey.cloud
+      # - name: Deploy
+      #   run: |
+      #     sed -i -e 's/server: https:\/\/teleport.tookey.cloud:443/server: https:\/\/teleport.tookey.cloud:3026/' $KUBECONFIG
+      #     helm upgrade --install $HELM_SHORT ./.helm --namespace apps-staging --set image=${{ env.REPO_IMAGE }} --set branch=$GIT_BRANCH --dry-run
+      #     helm upgrade --install $HELM_SHORT ./.helm --namespace apps-staging --set image=${{ env.REPO_IMAGE }} --set branch=$GIT_BRANCH --wait
+      #   env:
+      #     REPO_IMAGE: registry.digitalocean.com/tookey/staging-${{ github.event.repository.name }}:${{ env.GIT_BRANCH }}-${{ github.sha }}
 
 
-      - name: Install doctl
+      - name: Login to Kubernetes
         uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
       - name: Deploy
         run: |
-          sed -i -e 's/server: https:\/\/teleport.tookey.cloud:443/server: https:\/\/teleport.tookey.cloud:3026/' $KUBECONFIG
           helm upgrade --install $HELM_SHORT ./.helm --namespace apps-staging --set image=${{ env.REPO_IMAGE }} --set branch=$GIT_BRANCH --dry-run
           helm upgrade --install $HELM_SHORT ./.helm --namespace apps-staging --set image=${{ env.REPO_IMAGE }} --set branch=$GIT_BRANCH --wait
         env:
