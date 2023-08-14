@@ -57,8 +57,8 @@ jobs:
         with:
           proxy: teleport.tookey.cloud:443
           token: kube-github-ci-cd-token
-          certificate-ttl: 1h
-          kubernetes-cluster: teleport.tookey.cloud
+          # certificate-ttl: 1h
+          kubernetes-cluster: tookey-main
       - name: Deploy
         run: |
           sed -i -e 's/server: https:\/\/teleport.tookey.cloud:443/server: https:\/\/teleport.tookey.cloud:3026/' $KUBECONFIG
