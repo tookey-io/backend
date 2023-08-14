@@ -133,8 +133,9 @@ export class KeysUpdate extends BaseScene {
       message.join('\n'),
       isOwner
         ? Markup.inlineKeyboard([
-            [Markup.button.callback('🔁 Share with thirdparty', `${BotAction.KEY_SHARE}${keyId}`)],
-            [Markup.button.callback('❌ Delete', `${BotAction.KEY_DELETE}${keyId}`)],
+          [Markup.button.callback('🔁 Share with thirdparty', `${BotAction.KEY_SHARE}${keyId}`)],
+          [Markup.button.callback('👮 Verification flow', `${BotAction.KEY_VERIFICATION_FLOW}${keyId}`)],
+          [Markup.button.callback('❌ Delete', `${BotAction.KEY_DELETE}${keyId}`)],
           ])
         : undefined,
     );
@@ -144,6 +145,12 @@ export class KeysUpdate extends BaseScene {
   async onKeyShare(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
     const keyId = +this.getCallbackPayload(ctx, BotAction.KEY_SHARE);
     ctx.scene.enter(BotScene.KEY_SHARE, { keyShare: { keyId } });
+  }
+
+  @Action(new RegExp(`^${BotAction.KEY_VERIFICATION_FLOW}\\d+$`))
+  async onKeyVerification(@Ctx() ctx: TookeyContext<tg.Update.CallbackQueryUpdate>) {
+    const keyId = +this.getCallbackPayload(ctx, BotAction.KEY_VERIFICATION_FLOW);
+    ctx.scene.enter(BotScene.KEY_VERIFICATION, { keyVerification: { keyId } });
   }
 
   @Action(new RegExp(`^${BotAction.KEY_DELETE}\\d+$`))

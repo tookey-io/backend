@@ -25,9 +25,9 @@ import {
 import { AmqpPayload, AmqpSubscribe } from '@tookey/amqp';
 
 import { AmqpPayloadDto } from '../ampq.dto';
+import { AnyRoles } from '../decorators/any-role.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { JwtAuth } from '../decorators/jwt-auth.decorator';
-import { ShareableKeyJwtAuth } from '../decorators/shareable-key-jwt-auth.decorator';
 import { UserContextDto } from '../user/user.dto';
 import {
   KeyCreateRequestDto,
@@ -49,6 +49,7 @@ export class KeysController {
     private readonly keysService: KeysService,
   ) {}
 
+  @AnyRoles('user.keys.write')
   @JwtAuth()
   @ApiOperation({ description: 'Create a Key' })
   @ApiOkResponse({ type: KeyDto })
@@ -62,6 +63,7 @@ export class KeysController {
     return this.keysService.createKey(dto, user.id);
   }
 
+  @AnyRoles('user.keys.read')
   @JwtAuth()
   @ApiOperation({ description: 'Get a Key' })
   @ApiOkResponse({ type: KeyDto })
@@ -71,6 +73,7 @@ export class KeysController {
     return this.keysService.getKey({ id }, user.id);
   }
 
+  @AnyRoles('user.keys.read')
   @JwtAuth()
   @ApiOperation({ description: 'Get Keys List' })
   @ApiOkResponse({ type: KeyListResponseDto })
@@ -79,6 +82,7 @@ export class KeysController {
     return this.keysService.getKeyList(user.id);
   }
 
+  @AnyRoles('user.keys.write')
   @JwtAuth()
   @ApiOperation({ description: 'Delete a Key' })
   @ApiOkResponse({ type: KeyDeleteResponseDto })
@@ -87,14 +91,15 @@ export class KeysController {
     return this.keysService.softDelete(dto, user.id);
   }
 
-  @ShareableKeyJwtAuth()
-  @ApiOperation({ description: 'Sign a Key' })
+  @AnyRoles('user.keys.use')
+  @JwtAuth()
+  @ApiOperation({ description: 'Sign a hash' })
   @ApiOkResponse({ type: SignDto })
   @ApiNotFoundResponse()
-  @ApiForbiddenResponse({ description: 'Sign operation is forbidden' })
+  @ApiForbiddenResponse({ description: 'Receives sign request from an external signer' })
   @HttpCode(200)
   @Post('sign')
-  signKey(@Body() dto: KeySignRequestDto, @CurrentUser() user: UserContextDto): Promise<SignDto> {
+  receiveParticipationRequest(@Body() dto: KeySignRequestDto, @CurrentUser() user: UserContextDto): Promise<SignDto> {
     if (user.id > 0) return this.keysService.signKey(dto, user.id);
     if (this.isKeyAccessAllowed(dto.publicKey, user.keys)) return this.keysService.signKey(dto);
     else throw new ForbiddenException('Sign operation is forbidden');

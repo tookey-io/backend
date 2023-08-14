@@ -19,3 +19,8 @@ export enum TaskStatus {
   Error = 'error',
   Timeout = 'timeout',
 }
+
+export enum UserDeviceType {
+  Listener = 'listener',
+  FirebaseMessaging = 'firebase-messaging',
+}

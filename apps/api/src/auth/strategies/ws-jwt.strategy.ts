@@ -17,7 +17,7 @@ export class WsJwtStrategy extends PassportStrategy(Strategy, 'ws-jwt') {
     const jwt = configService.get('jwt', { infer: true });
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: jwt.accessTokenSecret,
+      secretOrKey: jwt.secret,
     });
   }
 

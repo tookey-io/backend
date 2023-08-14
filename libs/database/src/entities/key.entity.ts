@@ -5,6 +5,8 @@ import {
   EntityManager,
   Index,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   Repository,
@@ -15,6 +17,7 @@ import { CustomRepository } from '../typeorm-ex.decorator';
 import { MetaEntity } from './base';
 import { KeyParticipant } from './key-participant.entity';
 import { User } from './user.entity';
+import { UserDevice } from './user-device.entity';
 
 @Entity()
 export class Key extends MetaEntity {
@@ -64,6 +67,12 @@ export class Key extends MetaEntity {
 
   @Column({ type: 'int', unsigned: true, array: true, default: [] })
   participantsActive: number[];
+
+  @Column({ type: 'varchar', nullable: true })
+  verificationHook: string | null;
+
+  @ManyToMany(() => UserDevice, (device) => device.keys)
+  devices: UserDevice[];
 
   constructor(partial: Partial<Key>) {
     super();

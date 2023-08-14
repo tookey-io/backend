@@ -16,8 +16,8 @@ export class AccessService {
   ) {}
 
   async getAccessToken(userId: number): Promise<AccessToken> {
-    const found = await this.accessTokens.findOneBy({ userId, validUntil: MoreThan(new Date()) });
-    if (found) return found;
+    // const found = await this.accessTokens.findOneBy({ userId, validUntil: MoreThan(new Date()) });
+    // if (found) return found;
 
     return this.refreshToken(userId);
   }

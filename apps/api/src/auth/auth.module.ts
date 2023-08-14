@@ -13,11 +13,14 @@ import { TwitterModule } from '../twitter/twitter.module';
 import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { JwtRefreshTokenStrategy } from './strategies/jwt-refresh-token.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { ShareableKeyStrategy } from './strategies/shareable-key.strategy';
 import { SigninKeyStrategy } from './strategies/signin-key.strategy';
-import { WsJwtStrategy } from './strategies/ws-jwt.strategy';
+import { FlowsModule } from '@tookey/flows';
+
+// Deprecated strategies
+// import { JwtRefreshTokenStrategy } from './strategies/jwt-refresh-token.strategy';
+// import { ShareableKeyStrategy } from './strategies/shareable-key.strategy';
+// import { WsJwtStrategy } from './strategies/ws-jwt.strategy';
 
 const AuthRepositories = TypeOrmExModule.forCustomRepository([UserDiscordRepository]);
 
@@ -32,20 +35,23 @@ const AuthRepositories = TypeOrmExModule.forCustomRepository([UserDiscordReposit
       inject: [ConfigService],
       useFactory: async (configService: ConfigService<AppConfiguration>) => {
         const jwt = configService.get('jwt', { infer: true });
-        return { secret: jwt.accessTokenSecret, signOptions: { expiresIn: jwt.accessTokenTTL } };
+        return { secret: jwt.secret, signOptions: { expiresIn: jwt.refreshTokenTTL } };
       },
     }),
     TwitterModule,
     DiscordModule,
+    FlowsModule,
   ],
   controllers: [AuthController],
   providers: [
     AuthService,
-    JwtRefreshTokenStrategy,
     JwtStrategy,
-    WsJwtStrategy,
     SigninKeyStrategy,
-    ShareableKeyStrategy,
+
+    // Deprecated strategies
+    // JwtRefreshTokenStrategy,
+    // WsJwtStrategy,
+    // ShareableKeyStrategy,
   ],
 })
 export class AuthModule {}

@@ -11,3 +11,5 @@ export * from './1673116508305-wallet';
 export * from './1673342597388-discord-expiration';
 export * from './1673812120168-aofg-profiles';
 export * from './1675070482800-user-uuid';
+export * from './1686821195288-verificationHook';
+export * from './1689263415093-userDevice';

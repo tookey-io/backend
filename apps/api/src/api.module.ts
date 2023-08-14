@@ -12,6 +12,11 @@ import { ShareableTokenModule } from './shareable-token/shareable-token.module';
 import { TwitterModule } from './twitter/twitter.module';
 import { UserModule } from './user/user.module';
 import { WalletModule } from './wallet/wallet.module';
+import { DevicesModule } from './devices/devices.module';
+import { ApiController } from './api.controller';
+import { ApiService } from './api.service';
+import { SignApiService } from './sign-api/sign-api.service';
+import { SignApiController } from './sign-api/sign-api.controller';
 
 @Module({
   imports: [
@@ -31,6 +36,9 @@ import { WalletModule } from './wallet/wallet.module';
     PipefyModule,
     WalletModule,
     AdminModule,
+    DevicesModule,
   ],
+  controllers: [ApiController, SignApiController],
+  providers: [ApiService, SignApiService],
 })
 export class ApiModule {}

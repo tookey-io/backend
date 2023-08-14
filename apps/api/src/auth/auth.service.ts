@@ -6,7 +6,8 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
-import { AuthTokenDto } from './auth.dto';
+import { AuthTokenDto, PricipalDto } from './auth.dto';
+import { classToPlain, instanceToPlain, plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class AuthService {
@@ -16,40 +17,55 @@ export class AuthService {
     private readonly configService: ConfigService<AppConfiguration>,
   ) {}
 
-  public getJwtAccessToken(userId: number): AuthTokenDto {
+  public validateToken(token: string) {
+    const jwt = this.configService.get('jwt', { infer: true });
+    if (!jwt) throw new InternalServerErrorException('Invalid JWT Access Token configuration');
+
+    return this.jwtService
+      .verifyAsync<PricipalDto>(token, {
+        secret: jwt.secret,
+      })
+      .then((plain) => plainToInstance(PricipalDto, plain));
+  }
+
+  private getJwtToken(principal: PricipalDto, secret: string, ttl: number) {
     try {
-      const jwt = this.configService.get('jwt', { infer: true });
-      if (!jwt) throw new InternalServerErrorException('Invalid JWT Access Token configuration');
-      const token = this.jwtService.sign(
-        { id: userId },
-        {
-          secret: jwt.accessTokenSecret,
-          expiresIn: jwt.accessTokenTTL,
-        },
-      );
+      const token = this.jwtService.sign(principal, {
+        secret: secret,
+        expiresIn: ttl,
+      });
       return {
         token,
-        validUntil: formatISO(addSeconds(new Date(), jwt.accessTokenTTL)),
+        validUntil: formatISO(addSeconds(new Date(), ttl)),
       };
     } catch (error) {
       this.logger.error(error);
-      throw new Error(error);
+      throw error;
     }
   }
 
-  public getJwtRefreshToken(userId: number) {
+  public getJwtServiceToken(principal: PricipalDto) {
+    const plain = instanceToPlain(principal) as PricipalDto;
+    plain.roles.push('service');
+    const jwt = this.configService.get('jwt', { infer: true });
+    if (!jwt) throw new InternalServerErrorException('Invalid JWT Access Token configuration');
+    return this.getJwtToken(plain, jwt.secret, 60 * 60 * 24 * 365); // 1 year
+  }
+
+  public getJwtAccessToken(principal: PricipalDto) {
+    const plain = instanceToPlain(principal) as PricipalDto;
+    plain.roles.push('access');
+    const jwt = this.configService.get('jwt', { infer: true });
+    if (!jwt) throw new InternalServerErrorException('Invalid JWT Access Token configuration');
+    return this.getJwtToken(plain, jwt.secret, jwt.accessTokenTTL);
+  }
+
+  public getJwtRefreshToken(principal: PricipalDto) {
+    const plain = instanceToPlain(principal) as PricipalDto;
+    plain.roles.push('refresh');
     const jwt = this.configService.get('jwt', { infer: true });
     if (!jwt) throw new InternalServerErrorException('Invalid JWT Refresh Token configuration');
-    const token = this.jwtService.sign(
-      { id: userId },
-      {
-        secret: jwt.refreshTokenSecret,
-        expiresIn: jwt.refreshTokenTTL,
-      },
-    );
-    return {
-      token,
-      validUntil: formatISO(addSeconds(new Date(), jwt.refreshTokenTTL)),
-    };
+
+    return this.getJwtToken(plain, jwt.secret, jwt.refreshTokenTTL);
   }
 }

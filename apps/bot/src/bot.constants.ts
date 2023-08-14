@@ -5,6 +5,7 @@ export enum BotScene {
   AUTH = 'auth',
   KEY_SHARE = 'keyShare',
   KEY_DELETE = 'keyDelete',
+  KEY_VERIFICATION = 'keyVerification',
   SHAREABLE_TOKEN_CREATE = 'shareableTokenCreate',
 }
 
@@ -26,6 +27,10 @@ export enum BotAction {
   KEY_DELETE_APPROVE = 'key:delete:approve:',
   KEY_DELETE_REJECT = 'key:delete:reject:',
   KEY_SHARE_USER = 'key:share:user:',
+  KEY_VERIFICATION_FLOW = 'key:verification:',
+  KEY_VERIFICATION_FLOW_SELECT = 'key:verification:select:',
+  KEY_VERIFICATION_FLOW_REMOVE = 'key:verification:remove:',
+
   SHAREABLE_TOKEN_CREATE = 'shareable:create',
   SHAREABLE_TOKEN_MANAGE = 'shareable:manage:',
   SHAREABLE_TOKEN_PAGE = 'shareable:page:',

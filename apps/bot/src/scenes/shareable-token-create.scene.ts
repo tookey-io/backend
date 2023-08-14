@@ -3,7 +3,7 @@ import { ShareableTokenService } from 'apps/api/src/shareable-token/shareable-to
 import { TelegrafExceptionFilter } from 'apps/app/src/filters/telegraf-exception.filter';
 import { format } from 'date-fns';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { Ctx, Hears, Wizard, WizardStep } from 'nestjs-telegraf';
+import { Action, Ctx, Hears, Wizard, WizardStep } from 'nestjs-telegraf';
 import { Markup } from 'telegraf';
 
 import { UseFilters } from '@nestjs/common';
@@ -11,7 +11,56 @@ import { UseFilters } from '@nestjs/common';
 import { BotMenu, BotScene, mainKeyboard } from '../bot.constants';
 import { TookeyContext } from '../bot.types';
 import { BaseScene } from '../scenes/base.scene';
+import { Message } from 'telegraf/types';
 
+function storePrevious(ctx: TookeyContext, msg: Message.CommonMessage) {
+  ctx.wizard.state.shareableTokenCreate?.previous?.push(msg);
+}
+
+function deletePrevious(ctx: TookeyContext) {
+  if (ctx.wizard.state.shareableTokenCreate) {
+    const msgs = [...ctx.wizard.state.shareableTokenCreate.previous];
+    console.log('previous to delete', msgs);
+    ctx.wizard.state.shareableTokenCreate.previous = [];
+    if (msgs.length > 0) {
+      return Promise.all(msgs.map((msg) => ctx.deleteMessage(msg.message_id)));
+    }
+  }
+}
+
+async function keySelection(ctx: TookeyContext) {
+  storePrevious(
+    ctx,
+    await ctx.replyWithMarkdown(
+      `**Great!  Now that you've selected *${ctx.wizard.state.shareableTokenCreate?.tokenName}* as name for your new **Shareable Token**, please choose the keys you want to add to the token. Here are the available keys:`,
+      Markup.inlineKeyboard([
+        [
+          Markup.button.callback(`All`, ShareableTokenCreateSceneActions.SELECT_ALL_KEYS),
+          Markup.button.callback(`None`, ShareableTokenCreateSceneActions.DESELECT_ALL_KEYS),
+          Markup.button.callback('✅ Confirm', ShareableTokenCreateSceneActions.CONFIRM),
+        ],
+        ...ctx.wizard.state.keys.map((key) => {
+          const selected = ctx.wizard.state.shareableTokenCreate.selectedKeys.includes(key.keyId);
+          const emoji = selected ? '🟢' : '⚪';
+          return [
+            Markup.button.callback(
+              `${emoji} ${key.keyName}`.padEnd(150, ' '),
+              `${ShareableTokenCreateSceneActions.TOGGLE_KEY}${key.keyId}`,
+            ),
+          ];
+        }),
+      ]),
+    ),
+  );
+}
+
+enum ShareableTokenCreateSceneActions {
+  TOGGLE_KEY = 'select_key',
+  SELECT_ALL_KEYS = 'select_all_keys',
+  DESELECT_ALL_KEYS = 'deselect_all_keys',
+  CONFIRM = 'confirm',
+  
+}
 @Wizard(BotScene.SHAREABLE_TOKEN_CREATE)
 @UseFilters(TelegrafExceptionFilter)
 export class ShareableTokenCreateScene extends BaseScene {
@@ -32,21 +81,40 @@ export class ShareableTokenCreateScene extends BaseScene {
     ctx.scene.leave();
   }
 
+  @Action(new RegExp(`^${ShareableTokenCreateSceneActions.TOGGLE_KEY}`))
+  async toggleKey(@Ctx() ctx: TookeyContext) {
+    const keyId = this.getCallbackPayload(ctx, ShareableTokenCreateSceneActions.TOGGLE_KEY);
+
+    const id = ctx.wizard.state.shareableTokenCreate?.selectedKeys?.indexOf(+keyId);
+    if (id === -1) {
+      ctx.wizard.state.shareableTokenCreate?.selectedKeys?.push(+keyId);
+    } else if (typeof id !== 'undefined') {
+      ctx.wizard.state.shareableTokenCreate?.selectedKeys?.splice(id, 1);
+    }
+
+    await Promise.all([deletePrevious(ctx), keySelection(ctx)]);
+  }
+
   @WizardStep(1)
   async stepName(@Ctx() ctx: TookeyContext) {
     const userTelegram = ctx.user;
     const { user } = userTelegram;
+
     ctx.wizard.state.shareableTokenCreate = {
       tokenName: null,
       selectedKeys: [],
       ttl: null,
+      previous: [],
     };
 
     const sceneKeyboard = Markup.keyboard([[BotMenu.CANCEL]]).resize();
 
-    await ctx.reply(
-      'To create a new Shareable Token, please send the name of the token you want to create.',
-      sceneKeyboard,
+    storePrevious(
+      ctx,
+      await ctx.reply(
+        'To create a new Shareable Token, please send the name of the token you want to create.',
+        sceneKeyboard,
+      ),
     );
 
     const keys = await this.keysService.getKeyParticipationsByUser(user.id);
@@ -57,29 +125,35 @@ export class ShareableTokenCreateScene extends BaseScene {
 
   @WizardStep(2)
   async stepKeys(@Ctx() ctx: TookeyContext) {
-    if (!ctx.message.text.match(/^[a-zA-Z0-9\s]+$/)) {
-      await ctx.reply(
-        [
-          'Sorry, that is not a valid token name.',
-          'To create a new Shareable Token, please send me a name that contains only alphanumeric characters and spaces.',
-        ].join('\n'),
+    storePrevious(ctx, ctx.message);
+
+    if (!ctx.message.text.match(/^[a-zA-Z0-9\-]+$/)) {
+      storePrevious(
+        ctx,
+        await ctx.reply(
+          [
+            'Sorry, that is not a valid token name.',
+            'To create a new Shareable Token, please send me a name that contains only alphanumeric characters and dashes .',
+          ].join('\n'),
+        ),
       );
       return;
     }
 
-    ctx.wizard.state.shareableTokenCreate = { tokenName: ctx.message.text };
-    await ctx.reply(
-      `Great! Now that you've selected the name for your new Shareable Token, please choose the keys you want to add to the token. Here are the available keys:`,
-    );
-    await ctx.reply(ctx.wizard.state.keys.map((key, i) => `${i + 1}. ${key.keyName}`).join('\n'));
-    await ctx.reply(
-      'To select a key, please reply with the number of the key you want to add to the token. You can add multiple keys to the token by separating the numbers with a comma.',
-    );
+    await deletePrevious(ctx);
 
-    ctx.wizard.next();
+    ctx.wizard.state.shareableTokenCreate.tokenName = ctx.message.text;
+
+    await keySelection(ctx);
+
+    await ctx.wizard.next();
+  }
+  @WizardStep(3)
+  async stepWaitKeys(@Ctx() ctx: TookeyContext) {
+    console.log('do noting');
   }
 
-  @WizardStep(3)
+  @WizardStep(4)
   async stepTTL(@Ctx() ctx: TookeyContext) {
     if (!ctx.message.text.match(/^[0-9]+(,[0-9]+)*$/)) {
       await ctx.reply(
@@ -88,7 +162,7 @@ export class ShareableTokenCreateScene extends BaseScene {
       return;
     }
 
-    ctx.wizard.state.shareableTokenCreate.selectedKeys = ctx.message.text.split(',').map(Number);
+    // ctx.wizard.state.shareableTokenCreate.selectedKeys = ctx.message.text.split(',').map(Number);
 
     await ctx.reply(`Great! You have selected the following keys for your new Shareable Token:`);
     await ctx.reply(
@@ -103,7 +177,7 @@ export class ShareableTokenCreateScene extends BaseScene {
     ctx.wizard.next();
   }
 
-  @WizardStep(4)
+  @WizardStep(5)
   async stepSubmit(@Ctx() ctx: TookeyContext) {
     const userTelegram = ctx.user;
     const { user } = userTelegram;
