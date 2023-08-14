@@ -40,7 +40,7 @@ spec:
             - name: CORS_ORIGINS
               value: "https://tookey.io,https://wallet.tookey.io,https://automation.tookey.io"
             - name: CORS_ALLOWED_HEADERS
-              value: "Content-Type,Authorization"
+              value: "Content-Type,Authorization,X-SIGNIN-KEY"
             - name: APP_URL
               value: "https://backend.apps-production.tookey.cloud"
             - name: NODE_ENV

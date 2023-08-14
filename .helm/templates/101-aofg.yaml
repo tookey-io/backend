@@ -36,7 +36,7 @@ spec:
             - name: CORS_ORIGINS
               value: "https://aofg.io,https://automation.aofg.io"
             - name: CORS_ALLOWED_HEADERS
-              value: "Content-Type,Authorization"
+              value: "Content-Type,Authorization,X-SIGNIN-KEY"
             - name: DISCORD_CALLBACK_URL
               value: "https://aofg.io/auth/discord"
             - name: NODE_ENV
