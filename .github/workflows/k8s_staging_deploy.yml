@@ -47,18 +47,24 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Fetch Teleport binaries
-        uses: teleport-actions/setup@v1
+      # - name: Fetch Teleport binaries
+      #   uses: teleport-actions/setup@v1
+      #   with:
+      #     version: 11.3.1
+      # - name: Login to Kubernetes
+      #   id: auth
+      #   uses: teleport-actions/auth-k8s@v1
+      #   with:
+      #     proxy: teleport.tookey.cloud:443
+      #     token: kube-github-ci-cd-token
+      #     certificate-ttl: 1h
+      #     kubernetes-cluster: teleport.tookey.cloud
+
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
         with:
-          version: 11.3.1
-      - name: Login to Kubernetes
-        id: auth
-        uses: teleport-actions/auth-k8s@v1
-        with:
-          proxy: teleport.tookey.cloud:443
-          token: kube-github-ci-cd-token
-          # certificate-ttl: 1h
-          kubernetes-cluster: tookey-main
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
       - name: Deploy
         run: |
           sed -i -e 's/server: https:\/\/teleport.tookey.cloud:443/server: https:\/\/teleport.tookey.cloud:3026/' $KUBECONFIG
