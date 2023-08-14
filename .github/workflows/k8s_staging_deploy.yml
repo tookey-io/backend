@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - fix/deployment-issues
 
 jobs:
   build_and_deploy:
@@ -67,11 +68,9 @@ jobs:
       #   env:
       #     REPO_IMAGE: registry.digitalocean.com/tookey/staging-${{ github.event.repository.name }}:${{ env.GIT_BRANCH }}-${{ github.sha }}
 
+      - name: Save DigitalOcean kubeconfig with short-lived credentials
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 tookey-main
 
-      - name: Login to Kubernetes
-        uses: digitalocean/action-doctl@v2
-        with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
       - name: Deploy
         run: |
           helm upgrade --install $HELM_SHORT ./.helm --namespace apps-staging --set image=${{ env.REPO_IMAGE }} --set branch=$GIT_BRANCH --dry-run
