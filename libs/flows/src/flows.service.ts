@@ -76,13 +76,19 @@ export class FlowsService {
     if (typeof password === 'undefined') throw new UnauthorizedException('No password provided for flows service');
     if (typeof backendUrl === 'undefined') throw new BadGatewayException('No backendUrl provided for flows service');
 
-    const response = await firstValueFrom(
-      this.httpService.post<{ token: string }>(`${backendUrl}/v1/authentication/external/service/auth`, { password }),
-    );
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post<{ token: string }>(`${backendUrl}/v1/authentication/external/service/auth`, { password }),
+      );
 
-    this.logger.info('Authenticated with flows service: ' + response.data.token);
-
-    this.authToken = response.data.token;
+      this.logger.info('Authenticated with flows service: ' + response.data.token);
+      this.authToken = response.data.token;
+    } catch (e) {
+      console.log(backendUrl, password)
+      console.error(e);
+      this.logger.error(e);
+      throw e;
+    }
   }
 
   async injectUser(user: ExternalUserInjectDto) {
@@ -114,6 +120,9 @@ export class FlowsService {
         // auth
         return null;
       }
+      console.log(backendUrl, user)
+      console.error(e);
+      this.logger.error(e);
       throw e;
     }
   }

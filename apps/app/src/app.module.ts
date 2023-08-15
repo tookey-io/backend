@@ -31,6 +31,7 @@ import { FlowsModule } from '@tookey/flows';
             // transport: !isProduction ? { target: 'pino-pretty' } : undefined,
 
             // Temporary debug on production :)
+            transport: { target: 'pino-pretty' },
             level: 'debug',
             useLevelLabels: true,
           },
