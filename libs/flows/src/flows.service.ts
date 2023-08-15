@@ -71,7 +71,7 @@ export class FlowsService {
 
   async authService() {
     const backendUrl = this.config.get('flows.backendUrl', { infer: true });
-    const password = this.config.get('flows.password', { infer: true }) || 'super-secret';
+    const password = this.config.get('flows.password', { infer: true });
 
     if (typeof password === 'undefined') throw new UnauthorizedException('No password provided for flows service');
     if (typeof backendUrl === 'undefined') throw new BadGatewayException('No backendUrl provided for flows service');
@@ -87,11 +87,7 @@ export class FlowsService {
 
   async injectUser(user: ExternalUserInjectDto) {
     if (typeof this.authToken === 'undefined') {
-      try {
-        await this.authService();
-      } catch (e: unknown) {
-        throw new UnauthorizedException('Unable to authenticate with flows service');
-      }
+      await this.authService();
     }
 
     const backendUrl = this.config.get('flows.backendUrl', { infer: true });
@@ -124,11 +120,7 @@ export class FlowsService {
 
   async authUser(dto: ExternalUserAuthDto) {
     if (typeof this.authToken === 'undefined') {
-      try {
-        await this.authService();
-      } catch (e: unknown) {
-        throw new UnauthorizedException('Unable to authenticate with flows service');
-      }
+      await this.authService();
     }
 
     const backendUrl = this.config.get('flows.backendUrl', { infer: true });
