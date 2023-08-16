@@ -23,6 +23,14 @@ export class PiecesController {
     }
     return piece
   }
+  @Get('/pieces/:vendor/:piece')
+  async findPieceByVendorAndScope(@Param("vendor") vendor: string, @Param("piece") pieceName: string, @Query("version") version?: string) {
+    const piece = await this.piecesService.getPiece(`${vendor}/${pieceName}`, version);
+    if (!piece) {
+        throw new NotFoundException(`Piece ${vendor}/${pieceName}${version ? `:${version}` : ''} not found`);
+    }
+    return piece
+  }
 
   @AnyRoles('admin.pieces.write')
   @JwtAuth()
