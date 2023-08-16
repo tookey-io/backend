@@ -17,6 +17,7 @@ import { ApiController } from './api.controller';
 import { ApiService } from './api.service';
 import { SignApiService } from './sign-api/sign-api.service';
 import { SignApiController } from './sign-api/sign-api.controller';
+import { PiecesModule } from './pieces/pieces.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { SignApiController } from './sign-api/sign-api.controller';
     WalletModule,
     AdminModule,
     DevicesModule,
+    PiecesModule,
   ],
   controllers: [ApiController, SignApiController],
   providers: [ApiService, SignApiService],

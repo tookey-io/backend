@@ -2,7 +2,7 @@ import { AppConfiguration } from 'apps/app/src/app.config';
 import { addSeconds, formatISO } from 'date-fns';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
@@ -42,6 +42,14 @@ export class AuthService {
       this.logger.error(error);
       throw error;
     }
+  }
+
+  public getJwtAdminToken(key: string) {
+    const jwt = this.configService.get('jwt', { infer: true });
+    if (!jwt) throw new InternalServerErrorException('Invalid JWT Access Token configuration');
+    if (jwt.secret !== key) throw new UnauthorizedException('Invalid admin key');
+
+    return this.getJwtToken({ id: -1, roles: ['admin'] }, jwt.secret, 60 * 60 * 24 * 365); // 1 year
   }
 
   public getJwtServiceToken(principal: PricipalDto) {
