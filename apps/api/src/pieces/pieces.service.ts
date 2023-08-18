@@ -5,30 +5,30 @@ import { Equal, IsNull, LessThan, LessThanOrEqual, MoreThanOrEqual } from 'typeo
 import { inc, coerce, minVersion } from 'semver';
 
 function findSearchOperation(version: string) {
-  if (version === 'undefined') {
-    return [MoreThanOrEqual('0.0.0'), LessThanOrEqual('999.999.999')]
+  try {
+    const coerced = coerce(version).raw as string;
+    const min = minVersion(version).raw as string;
+    const max = version.startsWith('^')
+      ? increaseMajorVersion(coerced)
+      : version.startsWith('~')
+      ? increaseMinorVersion(coerced)
+      : version;
+    console.log({
+      version,
+      coerced,
+      min,
+      max,
+    });
+    if (version.startsWith('^')) {
+      return [MoreThanOrEqual(min), LessThan(increaseMajorVersion(coerced))];
+    }
+    if (version.startsWith('~')) {
+      return [MoreThanOrEqual(min), LessThan(increaseMinorVersion(coerced))];
+    }
+    return [Equal(version)];
+  } catch (e) {
+    return undefined;
   }
-  
-  const coerced = coerce(version).raw as string;
-  const min = minVersion(version).raw as string;
-  const max = version.startsWith('^')
-    ? increaseMajorVersion(coerced)
-    : version.startsWith('~')
-    ? increaseMinorVersion(coerced)
-    : version;
-  console.log({
-    version,
-    coerced,
-    min,
-    max,
-  });
-  if (version.startsWith('^')) {
-    return [MoreThanOrEqual(min), LessThan(increaseMajorVersion(coerced))];
-  }
-  if (version.startsWith('~')) {
-    return [MoreThanOrEqual(min), LessThan(increaseMinorVersion(coerced))];
-  }
-  return [Equal(version)];
 }
 
 export function isNil<T>(value: T | null | undefined): value is null | undefined {
@@ -75,11 +75,11 @@ export class PiecesService {
       .getMany()
       .then((pieces) => {
         if (summary) {
-          return pieces.map(p => ({
+          return pieces.map((p) => ({
             ...p,
             actions: Object.keys(p.actions).length,
             triggers: Object.keys(p.triggers).length,
-          }))
+          }));
         } else {
           return pieces;
         }
