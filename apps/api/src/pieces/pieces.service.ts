@@ -5,6 +5,10 @@ import { Equal, IsNull, LessThan, LessThanOrEqual, MoreThanOrEqual } from 'typeo
 import { inc, coerce, minVersion } from 'semver';
 
 function findSearchOperation(version: string) {
+  if (version === 'undefined') {
+    return [MoreThanOrEqual('0.0.0'), LessThanOrEqual('999.999.999')]
+  }
+  
   const coerced = coerce(version).raw as string;
   const min = minVersion(version).raw as string;
   const max = version.startsWith('^')
