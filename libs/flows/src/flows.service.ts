@@ -24,7 +24,7 @@ export class FlowsService {
   constructor(
     @InjectPinoLogger(FlowsService.name) private readonly logger: PinoLogger,
     private readonly httpService: HttpService,
-    private readonly config: ConfigService<{ flows: FlowsConfig }>,
+    private readonly config: ConfigService<{ publicUrl: string; flows: FlowsConfig }>,
   ) {}
 
   private async getUserAuthToken(user: ExternalUserAuthDto) {
@@ -84,7 +84,7 @@ export class FlowsService {
       this.logger.info('Authenticated with flows service: ' + response.data.token);
       this.authToken = response.data.token;
     } catch (e) {
-      console.log(backendUrl, password)
+      console.log(backendUrl, password);
       console.error(e);
       this.logger.error(e);
       throw e;
@@ -120,7 +120,7 @@ export class FlowsService {
         // auth
         return null;
       }
-      console.log(backendUrl, user)
+      console.log(backendUrl, user);
       console.error(e);
       this.logger.error(e);
       throw e;
@@ -132,6 +132,7 @@ export class FlowsService {
       await this.authService();
     }
 
+    const publicUrl = this.config.get('publicUrl', { infer: true });
     const backendUrl = this.config.get('flows.backendUrl', { infer: true });
     if (typeof backendUrl === 'undefined') throw new BadGatewayException('No backendUrl provided for flows service');
 
@@ -154,9 +155,16 @@ export class FlowsService {
         this.httpService.post<unknown>(
           `${backendUrl}/v1/app-connections`,
           {
-            appName: '@activepieces/piece-tookey-wallet',
+            appName: '@tookey-io/piece-wallet',
             name: 'tookey-wallet',
-            value: { secret_text: dto.token, type: 'SECRET_TEXT' },
+            type: 'CUSTOM_AUTH',
+            value: {
+              type: 'CUSTOM_AUTH',
+              props: {
+                token: dto.token,
+                backendUrl: publicUrl,
+              },
+            },
           },
           {
             headers: {
