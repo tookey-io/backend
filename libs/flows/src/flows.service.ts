@@ -151,18 +151,6 @@ export class FlowsService {
     ).then(({ data }) => data);
 
     if (dto.token) {
-      this.logger.info('Inject app connection', {
-        appName: '@tookey-io/piece-wallet',
-        name: 'tookey-wallet',
-        type: 'CUSTOM_AUTH',
-        value: {
-          type: 'CUSTOM_AUTH',
-          props: {
-            token: dto.token,
-            backendUrl: publicUrl,
-          },
-        },
-      });
       await firstValueFrom(
         this.httpService.post<unknown>(
           `${backendUrl}/v1/app-connections`,

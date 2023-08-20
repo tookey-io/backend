@@ -45,6 +45,8 @@ spec:
               value: "https://backend.apps-production.tookey.cloud"
             - name: NODE_ENV
               value: "production"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /etc/gcp/sa_credentials.json
           envFrom:
             - secretRef:
                 name: backend-env
@@ -59,6 +61,17 @@ spec:
           ports:
             - name: "http"
               containerPort: 3000
+          volumeMounts: 
+            - name: service-account-credentials-volume
+              mountPath: /etc/gcp
+              readOnly: true
+      volumes:
+        - name: service-account-credentials-volume
+          secret: 
+            secretName: backend-service-account-credentials
+            items:
+              - key: sa_json
+                path: sa_credentials.json
 
 ---
 apiVersion: v1
