@@ -2,7 +2,7 @@
   "name": "@tookey/backend",
   "private": true,
   "version": "1.5.1",
-  "description": "Nest TypeScript starter repository",
+  "description": "Tookey backend for User management and expose api",
   "license": "MIT",
   "scripts": {
     "prebuild": "rimraf dist",

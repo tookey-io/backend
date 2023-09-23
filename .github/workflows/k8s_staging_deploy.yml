@@ -4,15 +4,18 @@ on:
   push:
     branches:
       - master
-      - feature/flows-api
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build_and_deploy:
+    runs-on: ubuntu-latest
     permissions:
       # The "id-token: write" permission is required or Machine ID will not be able to authenticate with the cluster.
       id-token: write
       contents: read
-    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
