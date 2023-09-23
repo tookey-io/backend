@@ -26,17 +26,11 @@ jobs:
     steps:
       - 
         uses: actions/checkout@v3
-
-      - 
-        name: Install Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '18'
-
       - 
         name: Get version from package.json
         id: package_version
-        run: echo "::set-output name=version::$(node extract-version.js)"
+        run: echo "version=v$(jq -r .version package.json)" >> $GITHUB_OUTPUT
+
       -
         name: Login to GHCR
         if: github.event_name != 'pull_request'
