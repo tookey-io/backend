@@ -83,6 +83,9 @@ jobs:
       contents: read
 
     steps:
+      - 
+        uses: actions/checkout@v3
+
       - name: Set environment variables
         run: |
           # Short name for current branch. For PRs, use target branch (base ref)
@@ -116,10 +119,8 @@ jobs:
             type=sha
 
       - name: Deploy
-        if: github.ref == 'refs/heads/main' || matrix.namespace != 'apps-production'
+        if: github.ref == 'refs/heads/main' || matrix.namespace != 'production'
         run: |
-          helm upgrade --install $HELM_SHORT ./.helm --namespace ${{ matrix.namespace }} --set image=${{ env.REPO_IMAGE }} --set branch=$GIT_BRANCH --dry-run
-          helm upgrade --install $HELM_SHORT ./.helm --namespace ${{ matrix.namespace }} --set image=${{ env.REPO_IMAGE }} --set branch=$GIT_BRANCH --wait
-        env:
-          REPO_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags[0] }}
+          helm upgrade --install $HELM_SHORT ./.helm --namespace ${{ matrix.namespace }} --set image=${{ steps.meta.outputs.tags }} --set branch=$GIT_BRANCH --dry-run
+          helm upgrade --install $HELM_SHORT ./.helm --namespace ${{ matrix.namespace }} --set image=${{ steps.meta.outputs.tags }} --set branch=$GIT_BRANCH --wait
 
