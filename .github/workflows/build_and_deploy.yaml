@@ -70,7 +70,7 @@ jobs:
 
   deploy_do:
     needs: docker_build
-    runs_on: ubuntu-latest
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
