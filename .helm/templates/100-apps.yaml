@@ -88,6 +88,9 @@ spec:
   routes:
     - match: "Host(`backend.{{ $.Release.Namespace }}.tookey.cloud`)"
       kind: Rule
+      middlewares:
+        - name: allow-cors
+          namespace: {{ $.Release.Namespace }}
       services:
         - name: backend
           port: 80
