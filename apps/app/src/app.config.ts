@@ -32,7 +32,7 @@ export type DiscordConfig = {
 };
 
 export type CorsConfig = {
-  origin: string | string[];
+  origin: boolean | string | string[];
   allowedHeaders: string;
   methods: string;
 };
@@ -125,7 +125,7 @@ export function configuration(): AppConfiguration {
     },
     healthTimeout: (process.env.HEALTH_TIMEOUT ? parseInt(process.env.HEALTH_TIMEOUT, 10) : 120) * 1_000,
     cors: {
-      origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',
+      origin: process.env.CORS_ORIGINS && process.env.CORS_ORIGINS !== "*" ? process.env.CORS_ORIGINS.split(',') : true,
       allowedHeaders: process.env.CORS_ALLOWED_HEADERS ? process.env.CORS_ALLOWED_HEADERS : '*',
       methods: process.env.CORS_METHODS ? process.env.CORS_METHODS : '*',
     },
