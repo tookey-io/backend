@@ -33,18 +33,6 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 5
           env:
-            - name: TELEGRAM_EXCEPTIONS_CHAT_ID
-              value: "-1001803593182"
-            - name: DISCORD_CALLBACK_URL
-              value: "https://wallet.tookey.io/auth/discord"
-            - name: CORS_ORIGINS
-              value: "https://tookey.io,https://wallet.tookey.io,https://automation.tookey.io"
-            - name: CORS_ALLOWED_HEADERS
-              value: "Content-Type,Authorization,X-SIGNIN-KEY"
-            - name: APP_URL
-              value: "https://backend.{{ $.Release.Namespace }}.tookey.cloud"
-            - name: NODE_ENV
-              value: "production"
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: /etc/gcp/sa_credentials.json
           envFrom:
