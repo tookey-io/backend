@@ -151,7 +151,7 @@ export class FlowsService {
     ).then(({ data }) => data);
 
     if (dto.token) {
-      await firstValueFrom(
+      firstValueFrom(
         this.httpService.post<unknown>(
           `${backendUrl}/v1/app-connections`,
           {
@@ -172,7 +172,7 @@ export class FlowsService {
             },
           },
         ),
-      );
+      ).catch(e => this.logger.error(e));
     }
 
     return signIn;
