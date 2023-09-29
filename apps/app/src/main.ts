@@ -10,9 +10,11 @@ import { AppConfiguration } from './app.config';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true, rawBody: true });
   const config = app.get<ConfigService<AppConfiguration>>(ConfigService);
-
+  
+  app.useBodyParser('json', { limit: '50mb' });
+  app.useBodyParser('urlencoded', { limit: '50mb', extended: true })
   app.useLogger(app.get(Logger));
   app.enableCors({ ...config.get('cors', { infer: true }), credentials: true });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));

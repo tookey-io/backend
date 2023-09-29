@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: "backend"
-  namespace: "apps-production"
+  namespace: "{{ $.Release.Namespace }}"
   labels:
     service: "backend"
 spec:
@@ -33,18 +33,10 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 5
           env:
-            - name: TELEGRAM_EXCEPTIONS_CHAT_ID
-              value: "-1001803593182"
-            - name: DISCORD_CALLBACK_URL
-              value: "https://wallet.tookey.io/auth/discord"
             - name: CORS_ORIGINS
-              value: "https://tookey.io,https://wallet.tookey.io"
-            - name: CORS_ALLOWED_HEADERS
-              value: "Content-Type,Authorization"
-            - name: APP_URL
-              value: "https://backend.apps-production.tookey.cloud"
-            - name: NODE_ENV
-              value: "production"
+              value: https://backend.develop.tookey.cloud,http://automation.develop.tookey.cloud
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /etc/gcp/sa_credentials.json
           envFrom:
             - secretRef:
                 name: backend-env
@@ -59,13 +51,24 @@ spec:
           ports:
             - name: "http"
               containerPort: 3000
+          volumeMounts: 
+            - name: service-account-credentials-volume
+              mountPath: /etc/gcp
+              readOnly: true
+      volumes:
+        - name: service-account-credentials-volume
+          secret: 
+            secretName: backend-service-account-credentials
+            items:
+              - key: sa_json
+                path: sa_credentials.json
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: "backend"
-  namespace: "apps-production"
+  namespace: "{{ $.Release.Namespace }}"
 spec:
   type: ClusterIP
   selector:
@@ -80,13 +83,16 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
   name: "backend"
-  namespace: "apps-production"
+  namespace: "{{ $.Release.Namespace }}"
 spec:
   entryPoints:
     - websecure
   routes:
-    - match: "Host(`backend.apps-production.tookey.cloud`)"
+    - match: "Host(`backend.{{ $.Release.Namespace }}.tookey.cloud`)"
       kind: Rule
+      middlewares:
+        - name: allow-cors
+          namespace: {{ $.Release.Namespace }}
       services:
         - name: backend
           port: 80

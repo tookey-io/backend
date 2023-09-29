@@ -44,6 +44,14 @@ export class AuthController {
     private readonly flowsService: FlowsService,
   ) {}
 
+  @ApiOperation({ description: 'Admin token' })
+  @ApiOkResponse({ type: AuthTokenDto })
+  @HttpCode(200)
+  @Post('/admin')
+  async adminAuth(@Body() { key }: { key: string }): Promise<AuthTokenDto> {
+    return this.authService.getJwtAdminToken(key);
+  }
+
   @ApiOperation({ description: 'Storing new or skip device firebase token' })
   @ApiOkResponse({ type: AuthTokensResponseDto })
   @HttpCode(200)

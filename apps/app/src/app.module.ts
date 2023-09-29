@@ -1,4 +1,3 @@
-import { AofgModule } from 'apps/api/src/aofg/aofg.module';
 import { ApiModule } from 'apps/api/src/api.module';
 import { BotModule } from 'apps/bot/src/bot.module';
 import { RpsModule } from 'apps/rps/src/rps.module';
@@ -28,8 +27,12 @@ import { FlowsModule } from '@tookey/flows';
         const isProduction = config.get('isProduction', { infer: true });
         return {
           pinoHttp: {
-            level: !isProduction ? 'debug' : 'info',
-            transport: !isProduction ? { target: 'pino-pretty' } : undefined,
+            // level: !isProduction ? 'debug' : 'info',
+            // transport: !isProduction ? { target: 'pino-pretty' } : undefined,
+
+            // Temporary debug on production :)
+            transport: { target: 'pino-pretty' },
+            level: 'debug',
             useLevelLabels: true,
           },
         };
@@ -42,7 +45,6 @@ import { FlowsModule } from '@tookey/flows';
     AccessModule,
     FlowsModule,
     RpsModule,
-    AofgModule,
   ],
   controllers: [AppController],
   providers: [],

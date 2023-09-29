@@ -32,7 +32,7 @@ export type DiscordConfig = {
 };
 
 export type CorsConfig = {
-  origin: string | string[];
+  origin: boolean | string | string[];
   allowedHeaders: string;
   methods: string;
 };
@@ -53,6 +53,7 @@ export type EthersConfig = {
 };
 
 export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig, AmpqConfig {
+  publicUrl: string;
   flows: FlowsConfig;
   defaultTtl: number;
   telegramToken: string;
@@ -75,7 +76,12 @@ export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig
 }
 
 export function configuration(): AppConfiguration {
+  if (!process.env.PUBLIC_URL) {
+    throw new Error("PUBLIC_URL environment variable is required");
+  }
+
   return {
+    publicUrl: process.env.PUBLIC_URL,
     defaultTtl: parseInt(process.env.ACCESS_TOKEN_TTL) || 1000 * 60, // 1 min
     telegramToken: process.env.TELEGRAM_TOKEN,
     telegramBotName: process.env.TELEGRAM_BOT_NAME || 'tookey_bot',
@@ -119,7 +125,7 @@ export function configuration(): AppConfiguration {
     },
     healthTimeout: (process.env.HEALTH_TIMEOUT ? parseInt(process.env.HEALTH_TIMEOUT, 10) : 120) * 1_000,
     cors: {
-      origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',
+      origin: process.env.CORS_ORIGINS && process.env.CORS_ORIGINS !== "*" ? process.env.CORS_ORIGINS.split(',') : true,
       allowedHeaders: process.env.CORS_ALLOWED_HEADERS ? process.env.CORS_ALLOWED_HEADERS : '*',
       methods: process.env.CORS_METHODS ? process.env.CORS_METHODS : '*',
     },

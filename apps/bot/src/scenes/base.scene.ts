@@ -2,7 +2,12 @@ import { TookeyContext } from '../bot.types';
 
 export abstract class BaseScene {
   protected getCallbackData(ctx: TookeyContext): string {
-    return ctx.callbackQuery.data;
+    if ("data" in ctx.callbackQuery) {
+      return ctx.callbackQuery.data;
+    } else {
+      // TODO: figure out issue with GameQuery callback
+      return ""
+    }
   }
 
   protected getCallbackPayload(ctx: TookeyContext, prefix: string) {

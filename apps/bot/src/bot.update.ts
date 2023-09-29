@@ -1,12 +1,12 @@
 import { TelegrafExceptionFilter } from 'apps/app/src/filters/telegraf-exception.filter';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { Command, Ctx, InjectBot, Sender, Start, Update } from 'nestjs-telegraf';
+import { Command, Ctx, Hears, InjectBot, Sender, Start, Update } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
 import * as tg from 'telegraf/types';
 
 import { UseFilters } from '@nestjs/common';
 
-import { BotCommand, BotScene } from './bot.constants';
+import { BotCommand, BotMenu, BotScene } from './bot.constants';
 import { TookeyContext } from './bot.types';
 import { ValidationException } from './exceptions/validation.exception';
 import { BaseScene } from './scenes/base.scene';
@@ -36,6 +36,11 @@ export class BotUpdate extends BaseScene {
     }
 
     await ctx.scene.enter(BotScene.INIT, ctx.scene.state);
+  }
+
+  @Hears(BotMenu.SIGN_IN_UP)
+  async automation(@Ctx() ctx: TookeyContext) {
+    await ctx.scene.enter(BotScene.AUTH);
   }
 
   @Command(BotCommand.AUTH)
