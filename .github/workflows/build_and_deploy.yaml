@@ -3,7 +3,7 @@ name: Docker build
 on:
   push:
     branches:
-      - main
+      - master
       - development
   release:
     types:
@@ -116,7 +116,7 @@ jobs:
             type=sha
 
       - name: Deploy
-        if: github.ref == 'refs/heads/main' || matrix.namespace != 'production'
+        if: github.ref == 'refs/heads/master' || matrix.namespace != 'production'
         run: |
           helm upgrade --install $HELM_SHORT ./.helm --namespace ${{ matrix.namespace }} --set image=${{ steps.meta.outputs.tags }} --set branch=$GIT_BRANCH --dry-run
           helm upgrade --install $HELM_SHORT ./.helm --namespace ${{ matrix.namespace }} --set image=${{ steps.meta.outputs.tags }} --set branch=$GIT_BRANCH --wait
