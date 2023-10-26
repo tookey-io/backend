@@ -249,7 +249,7 @@ export class DiscordService {
     const entityManager = queryRunner.manager;
 
     try {
-      const user = await this.userService.createUser({ invitedBy: dto.invitedBy }, entityManager);
+      const user = await this.userService.createUser({}, entityManager);
       const userDiscord = await this.discordUsers.createOrUpdateOne({ ...dto, userId: user.id }, entityManager);
 
       await queryRunner.commitTransaction();
