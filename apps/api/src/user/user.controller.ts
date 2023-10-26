@@ -1,4 +1,4 @@
-import { ClassSerializerInterceptor, Controller, Get, UseInterceptors } from '@nestjs/common';
+import { ClassSerializerInterceptor, Controller, Get, NotFoundException, UseInterceptors } from '@nestjs/common';
 import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../decorators/current-user.decorator';
@@ -18,6 +18,17 @@ export class UserController {
   @ApiNotFoundResponse()
   @Get('me')
   async getCurrentUser(@CurrentUser() user: UserContextDto): Promise<UserDto> {
-    return this.userService.getUser(user);
+    console.log({
+      user,
+      method: 'getCurrentUser',
+    });
+    const userDto = await this.userService.getUser(
+      { id: user.id },
+      { relations: ['parent', 'google', 'email', 'twitter', 'telegram', 'discord'] },
+    );
+
+    if (!userDto) throw new NotFoundException('User not found');
+
+    return userDto;
   }
 }

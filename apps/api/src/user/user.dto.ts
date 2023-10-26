@@ -3,6 +3,7 @@ import { IsBoolean, IsDate, IsNumber, IsOptional, IsString, IsUUID, ValidateNest
 import { formatISO } from 'date-fns';
 
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
+import { UserRole } from '@tookey/database/entities/user-role.type';
 
 
 @Exclude()
@@ -33,6 +34,10 @@ export class UserDto {
   @Expose()
   @IsNumber()
   keyLimit: number;
+
+  @ApiProperty()
+  @Expose()
+  role: UserRole
 
   constructor(partial: Partial<UserDto>) {
     Object.assign(this, partial);

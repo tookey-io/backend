@@ -13,5 +13,7 @@ export * from './user-twitter.entity';
 export * from './user.entity';
 export * from './wallet.entity';
 export * from './aofg-profile.entity';
-export * from './user-device.entity'
-export * from './piece.entity'
+export * from './user-device.entity';
+export * from './piece.entity';
+export * from './user-google.entity';
+export * from './user-email.entity';

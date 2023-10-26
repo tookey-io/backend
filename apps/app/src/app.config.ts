@@ -23,6 +23,7 @@ export type TwitterConfig = {
   clientId: string;
   clientSecret: string;
   callbackUrl: string;
+  bearer: string;
 };
 
 export type DiscordConfig = {
@@ -52,9 +53,15 @@ export type EthersConfig = {
   secret: string;
 };
 
-export class AppConfiguration implements BotConfig, DatabaseConfig, AccessConfig, AmpqConfig {
-  publicUrl: string;
+export type GoogleConfig = {
+  clientId?: string;
+  clientSecret?: string;
+};
+
+export type AppConfiguration =  BotConfig & DatabaseConfig & AccessConfig & AmpqConfig & {
+  publicUrl: string;  
   flows: FlowsConfig;
+  google: GoogleConfig
   defaultTtl: number;
   telegramToken: string;
   telegramBotName: string;
@@ -105,6 +112,7 @@ export function configuration(): AppConfiguration {
       clientId: process.env.TWITTER_CLIENT_ID,
       clientSecret: process.env.TWITTER_CLIENT_SECRET,
       callbackUrl: process.env.TWITTER_CALLBACK_URL,
+      bearer: process.env.TWITTER_BEARER,
     },
     discord: {
       clientID: process.env.DISCORD_CLIENT_ID,
@@ -141,5 +149,9 @@ export function configuration(): AppConfiguration {
       network: process.env.ETHERS_NETWORK,
       secret: process.env.ETHERS_SECRET || 'ethers_secret',
     },
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    }
   };
 }

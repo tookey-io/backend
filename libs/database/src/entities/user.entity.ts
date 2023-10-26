@@ -1,4 +1,4 @@
-import { Exclude } from 'class-transformer';
+import { Exclude, Expose } from 'class-transformer';
 import {
   Column,
   DeepPartial,
@@ -7,6 +7,7 @@ import {
   Generated,
   Index,
   OneToMany,
+  OneToOne,
   Tree,
   TreeChildren,
   TreeParent,
@@ -16,6 +17,12 @@ import {
 import { CustomRepository } from '../typeorm-ex.decorator';
 import { MetaEntity } from './base';
 import { Key } from './key.entity';
+import { UserDiscord } from './user-discord.entity';
+import { UserEmail } from './user-email.entity';
+import { UserGoogle } from './user-google.entity';
+import { UserRole } from './user-role.type';
+import { UserTelegram } from './user-telegram.entity';
+import { UserTwitter } from './user-twitter.entity';
 
 @Entity()
 @Tree('nested-set')
@@ -47,6 +54,40 @@ export class User extends MetaEntity {
   @Column({ nullable: true })
   @Exclude()
   refreshToken?: string | null;
+
+  @Column({ type: 'enum', enum: UserRole, default: UserRole.User })
+  role: UserRole;
+
+  @OneToOne(type => UserEmail, email => email.user, { eager: true })
+  @Exclude({ toPlainOnly: true })
+  email?: UserEmail
+
+  @OneToOne(type => UserGoogle, google => google.user, { eager: true })
+  google?: UserGoogle
+
+  @OneToOne(type => UserDiscord, discord => discord.user, { eager: true })
+  discord?: UserDiscord
+
+  @OneToOne(type => UserTelegram, telegram => telegram.user, { eager: true })
+  telegram?: UserTelegram
+
+  @OneToOne(type => UserTwitter, twitter => twitter.user, { eager: true })
+  twitter?: UserTwitter
+  
+  @Expose({ toPlainOnly: true})
+  get firstName() {
+    return this.email?.firstName || this.google?.firstName || this.telegram?.firstName || this.twitter?.username || this.discord?.discordTag
+  }
+  
+  @Expose({ toPlainOnly: true})
+  get lastName() {
+    return this.email?.lastName || this.google?.lastName || this.telegram?.lastName || this.twitter?.username || this.discord?.discordTag
+  }
+  
+  @Expose({ toPlainOnly: true})
+  get fullName() {
+    return `${this.firstName} ${this.lastName}`
+  }
 }
 
 @CustomRepository(User)
@@ -58,6 +99,7 @@ export class UserRepository extends TreeRepository<User> {
 
   createOrUpdateOne(entityLike: DeepPartial<User>, entityManager?: EntityManager): Promise<User> {
     const entity = this.create(entityLike);
+    console.log(entity);
     return entityManager ? entityManager.save(entity) : this.save(entity);
   }
 }

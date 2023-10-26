@@ -1,10 +1,17 @@
 import * as bcrypt from 'bcrypt';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, FindOneOptions } from 'typeorm';
 
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { User, UserRepository, UserTelegramRepository } from '@tookey/database';
+import {
+  User,
+  UserDiscordRepository,
+  UserGoogleRepository,
+  UserRepository,
+  UserTelegramRepository,
+  UserTwitterRepository,
+} from '@tookey/database';
 
 import {
   CreateTelegramUserDto,
@@ -12,7 +19,9 @@ import {
   TelegramUserRequestDto,
   UpdateTelegramUserDto,
 } from './user-telegram.dto';
-import { CreateUserDto, UpdateUserDto, UserDto, UserRequestDto } from './user.dto';
+import { CreateUserDto, UpdateUserDto, UserContextDto, UserDto, UserRequestDto } from './user.dto';
+import { CreateDiscordUserDto, CreateGoogleUserDto, GoogleUserDto } from './user-google.dto';
+import { CreateTwitterUserDto } from './user-twitter.dto';
 
 @Injectable()
 export class UserService {
@@ -21,21 +30,22 @@ export class UserService {
     private readonly dataSource: DataSource,
     private readonly users: UserRepository,
     private readonly telegramUsers: UserTelegramRepository,
+    private readonly googleUsers: UserGoogleRepository,
+    private readonly discordUsers: UserDiscordRepository,
+    private readonly twitterUsers: UserTwitterRepository,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async getUser(dto: UserRequestDto): Promise<UserDto | null> {
-    const user = await this.users.findOne({ where: dto });
+  async getUser(dto: UserRequestDto, overrides?: FindOneOptions<User>): Promise<User | null> {
+    const user = await this.users.findOne({ where: dto, ...overrides });
     if (!user) return null;
-    return new UserDto(user);
+    return user;
   }
 
-  async createUser(dto: CreateUserDto, entityManager?: EntityManager): Promise<UserDto> {
-    const parent = dto.invitedBy ? await this.getParentUser(dto.invitedBy) : await this.users.findRoot();
-    const user = await this.users.createOrUpdateOne({ ...dto, parent }, entityManager);
-    const userDto = new UserDto(user);
-    // this.eventEmitter.emit(UserEvent.CREATE, userDto);
-    return userDto;
+  async createUser(dto: Partial<User>, entityManager?: EntityManager) {
+    dto.parent = dto.parent || (await this.users.findRoot());
+    const user = await this.users.createOrUpdateOne(dto, entityManager);
+    return user;
   }
 
   async updateUser(id: number, dto: UpdateUserDto): Promise<UserDto | null> {
@@ -63,8 +73,13 @@ export class UserService {
 
     const entityManager = queryRunner.manager;
 
+    const userDto = {} as Partial<User>
+    if (dto.invitedBy) {
+      userDto.parent = await this.getParentUser(dto.invitedBy);
+    }
+
     try {
-      const user = await this.createUser({ invitedBy: dto.invitedBy }, entityManager);
+      const user = await this.createUser(userDto, entityManager);
       const userTelegram = await this.telegramUsers.createOrUpdateOne({ ...dto, userId: user.id }, entityManager);
 
       await queryRunner.commitTransaction();
@@ -76,6 +91,147 @@ export class UserService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+
+  async createTwitterUser(dto: CreateTwitterUserDto, userDto: Partial<User> = {}) {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    const entityManager = queryRunner.manager;
+
+    try {
+      const user = await this.createUser(userDto, entityManager);
+      const userDiscord = await this.twitterUsers.createOrUpdateOne(
+        {
+          user,
+          twitterId: dto.id,
+          username: dto.username,
+          name: dto.name,
+          accessToken: dto.accessToken,
+          validUntil: dto.validUntil,
+          refreshToken: dto.refreshToken,
+        },
+        entityManager,
+      );
+
+      await queryRunner.commitTransaction();
+
+      return userDiscord
+    } catch (error) {
+      queryRunner.isTransactionActive && (await queryRunner.rollbackTransaction());
+      this.logger.error('Create Twitter User transaction', error);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async getOrCreateTwitterUser(dto: CreateTwitterUserDto) {
+    const userDiscord = await this.twitterUsers.findOne({ where: { twitterId: dto.id }, relations: ['user'] });
+    console.log('found?', userDiscord);
+    if (userDiscord) return userDiscord;
+
+    return this.createTwitterUser(dto);
+  }
+
+  async getOrConnectTwitterUser(dto: CreateTwitterUserDto, user: UserContextDto) {
+    const found = await this.discordUsers.findOne({ where: { discordId: dto.id }, relations: ['user'] });
+
+    if (found && user.id !== found.user.id) {
+      throw new BadRequestException("This twitter account is already connected to another user");
+    }
+
+    if (found) return found;
+
+    return this.createTwitterUser(dto, { id: user.id });
+  }
+
+  async createDiscordUser(dto: CreateDiscordUserDto, userDto: Partial<User> = {}) {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    const entityManager = queryRunner.manager;
+
+    try {
+      const user = await this.createUser(userDto, entityManager);
+      const userDiscord = await this.discordUsers.createOrUpdateOne(
+        {
+          user,
+          discordId: dto.id,
+          discordTag: `${dto.username}#${dto.discriminator}`,
+          email: dto.email,
+          verified: dto.verified,
+          accessToken: dto.accessToken,
+          validUntil: dto.validUntil,
+          refreshToken: dto.refreshToken,
+        },
+        entityManager,
+      );
+
+      await queryRunner.commitTransaction();
+
+      return userDiscord
+    } catch (error) {
+      queryRunner.isTransactionActive && (await queryRunner.rollbackTransaction());
+      this.logger.error('Create Discord User transaction', error);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async getOrCreateDiscordUser(dto: CreateDiscordUserDto) {
+    const userDiscord = await this.discordUsers.findOne({ where: { discordId: dto.id }, relations: ['user'] });
+    console.log('found?', userDiscord);
+    if (userDiscord) return userDiscord;
+
+    return this.createDiscordUser(dto);
+  }
+
+  async getOrConnectDiscordUser(dto: CreateDiscordUserDto, user: UserContextDto) {
+    const found = await this.discordUsers.findOne({ where: { discordId: dto.id }, relations: ['user'] });
+
+    if (found && user.id !== found.user.id) {
+      throw new BadRequestException("This discord account is already connected to another user");
+    }
+
+    if (found) return found;
+
+    return this.createDiscordUser(dto, { id: user.id });
+  }
+
+  async createGoogleUser(dto: CreateGoogleUserDto): Promise<GoogleUserDto> {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    const entityManager = queryRunner.manager;
+
+    try {
+      const user = await this.createUser({}, entityManager);
+      const userGoogle = await this.googleUsers.createOrUpdateOne({ ...dto, userId: user.id }, entityManager);
+
+      await queryRunner.commitTransaction();
+
+      return new GoogleUserDto({ ...userGoogle, user });
+    } catch (error) {
+      queryRunner.isTransactionActive && (await queryRunner.rollbackTransaction());
+      this.logger.error('Create Google User transaction', error);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async getOrCreateGoogleUser(dto: CreateGoogleUserDto): Promise<GoogleUserDto> {
+    const userGoogle = await this.googleUsers.findOne({ where: { googleId: dto.googleId }, relations: ['user'] });
+    console.log('found?', userGoogle);
+    if (userGoogle) return new GoogleUserDto(userGoogle);
+
+    return this.createGoogleUser(dto);
   }
 
   async getParentUser(username?: string): Promise<User> {

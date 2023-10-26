@@ -38,6 +38,8 @@ export class DiscordService {
   discordApiUrl = 'https://discord.com/api';
   scope = ['identify', 'email', 'guilds.members.read'];
 
+  codes = new Set<string>()
+
   constructor(
     @InjectPinoLogger(DiscordService.name) private readonly logger: PinoLogger,
     @Inject(CACHE_MANAGER) private cache: Cache,
@@ -48,24 +50,6 @@ export class DiscordService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService<AppConfiguration>,
   ) {
-    // const axios = this.httpService.axiosRef;
-    // axios.interceptors.response.use(
-    //   (response) => {
-    //     return response;
-    //   },
-    //   async (error) => {
-    //     if (error.response && error.response.status === 429) {
-    //       error.response.headers['x-ratelimit-bucket']; // 38d590a8409e2bc3ac60a6ad3878d6c1
-    //       error.response.headers['x-ratelimit-limit']; // 5
-    //       error.response.headers['x-ratelimit-remaining']; // 0
-    //       error.response.headers['x-ratelimit-reset-after']; // seconds
-    //       error.response.headers['x-ratelimit-scope']; // user
-    //       return error;
-    //     } else {
-    //       return error;
-    //     }
-    //   },
-    // );
   }
 
   async getAuthLink(state?: string): Promise<DiscordAuthUrlResponseDto> {
@@ -85,6 +69,11 @@ export class DiscordService {
   private async exchangeTokens(code: string): Promise<DiscordTokenExchangeDto> {
     try {
       const { clientID, clientSecret, callbackURL } = this.configService.get('discord', { infer: true });
+      console.log({
+        clientID,
+        clientSecret,
+        callbackURL,
+      })
       const { data } = await firstValueFrom(
         this.httpService.request({
           url: `${this.discordApiUrl}/oauth2/token`,
@@ -92,16 +81,20 @@ export class DiscordService {
           data: new URLSearchParams({
             client_id: clientID,
             client_secret: clientSecret,
-            code,
+            code: code,
             grant_type: 'authorization_code',
             redirect_uri: callbackURL,
+            // scope: 'identify email guilds.members.read'
           }),
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Accept-Encoding': 'gzip,deflate,compress',
           },
         }),
-      );
+      ).catch(e => {
+        console.error(e)
+        throw e
+      });
 
       if (data.error) throw new BadRequestException(data.error_description);
 
@@ -118,9 +111,19 @@ export class DiscordService {
   }
 
   async requestUser({ code }: DiscordAccessTokenRequestDto): Promise<DiscordUserDto> {
+    if (this.codes.has(code)) {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      return null
+    }
+    
+    this.codes.add(code)
+
     try {
+      console.log('exchange tokens')
       const oauthData = await this.exchangeTokens(code);
       const authorization = `Bearer ${oauthData.accessToken}`;
+
+      console.log('making call')
 
       const { data } = await firstValueFrom(
         this.httpService.request({
@@ -131,6 +134,8 @@ export class DiscordService {
           },
         }),
       );
+
+      console.log(data)
 
       const discordUser = await this.getUser({ discordId: data.id }, null);
       const discordTag = `${data.username}#${data.discriminator}`;

@@ -6,8 +6,8 @@ import { MetaEntity } from './base';
 import { User } from './user.entity';
 
 @Entity()
-export class UserTwitter extends MetaEntity {
-  @OneToOne(() => User, user => user.twitter)
+export class UserGoogle extends MetaEntity {
+  @OneToOne(() => User, user => user.google)
   @JoinColumn({ name: 'userId' })
   user: User;
 
@@ -18,30 +18,25 @@ export class UserTwitter extends MetaEntity {
 
   @Index({ unique: true })
   @Column({ type: 'varchar', unique: true })
-  twitterId: string;
+  googleId: string;
 
   @Column({ type: 'varchar', nullable: true })
-  name: string | null;
+  email: string | null;
 
   @Column({ type: 'varchar', nullable: true })
-  username: string | null;
+  firstName: string | null;
 
   @Column({ type: 'varchar', nullable: true })
-  @Exclude({ toPlainOnly: true })
+  lastName: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  @Exclude()
   accessToken: string | null;
-
-  @Column({ type: 'varchar', nullable: true })
-  @Exclude({ toPlainOnly: true })
-  refreshToken: string | null;
-
-  @Column({ nullable: true })
-  @Exclude({ toPlainOnly: true })
-  validUntil: Date | null;
 }
 
-@CustomRepository(UserTwitter)
-export class UserTwitterRepository extends Repository<UserTwitter> {
-  createOrUpdateOne(entityLike: DeepPartial<UserTwitter>, entityManager?: EntityManager): Promise<UserTwitter> {
+@CustomRepository(UserGoogle)
+export class UserGoogleRepository extends Repository<UserGoogle> {
+  createOrUpdateOne(entityLike: DeepPartial<UserGoogle>, entityManager?: EntityManager): Promise<UserGoogle> {
     const entity = this.create(entityLike);
     return entityManager ? entityManager.save(entity) : this.save(entity);
   }

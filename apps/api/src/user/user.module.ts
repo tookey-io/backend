@@ -1,10 +1,23 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmExModule, UserRepository, UserTelegramRepository } from '@tookey/database';
+import {
+  TypeOrmExModule,
+  UserDiscordRepository,
+  UserGoogleRepository,
+  UserRepository,
+  UserTelegramRepository,
+  UserTwitterRepository,
+} from '@tookey/database';
 
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
 
-const UserRepositories = TypeOrmExModule.forCustomRepository([UserRepository, UserTelegramRepository]);
+const UserRepositories = TypeOrmExModule.forCustomRepository([
+  UserRepository,
+  UserTelegramRepository,
+  UserGoogleRepository,
+  UserDiscordRepository,
+  UserTwitterRepository,
+]);
 
 @Module({
   imports: [UserRepositories],
