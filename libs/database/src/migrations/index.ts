@@ -14,3 +14,6 @@ export * from './1675070482800-user-uuid';
 export * from './1686821195288-verificationHook';
 export * from './1689263415093-userDevice';
 export * from './1692121464935-pieces';
+export * from './1697435937767-user-google';
+export * from './1697737348969-email';
+export * from './1697743613593-roles';

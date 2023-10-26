@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import { Column, DeepPartial, Entity, EntityManager, Index, JoinColumn, OneToOne, Repository } from 'typeorm';
 
 import { CustomRepository } from '../typeorm-ex.decorator';
@@ -6,12 +7,13 @@ import { User } from './user.entity';
 
 @Entity()
 export class UserTelegram extends MetaEntity {
-  @OneToOne(() => User)
-  @JoinColumn()
+  @OneToOne(() => User, user => user.telegram)
+  @JoinColumn({ name: 'userId' })
   user: User;
 
   @Index()
   @Column()
+  @Exclude({ toPlainOnly: true })
   userId: number;
 
   @Index({ unique: true })

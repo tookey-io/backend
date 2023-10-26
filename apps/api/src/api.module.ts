@@ -18,6 +18,11 @@ import { ApiService } from './api.service';
 import { SignApiService } from './sign-api/sign-api.service';
 import { SignApiController } from './sign-api/sign-api.controller';
 import { PiecesModule } from './pieces/pieces.module';
+import { AuthGoogleModule } from 'apps/api/src/auth-google/auth-google.module';
+import { AuthEmailService } from './auth-email/auth-email.service';
+import { AuthEmailModule } from './auth-email/auth-email.module';
+import { AuthDiscordModule } from './auth-discord/auth-discord.module';
+import { AuthTwitterModule } from './auth-twitter/auth-twitter.module';
 
 @Module({
   imports: [
@@ -30,6 +35,10 @@ import { PiecesModule } from './pieces/pieces.module';
     }),
     KeyModule,
     UserModule,
+    AuthEmailModule,
+    AuthGoogleModule,
+    AuthDiscordModule,
+    AuthTwitterModule,
     AuthModule,
     ShareableTokenModule,
     TwitterModule,
@@ -41,6 +50,6 @@ import { PiecesModule } from './pieces/pieces.module';
     PiecesModule,
   ],
   controllers: [ApiController, SignApiController],
-  providers: [ApiService, SignApiService],
+  providers: [ApiService, SignApiService, AuthEmailService],
 })
 export class ApiModule {}

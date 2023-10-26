@@ -1,6 +1,7 @@
 import { Transform, Type } from 'class-transformer';
-import { IsString, ValidateNested } from 'class-validator';
+import { IsNotEmpty, IsString, ValidateNested } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { User } from '@tookey/database';
 
 export class AuthTokenDto {
   @ApiProperty()
@@ -24,6 +25,10 @@ export class PricipalDto {
   keys?: string[];
 }
 
+export class AccessTokenResponseDto {
+  
+}
+
 export class AuthTokensResponseDto {
   @ApiProperty({ type: () => AuthTokenDto })
   @ValidateNested()
@@ -34,6 +39,11 @@ export class AuthTokensResponseDto {
   @ValidateNested()
   @Type(() => AuthTokenDto)
   refresh: AuthTokenDto;
+
+  @ApiProperty({ type: () => User })
+  @ValidateNested()
+  @Type(() => User)
+  user: User;
 }
 
 export class AuthTwitterCallbackDto {
@@ -44,4 +54,10 @@ export class AuthTwitterCallbackDto {
   @ApiProperty()
   @IsString()
   state: string;
+}
+
+export class AuthGoogleLoginDto {
+  @ApiProperty({ example: 'abc', description: 'Google id token (receive from Google OAuth)' })
+  @IsNotEmpty()
+  idToken: string;
 }

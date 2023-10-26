@@ -5,6 +5,7 @@ import {
   Controller,
   Get,
   HttpCode,
+  HttpStatus,
   NotFoundException,
   Post,
   Put,
@@ -29,6 +30,7 @@ import { AuthService } from './auth.service';
 import { FlowsService } from '@tookey/flows';
 import { JwtAuth } from '../decorators/jwt-auth.decorator';
 import { AnyRoles } from '../decorators/any-role.decorator';
+import { GoogleAuthLoginDto, AuthGoogleService } from 'apps/api/src/auth-google/auth-google.service';
 
 @Controller('api/auth')
 @ApiTags('Authentication')
@@ -66,14 +68,14 @@ export class AuthController {
   @ApiOkResponse({ type: AuthTokensResponseDto })
   @HttpCode(200)
   @Post('flows')
-  async signinFlow(@CurrentUser() user: UserContextDto) {
-    const telegramUser = await this.userService.getTelegramUser({ userId: user.id });
-    if (!telegramUser) throw new NotFoundException('Telegram user not found');
+  async signinFlow(@CurrentUser() userDto: UserContextDto) {
+    const user = await this.userService.getUser({ id: userDto.id });
+    if (!user) throw new NotFoundException('Telegram user not found');
 
     const userRequest = {
       id: user.id.toString(),
-      firstName: telegramUser.firstName,
-      lastName: telegramUser.lastName,
+      firstName: user.firstName,
+      lastName: user.lastName,
       trackEvents: true,
       newsLetter: true,
     };
@@ -104,7 +106,7 @@ export class AuthController {
     await this.accessService.refreshToken(user.id);
     this.eventEmitter.emit(AuthEvent.SIGNIN, user.id);
 
-    return { access, refresh };
+    return { access, refresh , user: user.user as any };
   }
 
   @AnyRoles('refresh')
@@ -137,24 +139,36 @@ export class AuthController {
     const access = this.authService.getJwtAccessToken({ id: user.userId, roles: ['user', 'twitter'] });
     const refresh = this.authService.getJwtRefreshToken({ id: user.userId, roles: ['user', 'twitter'] });
     await this.userService.setCurrentRefreshToken(refresh.token, user.id);
-    return { access, refresh };
+    return { access, refresh, user: user.user as any };
   }
 
-  @ApiOperation({ description: 'Get discord auth url' })
-  @ApiOkResponse({ type: DiscordAuthUrlResponseDto })
-  @Get('discord')
-  async discordAuthUrl(@Query('state') state?: string): Promise<DiscordAuthUrlResponseDto> {
-    return await this.discordService.getAuthLink(state);
-  }
+  // @ApiOperation({ description: 'Get discord auth url' })
+  // @ApiOkResponse({ type: DiscordAuthUrlResponseDto })
+  // @Get('discord')
+  // async discordAuthUrl(@Query('state') state?: string): Promise<DiscordAuthUrlResponseDto> {
+  //   return await this.discordService.getAuthLink(state);
+  // }
 
-  @ApiOperation({ description: 'Get access and refresh tokens with discord' })
+  // @ApiOperation({ description: 'Get access and refresh tokens with discord' })
+  // @ApiOkResponse({ type: AuthTokensResponseDto })
+  // @Post('discord')
+  // async discordAuthCallback(@Body() { code }: DiscordAccessTokenRequestDto): Promise<AuthTokensResponseDto> {
+  //   console.log('discord auth', code)
+  //   const user = await this.discordService.requestUser({ code });
+  //   if (!user) {
+  //     return null
+  //   }
+  //   const access = this.authService.getJwtAccessToken({ id: user.userId, roles: ['user', 'discord'] });
+  //   const refresh = this.authService.getJwtRefreshToken({ id: user.userId, roles: ['user', 'discord'] });
+  //   await this.userService.setCurrentRefreshToken(refresh.token, user.id);
+  //   return { access, refresh, user: user.user };
+  // }
+  
+  @ApiOperation({ description: 'Get OTP token to connect external service' })
   @ApiOkResponse({ type: AuthTokensResponseDto })
-  @Post('discord')
-  async discordAuthCallback(@Body() { code }: DiscordAccessTokenRequestDto): Promise<AuthTokensResponseDto> {
-    const user = await this.discordService.requestUser({ code });
-    const access = this.authService.getJwtAccessToken({ id: user.userId, roles: ['user', 'discord'] });
-    const refresh = this.authService.getJwtRefreshToken({ id: user.userId, roles: ['user', 'discord'] });
-    await this.userService.setCurrentRefreshToken(refresh.token, user.id);
-    return { access, refresh };
+  @JwtAuth()
+  @Get('access')
+  async getAccessToken(@CurrentUser() user: UserContextDto) {
+    return this.accessService.getAccessToken(user.id);
   }
 }

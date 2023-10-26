@@ -114,7 +114,7 @@ export class TwitterService {
     const entityManager = queryRunner.manager;
 
     try {
-      const user = await this.userService.createUser({ invitedBy: dto.invitedBy }, entityManager);
+      const user = await this.userService.createUser({}, entityManager);
       const userTwitter = await this.twitterUsers.createOrUpdateOne({ ...dto, userId: user.id }, entityManager);
 
       await queryRunner.commitTransaction();

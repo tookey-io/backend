@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import { Column, DeepPartial, Entity, EntityManager, Index, JoinColumn, OneToOne, Repository } from 'typeorm';
 
 import { CustomRepository } from '../typeorm-ex.decorator';
@@ -6,12 +7,13 @@ import { User } from './user.entity';
 
 @Entity()
 export class UserDiscord extends MetaEntity {
-  @OneToOne(() => User)
-  @JoinColumn()
+  @OneToOne(() => User, user => user.discord)
+  @JoinColumn({ name: 'userId' })
   user: User;
 
   @Index()
   @Column()
+  @Exclude({ toPlainOnly: true })
   userId: number;
 
   @Index({ unique: true })
@@ -33,13 +35,16 @@ export class UserDiscord extends MetaEntity {
   @Column({ type: 'boolean', nullable: true })
   verified: boolean | null;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', nullable: false })
+  @Exclude({ toPlainOnly: true })
   accessToken: string | null;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', nullable: false })
+  @Exclude({ toPlainOnly: true })
   refreshToken: string | null;
 
-  @Column({ nullable: true })
+  @Column({ nullable: false })
+  @Exclude({ toPlainOnly: true })
   validUntil: Date | null;
 }
 

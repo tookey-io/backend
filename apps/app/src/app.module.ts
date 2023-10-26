@@ -27,12 +27,12 @@ import { FlowsModule } from '@tookey/flows';
         const isProduction = config.get('isProduction', { infer: true });
         return {
           pinoHttp: {
-            // level: !isProduction ? 'debug' : 'info',
-            // transport: !isProduction ? { target: 'pino-pretty' } : undefined,
+            level: !isProduction ? 'debug' : 'info',
+            transport: !isProduction ? { target: 'pino-pretty' } : undefined,
 
             // Temporary debug on production :)
-            transport: { target: 'pino-pretty' },
-            level: 'debug',
+            // transport: { target: 'pino-pretty' },
+            // level: 'debug',
             useLevelLabels: true,
           },
         };

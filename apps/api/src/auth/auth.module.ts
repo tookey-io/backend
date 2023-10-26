@@ -16,6 +16,7 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { SigninKeyStrategy } from './strategies/signin-key.strategy';
 import { FlowsModule } from '@tookey/flows';
+import { AuthGoogleModule } from 'apps/api/src/auth-google/auth-google.module';
 
 // Deprecated strategies
 // import { JwtRefreshTokenStrategy } from './strategies/jwt-refresh-token.strategy';
@@ -47,11 +48,7 @@ const AuthRepositories = TypeOrmExModule.forCustomRepository([UserDiscordReposit
     AuthService,
     JwtStrategy,
     SigninKeyStrategy,
-
-    // Deprecated strategies
-    // JwtRefreshTokenStrategy,
-    // WsJwtStrategy,
-    // ShareableKeyStrategy,
   ],
+  exports: [AuthService],
 })
 export class AuthModule {}
