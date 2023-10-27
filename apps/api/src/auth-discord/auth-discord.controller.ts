@@ -77,8 +77,8 @@ export class AuthDiscordController {
     console.log('uncached auth')
     const profile = await this.discordService.getProfileByCode(body);
     const user = await this.userService.getOrCreateDiscordUser(new CreateDiscordUserDto(profile));
-    const access = this.authService.getJwtAccessToken({ id: user.userId, roles: ['user', 'google'] });
-    const refresh = this.authService.getJwtRefreshToken({ id: user.userId, roles: ['user', 'google'] });
+    const access = this.authService.getJwtAccessToken(user.user);
+    const refresh = this.authService.getJwtRefreshToken(user.user);
     await this.userService.setCurrentRefreshToken(refresh.token, user.userId);
     return { access, refresh, user: user.user };
   }

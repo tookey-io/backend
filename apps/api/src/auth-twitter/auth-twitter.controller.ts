@@ -77,8 +77,8 @@ export class AuthTwitterController {
     console.log('uncached auth')
     const profile = await this.twitterService.getProfileByCode(body);
     const user = await this.userService.getOrCreateTwitterUser(new CreateTwitterUserDto(profile));
-    const access = this.authService.getJwtAccessToken({ id: user.userId, roles: ['user', 'google'] });
-    const refresh = this.authService.getJwtRefreshToken({ id: user.userId, roles: ['user', 'google'] });
+    const access = this.authService.getJwtAccessToken(user.user);
+    const refresh = this.authService.getJwtRefreshToken(user.user);
     await this.userService.setCurrentRefreshToken(refresh.token, user.userId);
     return { access, refresh, user: user.user };
   }

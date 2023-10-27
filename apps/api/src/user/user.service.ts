@@ -7,6 +7,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   User,
   UserDiscordRepository,
+  UserGoogle,
   UserGoogleRepository,
   UserRepository,
   UserTelegramRepository,
@@ -203,7 +204,7 @@ export class UserService {
     return this.createDiscordUser(dto, { id: user.id });
   }
 
-  async createGoogleUser(dto: CreateGoogleUserDto): Promise<GoogleUserDto> {
+  async createGoogleUser(dto: CreateGoogleUserDto) {
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
@@ -217,7 +218,7 @@ export class UserService {
 
       await queryRunner.commitTransaction();
 
-      return new GoogleUserDto({ ...userGoogle, user });
+      return userGoogle
     } catch (error) {
       queryRunner.isTransactionActive && (await queryRunner.rollbackTransaction());
       this.logger.error('Create Google User transaction', error);
@@ -226,10 +227,9 @@ export class UserService {
     }
   }
 
-  async getOrCreateGoogleUser(dto: CreateGoogleUserDto): Promise<GoogleUserDto> {
+  async getOrCreateGoogleUser(dto: CreateGoogleUserDto): Promise<UserGoogle> {
     const userGoogle = await this.googleUsers.findOne({ where: { googleId: dto.googleId }, relations: ['user'] });
-    console.log('found?', userGoogle);
-    if (userGoogle) return new GoogleUserDto(userGoogle);
+    if (userGoogle) return userGoogle;
 
     return this.createGoogleUser(dto);
   }
@@ -267,5 +267,9 @@ export class UserService {
     this.logger.info({ user });
     const isRefreshTokenMatching = await bcrypt.compare(refreshToken, user.refreshToken);
     if (isRefreshTokenMatching) return new UserDto(user);
+  }
+
+  getAllUsers(): Promise<User[]> {
+    return this.users.find({ relations: ['parent'] });
   }
 }

@@ -1,17 +1,24 @@
 import { Injectable } from '@nestjs/common';
-import { AofgProfileRepository, KeyRepository, SignRepository, UserDiscordRepository } from '@tookey/database';
+import { AccessService } from '@tookey/access';
+import { AofgProfileRepository, KeyRepository, SignRepository, User, UserDiscordRepository } from '@tookey/database';
+import { AuthTokenDto } from '../auth/auth.dto';
 
 import { UserDto } from '../user/user.dto';
 import { UserService } from '../user/user.service';
 
 @Injectable()
 export class AdminService {
+  getUserOtp(userId: number) {
+    return this.accessService.getAccessToken(userId);
+  }
+  
   constructor(
     private readonly userService: UserService,
     private readonly signs: SignRepository,
     private readonly keys: KeyRepository,
     private readonly userDiscord: UserDiscordRepository,
     private readonly aofgProfile: AofgProfileRepository,
+    private readonly accessService: AccessService
   ) {}
 
   async removeUserData(id: number): Promise<UserDto | null> {
@@ -28,5 +35,9 @@ export class AdminService {
         await this.keys.delete({ id: key.id });
       }
     }
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return this.userService.getAllUsers();
   }
 }

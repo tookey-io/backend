@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 
 import { AuthTokenDto, PricipalDto } from './auth.dto';
 import { classToPlain, instanceToPlain, plainToInstance } from 'class-transformer';
+import { User } from '@tookey/database';
 
 @Injectable()
 export class AuthService {
@@ -52,24 +53,24 @@ export class AuthService {
     return this.getJwtToken({ id: -1, roles: ['admin'] }, jwt.secret, 60 * 60 * 24 * 365); // 1 year
   }
 
-  public getJwtServiceToken(principal: PricipalDto) {
-    const plain = instanceToPlain(principal) as PricipalDto;
+  public getJwtServiceToken(user: User) {
+    const plain = user.toPrincipal()
     plain.roles.push('service');
     const jwt = this.configService.get('jwt', { infer: true });
     if (!jwt) throw new InternalServerErrorException('Invalid JWT Access Token configuration');
     return this.getJwtToken(plain, jwt.secret, 60 * 60 * 24 * 365); // 1 year
   }
 
-  public getJwtAccessToken(principal: PricipalDto) {
-    const plain = instanceToPlain(principal) as PricipalDto;
+  public getJwtAccessToken(user: User) {
+    const plain = user.toPrincipal()
     plain.roles.push('access');
     const jwt = this.configService.get('jwt', { infer: true });
     if (!jwt) throw new InternalServerErrorException('Invalid JWT Access Token configuration');
     return this.getJwtToken(plain, jwt.secret, jwt.accessTokenTTL);
   }
 
-  public getJwtRefreshToken(principal: PricipalDto) {
-    const plain = instanceToPlain(principal) as PricipalDto;
+  public getJwtRefreshToken(user: User) {
+    const plain = user.toPrincipal()
     plain.roles.push('refresh');
     const jwt = this.configService.get('jwt', { infer: true });
     if (!jwt) throw new InternalServerErrorException('Invalid JWT Refresh Token configuration');

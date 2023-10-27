@@ -4,6 +4,7 @@ import { formatISO } from 'date-fns';
 
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { UserRole } from '@tookey/database/entities/user-role.type';
+import { User } from '@tookey/database';
 
 
 @Exclude()
@@ -48,10 +49,10 @@ export class UserContextDto {
   @IsNumber()
   id: number;
 
-  @ApiProperty({ type: () => UserDto })
+  @ApiProperty({ type: () => User })
   @ValidateNested()
-  @Type(() => UserDto)
-  user: UserDto;
+  @Type(() => User)
+  user: User;
 
   @ApiPropertyOptional()
   @IsString({ each: true })
