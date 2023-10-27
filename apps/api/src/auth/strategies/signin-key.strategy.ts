@@ -12,12 +12,13 @@ export class SigninKeyStrategy extends PassportStrategy(HeaderAPIKeyStrategy, 's
   constructor(readonly accessService: AccessService, readonly userService: UserService) {
     super(
       { header: 'X-SIGNIN-KEY' },
-      true,
-      async (apikey: string, done: (err: Error | null, user?: UserContextDto) => void) => {
+      false,
+      async (apikey: string, verified: (err: Error | null, user?: UserContextDto) => void) => {
         const userId = await accessService.getTokenUserId(apikey);
         const user = await userService.getUser({ id: userId });
-        if (!userId) return done(new UnauthorizedException('Token is not valid'));
-        return done(null, { id: userId, user, roles: [] });
+        if (!userId) return verified(new UnauthorizedException('Token is not valid'));
+        // return verified(null, { foo: 'bar' });
+        return verified(null, { id: userId, user, roles: user.toRoles() });
       },
     );
   }

@@ -1,4 +1,5 @@
 import { Exclude, Expose } from 'class-transformer';
+import { defined } from 'libs/utils/defined';
 import {
   Column,
   DeepPartial,
@@ -55,38 +56,69 @@ export class User extends MetaEntity {
   @Exclude()
   refreshToken?: string | null;
 
-  @Column({ type: 'enum', enum: UserRole, default: UserRole.User })
+  @Column({ type: 'enum', enum: UserRole, default: UserRole.user })
   role: UserRole;
 
-  @OneToOne(type => UserEmail, email => email.user, { eager: true })
+  @OneToOne((type) => UserEmail, (email) => email.user, { eager: true })
   @Exclude({ toPlainOnly: true })
-  email?: UserEmail
+  email?: UserEmail;
 
-  @OneToOne(type => UserGoogle, google => google.user, { eager: true })
-  google?: UserGoogle
+  @OneToOne((type) => UserGoogle, (google) => google.user, { eager: true })
+  google?: UserGoogle;
 
-  @OneToOne(type => UserDiscord, discord => discord.user, { eager: true })
-  discord?: UserDiscord
+  @OneToOne((type) => UserDiscord, (discord) => discord.user, { eager: true })
+  discord?: UserDiscord;
 
-  @OneToOne(type => UserTelegram, telegram => telegram.user, { eager: true })
-  telegram?: UserTelegram
+  @OneToOne((type) => UserTelegram, (telegram) => telegram.user, { eager: true })
+  telegram?: UserTelegram;
 
-  @OneToOne(type => UserTwitter, twitter => twitter.user, { eager: true })
-  twitter?: UserTwitter
-  
-  @Expose({ toPlainOnly: true})
+  @OneToOne((type) => UserTwitter, (twitter) => twitter.user, { eager: true })
+  twitter?: UserTwitter;
+
+  @Expose({ toPlainOnly: true })
   get firstName() {
-    return this.email?.firstName || this.google?.firstName || this.telegram?.firstName || this.twitter?.username || this.discord?.discordTag
+    return (
+      this.email?.firstName ||
+      this.google?.firstName ||
+      this.telegram?.firstName ||
+      this.twitter?.username ||
+      this.discord?.discordTag
+    );
   }
-  
-  @Expose({ toPlainOnly: true})
+
+  @Expose({ toPlainOnly: true })
   get lastName() {
-    return this.email?.lastName || this.google?.lastName || this.telegram?.lastName || this.twitter?.username || this.discord?.discordTag
+    return (
+      this.email?.lastName ||
+      this.google?.lastName ||
+      this.telegram?.lastName ||
+      this.twitter?.username ||
+      this.discord?.discordTag
+    );
   }
-  
-  @Expose({ toPlainOnly: true})
+
+  @Expose({ toPlainOnly: true })
   get fullName() {
-    return `${this.firstName} ${this.lastName}`
+    return `${this.firstName} ${this.lastName}`;
+  }
+
+  toRoles() {
+    return [
+      ...Object.values(UserRole).filter((v): v is UserRole => typeof v === 'number' && v <= Number(this.role)).map(roleId => UserRole[roleId]),
+      this.discord ? 'discord' : undefined,
+      this.google ? 'google' : undefined,
+      this.twitter ? 'twitter' : undefined,
+      this.discord ? 'discord' : undefined,
+      this.telegram ? 'telegram' : undefined,
+      this.email ? 'email' : undefined,
+    ].filter(defined);
+  }
+
+  toPrincipal() {
+    return {
+      id: this.id,
+      roles: this.toRoles(),
+    };
   }
 }
 

@@ -70,8 +70,8 @@ export class AuthEmailService {
     if (!user.verified) throw new BadRequestException('User not verified');
     if (!isValidPassword) throw new BadRequestException('Invalid password');
 
-    const access = this.authService.getJwtAccessToken({ id: user.userId, roles: ['user', 'email'] });
-    const refresh = this.authService.getJwtRefreshToken({ id: user.userId, roles: ['user', 'email'] });
+    const access = this.authService.getJwtAccessToken(user.user);
+    const refresh = this.authService.getJwtRefreshToken(user.user);
     await this.userService.setCurrentRefreshToken(refresh.token, user.userId);
     return { access, refresh, user: user.user };
   }
@@ -104,8 +104,8 @@ export class AuthEmailService {
 
     user.password = password;
     
-    const access = this.authService.getJwtAccessToken({ id: user.userId, roles: ['user', 'email'] });
-    const refresh = this.authService.getJwtRefreshToken({ id: user.userId, roles: ['user', 'email'] });
+    const access = this.authService.getJwtAccessToken(user.user);
+    const refresh = this.authService.getJwtRefreshToken(user.user);
     await this.userService.setCurrentRefreshToken(refresh.token, user.userId);
 
     await this.userEmailRepository.save(user)

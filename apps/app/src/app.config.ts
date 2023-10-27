@@ -105,8 +105,8 @@ export function configuration(): AppConfiguration {
     jwt: {
       // TODO: rename to JWT_SECRET
       secret: process.env.JWT_REFRESH_TOKEN_SECRET || 'secret_refresh',
-      accessTokenTTL: parseInt(process.env.JWT_ACCESS_TOKEN_TTL) || 60 * 15, // 15 min
-      refreshTokenTTL: parseInt(process.env.JWT_REFRESH_TOKEN_TTL) || 60 * 60 * 24 * 7, // 7 days
+      accessTokenTTL: parseInt(process.env.JWT_ACCESS_TOKEN_TTL) || 60 * 15, // 10 sec
+      refreshTokenTTL: parseInt(process.env.JWT_REFRESH_TOKEN_TTL) || 60 * 60 * 24 * 365, // 1 year
     },
     twitter: {
       clientId: process.env.TWITTER_CLIENT_ID,

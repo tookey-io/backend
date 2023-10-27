@@ -69,26 +69,21 @@ export class AuthController {
   @HttpCode(200)
   @Post('flows')
   async signinFlow(@CurrentUser() userDto: UserContextDto) {
-    const user = await this.userService.getUser({ id: userDto.id });
-    if (!user) throw new NotFoundException('Telegram user not found');
-
+    console.log('currentuser', userDto)
     const userRequest = {
-      id: user.id.toString(),
-      firstName: user.firstName,
-      lastName: user.lastName,
+      id: userDto.user.id.toString(),
+      firstName: userDto.user.firstName,
+      lastName: userDto.user.lastName,
       trackEvents: true,
       newsLetter: true,
     };
     await this.flowsService.injectUser(userRequest);
     const flowUser = await this.flowsService.authUser({
       id: userRequest.id,
-      token: this.authService.getJwtServiceToken({
-        id: user.id,
-        roles: ['user', 'flows'],
-      }).token,
+      token: this.authService.getJwtServiceToken(userDto.user).token,
     });
 
-    this.eventEmitter.emit(AuthEvent.SIGNIN, user.id, 'Automation');
+    this.eventEmitter.emit(AuthEvent.SIGNIN, userDto.user.id, 'Automation');
     return flowUser;
   }
 
@@ -98,8 +93,8 @@ export class AuthController {
   @HttpCode(200)
   @Post('signin')
   async signin(@CurrentUser() user: UserContextDto): Promise<AuthTokensResponseDto> {
-    const access = this.authService.getJwtAccessToken({ id: user.id, roles: ['user', 'otp'] });
-    const refresh = this.authService.getJwtRefreshToken({ id: user.id, roles: ['user', 'otp'] });
+    const access = this.authService.getJwtAccessToken(user.user);
+    const refresh = this.authService.getJwtRefreshToken(user.user);
 
     await this.userService.setCurrentRefreshToken(refresh.token, user.id);
 
@@ -115,32 +110,35 @@ export class AuthController {
   @ApiOkResponse({ type: AuthTokenDto })
   @HttpCode(200)
   @Post('refresh')
-  refresh(@CurrentUser() user: UserContextDto): AuthTokenDto {
-    return this.authService.getJwtAccessToken({ id: user.id, roles: ['user', 'discord'] });
-  }
-
-  @ApiOperation({ description: 'Get twitter auth url' })
-  @ApiOkResponse({ type: TwitterAuthUrlResponseDto })
-  @Get('twitter')
-  async twitterAuthUrl(): Promise<TwitterAuthUrlResponseDto> {
-    const { url, state, codeVerifier } = await this.twitterService.getAuthLink();
-    this.twitterService.saveSession(state, codeVerifier);
-    return { url };
-  }
-
-  @ApiOperation({ description: 'Get access and refresh tokens with twitter' })
-  @ApiOkResponse({ type: AuthTokensResponseDto })
-  @Post('twitter')
-  async twitterAuthCallback(@Body() body: AuthTwitterCallbackDto): Promise<AuthTokensResponseDto> {
-    const session = await this.twitterService.loadSession(body.state);
-    if (!session) throw new BadRequestException('Session not found');
-
-    const user = await this.twitterService.requestUser({ code: body.code, codeVerifier: session.codeVerifier });
-    const access = this.authService.getJwtAccessToken({ id: user.userId, roles: ['user', 'twitter'] });
-    const refresh = this.authService.getJwtRefreshToken({ id: user.userId, roles: ['user', 'twitter'] });
+  async refresh(@CurrentUser() user: UserContextDto): Promise<AuthTokensResponseDto> {
+    const access = this.authService.getJwtAccessToken(user.user);
+    const refresh = this.authService.getJwtRefreshToken(user.user);
     await this.userService.setCurrentRefreshToken(refresh.token, user.id);
-    return { access, refresh, user: user.user as any };
+    return { access, refresh , user: user.user as any };
   }
+
+  // @ApiOperation({ description: 'Get twitter auth url' })
+  // @ApiOkResponse({ type: TwitterAuthUrlResponseDto })
+  // @Get('twitter')
+  // async twitterAuthUrl(): Promise<TwitterAuthUrlResponseDto> {
+  //   const { url, state, codeVerifier } = await this.twitterService.getAuthLink();
+  //   this.twitterService.saveSession(state, codeVerifier);
+  //   return { url };
+  // }
+
+  // @ApiOperation({ description: 'Get access and refresh tokens with twitter' })
+  // @ApiOkResponse({ type: AuthTokensResponseDto })
+  // @Post('twitter')
+  // async twitterAuthCallback(@Body() body: AuthTwitterCallbackDto): Promise<AuthTokensResponseDto> {
+  //   const session = await this.twitterService.loadSession(body.state);
+  //   if (!session) throw new BadRequestException('Session not found');
+
+  //   const user = await this.twitterService.requestUser({ code: body.code, codeVerifier: session.codeVerifier });
+  //   const access = this.authService.getJwtAccessToken({ id: user.userId, roles: ['user', 'twitter'] });
+  //   const refresh = this.authService.getJwtRefreshToken({ id: user.userId, roles: ['user', 'twitter'] });
+  //   await this.userService.setCurrentRefreshToken(refresh.token, user.id);
+  //   return { access, refresh, user: user.user as any };
+  // }
 
   // @ApiOperation({ description: 'Get discord auth url' })
   // @ApiOkResponse({ type: DiscordAuthUrlResponseDto })
@@ -165,7 +163,7 @@ export class AuthController {
   // }
   
   @ApiOperation({ description: 'Get OTP token to connect external service' })
-  @ApiOkResponse({ type: AuthTokensResponseDto })
+  @ApiOkResponse({ type: AuthTokenDto })
   @JwtAuth()
   @Get('access')
   async getAccessToken(@CurrentUser() user: UserContextDto) {

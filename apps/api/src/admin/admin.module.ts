@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AccessModule } from '@tookey/access';
 import {
   AofgProfileRepository,
   KeyRepository,
@@ -21,7 +22,7 @@ const AdminRepositories = TypeOrmExModule.forCustomRepository([
 ]);
 
 @Module({
-  imports: [AdminRepositories, UserModule],
+  imports: [AdminRepositories, UserModule, AccessModule],
   controllers: [AdminController],
   providers: [AdminService],
 })

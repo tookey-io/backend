@@ -19,8 +19,8 @@ export class AuthGoogleController {
   async googleAuthCallback(@Body() body: GoogleAuthLoginDto) {
     const profile = await this.googleService.getProfileByToken(body);
     const user = await this.userService.getOrCreateGoogleUser(profile);
-    const access = this.authService.getJwtAccessToken({ id: user.userId, roles: ['user', 'google'] });
-    const refresh = this.authService.getJwtRefreshToken({ id: user.userId, roles: ['user', 'google'] });
+    const access = this.authService.getJwtAccessToken(user.user);
+    const refresh = this.authService.getJwtRefreshToken(user.user);
     await this.userService.setCurrentRefreshToken(refresh.token, user.userId);
     return { access, refresh, user: user.user };
     // return { access, refresh };
