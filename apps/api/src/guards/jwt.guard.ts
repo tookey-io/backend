@@ -17,15 +17,17 @@ export class JwtGuard extends AuthGuard('jwt') {
     ]);
 
     if (isPublic) {
+      // return true
       const observableOrPromise = super.canActivate(context);
       if (isPromise(observableOrPromise)) {
-        return observableOrPromise.then((r) => r || true);
+        return observableOrPromise.catch(() => true).then(() => true);
       }
       if (isObservable(observableOrPromise)) {
         return observableOrPromise.pipe(map(() => true));
       }
 
-      return observableOrPromise || true;
+      console.log('isOther')
+      return true;
     } else {
       return super.canActivate(context);
     }
