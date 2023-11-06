@@ -74,7 +74,6 @@ export class AuthTwitterController {
   }
 
   private async internalTwitterAuthCallback(body: AuthTwitterLoginDto) {
-    console.log('uncached auth')
     const profile = await this.twitterService.getProfileByCode(body);
     const user = await this.userService.getOrCreateTwitterUser(new CreateTwitterUserDto(profile));
     const access = this.authService.getJwtAccessToken(user.user);

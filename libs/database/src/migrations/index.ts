@@ -17,3 +17,4 @@ export * from './1692121464935-pieces';
 export * from './1697435937767-user-google';
 export * from './1697737348969-email';
 export * from './1697743613593-roles';
+export * from './1699113772938-secrets';
