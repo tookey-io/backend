@@ -23,6 +23,7 @@ import { AuthEmailService } from './auth-email/auth-email.service';
 import { AuthEmailModule } from './auth-email/auth-email.module';
 import { AuthDiscordModule } from './auth-discord/auth-discord.module';
 import { AuthTwitterModule } from './auth-twitter/auth-twitter.module';
+import { SecretsModule } from './secrets/secrets.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { AuthTwitterModule } from './auth-twitter/auth-twitter.module';
     AdminModule,
     DevicesModule,
     PiecesModule,
+    SecretsModule,
   ],
   controllers: [ApiController, SignApiController],
   providers: [ApiService, SignApiService, AuthEmailService],

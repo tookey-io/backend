@@ -18,10 +18,6 @@ export class UserController {
   @ApiNotFoundResponse()
   @Get('me')
   async getCurrentUser(@CurrentUser() user: UserContextDto): Promise<UserDto> {
-    console.log({
-      user,
-      method: 'getCurrentUser',
-    });
     const userDto = await this.userService.getUser(
       { id: user.id },
       { relations: ['parent', 'google', 'email', 'twitter', 'telegram', 'discord'] },

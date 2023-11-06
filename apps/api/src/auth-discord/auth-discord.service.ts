@@ -31,13 +31,6 @@ export class AuthDiscordService {
 
   private async exchangeTokens(code: string, connect: boolean = false) {
     const { clientID, clientSecret, callbackURL } = this.configService.get('discord', { infer: true });
-    console.log({
-      method: 'exchangeTokens',
-      clientID,
-      clientSecret,
-      callbackURL,
-      connect
-    });
 
     const { data } = await firstValueFrom(
       this.httpService.request<{
@@ -69,8 +62,6 @@ export class AuthDiscordService {
 
       throw e;
     });
-
-    console.log(data);
 
     return {
       accessToken: data.access_token,

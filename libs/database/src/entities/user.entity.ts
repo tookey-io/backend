@@ -1,5 +1,5 @@
 import { Exclude, Expose } from 'class-transformer';
-import { defined } from 'libs/utils/defined';
+import { defined } from '../../../../libs/utils/defined';
 import {
   Column,
   DeepPartial,
@@ -131,7 +131,6 @@ export class UserRepository extends TreeRepository<User> {
 
   createOrUpdateOne(entityLike: DeepPartial<User>, entityManager?: EntityManager): Promise<User> {
     const entity = this.create(entityLike);
-    console.log(entity);
     return entityManager ? entityManager.save(entity) : this.save(entity);
   }
 }

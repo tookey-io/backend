@@ -69,7 +69,6 @@ export class AuthController {
   @HttpCode(200)
   @Post('flows')
   async signinFlow(@CurrentUser() userDto: UserContextDto) {
-    console.log('currentuser', userDto)
     const userRequest = {
       id: userDto.user.id.toString(),
       firstName: userDto.user.firstName,

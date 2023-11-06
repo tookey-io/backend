@@ -51,11 +51,6 @@ export class DevicesService implements OnApplicationBootstrap {
   async updateDevice(dto: DeviceUpdateRequestDto, user: UserDto) {
     const keys = await this.keyService.getKeysByPublicKeys(dto);
 
-    console.log({
-      keys,
-      dto,
-    });
-
     return this.devices.createOrUpdateOne({
       ...dto,
       user,

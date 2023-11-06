@@ -29,23 +29,15 @@ export class AuthTwitterService {
 
   private async exchangeTokens({code, codeVerifier}: AuthTwitterLoginDto, connect: boolean = false) {
     const { clientId, clientSecret, callbackUrl } = this.configService.get('twitter', { infer: true });
-    console.log({
-      method: 'exchangeTokens',
-      clientId,
-      clientSecret,
-      callbackUrl,
-      connect
-    });
-
     return new TwitterApi({ clientId, clientSecret }).loginWithOAuth2({ code, codeVerifier, redirectUri: callbackUrl + (connect ? '/connect' : '/login') }).catch(e => {
-      console.log(e)
+      console.error(e)
       throw new HttpException(e, HttpStatus.BAD_REQUEST);
     });
   }
 
   private async getUserInfo(client: TwitterApi) {
     return client.v2.me().catch(e => {
-      console.log(e)
+      console.error(e)
       throw new HttpException(e, HttpStatus.BAD_REQUEST);
     });
   }
