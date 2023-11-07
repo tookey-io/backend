@@ -38,7 +38,7 @@ export class SecretsService {
     switch (authorizationMethod) {
       case AuthorizationMethod.BODY:
         body.client_id = appConnection.clientId;
-        body.client_secret = appConnection.pieceName;
+        body.client_secret = clientSecret;
         break;
       case AuthorizationMethod.HEADER:
         headers.authorization = `Basic ${Buffer.from(`${appConnection.clientId}:${clientSecret}`).toString('base64')}`;
