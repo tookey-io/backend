@@ -4,11 +4,12 @@ import {
   Controller,
   Get,
   HttpCode,
-  HttpStatus, Patch,
+  HttpStatus,
+  Patch,
   Post,
   Query,
   Res,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
@@ -28,20 +29,30 @@ import { SecretsService } from './secrets.service';
 export class SecretsController {
   constructor(
     @InjectPinoLogger(SecretsController.name) private readonly logger: PinoLogger,
-    private service: SecretsService) {}
+    private service: SecretsService,
+  ) {}
+
   @Get('redirect')
+  @PublicRoute()
   @HttpCode(HttpStatus.OK)
   @ApiBadRequestResponse({ description: 'Email already exists' })
   async redirect(@Query('code') code: string, @Res() res: Response) {
     if (!code) {
-      return res.send('The code is missing in url')
+      return res.send('The code is missing in url');
     }
 
-    return res.type('html').type('text/html').send(`<script>if(window.opener){window.opener.postMessage({ 'code': '${encodeURIComponent(code)}' },'*')}</script> <html>Redirect succuesfully, this window should close now</html>`)
+    return res
+      .type('html')
+      .type('text/html')
+      .send(
+        `<script>if(window.opener){window.opener.postMessage({ 'code': '${encodeURIComponent(
+          code,
+        )}' },'*')}</script> <html>Redirect succuesfully, this window should close now</html>`,
+      );
   }
 
   @Get('apps')
-  @PublicRoute() 
+  @PublicRoute()
   @HttpCode(HttpStatus.OK)
   async apps(@CurrentUser() user?: UserContextDto, @Query('edition') edition?: Edition) {
     return this.service.getClientIds(edition, user?.roles.includes('admin'));
@@ -74,12 +85,10 @@ export class SecretsController {
 
   @JwtAuth()
   @AnyRoles('admin')
-  @Patch() 
+  @Patch()
   @HttpCode(HttpStatus.OK)
   @ApiBadRequestResponse({ description: 'Secret already exists' })
   async update(@Body() dto: CreateOrUpdateSecretDto) {
     return this.service.update(dto);
   }
-
-   
 }
