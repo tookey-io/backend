@@ -26,6 +26,7 @@ export class SecretsService {
     const body: Record<string, string> = {
       grant_type: 'refresh_token',
       refresh_token: appConnection.refreshToken,
+      redirect_uri: this.config.getOrThrow('publicUrl') + '/api/secrets/redirect',
     };
 
     const headers: Record<string, string> = {
