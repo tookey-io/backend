@@ -214,7 +214,7 @@ export class UserService {
 
     try {
       const user = await this.createUser({}, entityManager);
-      const userGoogle = await this.googleUsers.createOrUpdateOne({ ...dto, userId: user.id }, entityManager);
+      const userGoogle = await this.googleUsers.createOrUpdateOne({ ...dto, user }, entityManager);
 
       await queryRunner.commitTransaction();
 
