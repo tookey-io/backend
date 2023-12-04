@@ -71,8 +71,8 @@ export class AuthController {
   async signinFlow(@CurrentUser() userDto: UserContextDto) {
     const userRequest = {
       id: userDto.user.id.toString(),
-      firstName: userDto.user.firstName,
-      lastName: userDto.user.lastName,
+      firstName: userDto.user.firstName ?? 'John',
+      lastName: userDto.user.lastName ?? 'Doe',
       trackEvents: true,
       newsLetter: true,
     };
