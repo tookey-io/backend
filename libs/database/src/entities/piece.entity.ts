@@ -39,6 +39,12 @@ export class Piece extends MetaEntity {
 
   @Column({ type: 'jsonb', nullable: false })
   triggers: Object;
+
+  @Column({ type: 'enum', enum: ['OFFICIAL', 'COMMUNITY'], nullable: false, default: "OFFICIAL" })
+  pieceType: 'OFFICIAL' | 'COMMUNITY';
+
+  @Column({ type: 'enum', enum: ['REGISTRY', 'LOCAL'], nullable: false, default: "REGISTRY" })
+  packageType: 'REGISTRY' | 'LOCAL';
 }
 
 @CustomRepository(Piece)

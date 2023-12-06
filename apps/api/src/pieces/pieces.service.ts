@@ -100,6 +100,6 @@ export class PiecesService {
         name: 'ASC',
         version: 'DESC',
       } as const)
-      .getOne();
+      .getOne()
   }
 }
