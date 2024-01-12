@@ -19,3 +19,4 @@ export * from './1697737348969-email';
 export * from './1697743613593-roles';
 export * from './1699113772938-secrets';
 export * from './1701893634169-pieces';
+export * from './1705086423012-secrets-redirects';

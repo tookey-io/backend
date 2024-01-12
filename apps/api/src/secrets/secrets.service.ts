@@ -73,10 +73,11 @@ export class SecretsService {
   }
 
   async claim(dto: ClaimConnectionDto) {
-    const { clientSecret } = await this.getSecretById(dto.clientId);
+    const { clientSecret, redirectUrl } = await this.getSecretById(dto.clientId);
+    const redirect_uri = redirectUrl ?? this.config.getOrThrow('publicUrl') + '/api/secrets/redirect'
     const body: Record<string, string> = {
-      redirect_uri: this.config.getOrThrow('publicUrl') + '/api/secrets/redirect',
       grant_type: 'authorization_code',
+      redirect_uri,
       code: dto.code,
     };
 
