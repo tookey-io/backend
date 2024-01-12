@@ -49,6 +49,7 @@
     "@nestjs/typeorm": "^9.0.1",
     "@nestjs/websockets": "^9.2.1",
     "@tookey-io/libtss-ethereum": "^1.2.4",
+    "axios": "^1.6.5",
     "bcrypt": "^5.1.0",
     "bull": "^4.10.2",
     "cache-manager": "^4.1.0",

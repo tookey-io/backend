@@ -20,3 +20,4 @@ export * from './1697743613593-roles';
 export * from './1699113772938-secrets';
 export * from './1701893634169-pieces';
 export * from './1705086423012-secrets-redirects';
+export * from './1705089802726-secrets-content-type';

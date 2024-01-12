@@ -21,6 +21,9 @@ export class SecretEntity extends MetaEntity {
     
     @Column({ nullable: true })
     redirectUrl: string;
+
+    @Column({ nullable: true })
+    contentType: string;
 }
 
 @CustomRepository(SecretEntity)
