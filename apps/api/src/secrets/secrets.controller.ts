@@ -45,9 +45,16 @@ export class SecretsController {
       .type('html')
       .type('text/html')
       .send(
-        `<script>if(window.opener){window.opener.postMessage({ 'code': '${encodeURIComponent(
-          code,
-        )}' },'*')}</script> <html>Redirect succuesfully, this window should close now</html>`,
+        `
+<script>
+  if (window.opener) {
+    window.opener.postMessage({ 'code': '${encodeURIComponent(code)}' },'*')
+  } else {
+    window.localStorage.setItem('__oauth_code', params['code']);
+    window.close();
+  }
+</script>
+<html>Redirect succuesfully, this window should close now</html>`,
       );
   }
 
