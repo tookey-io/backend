@@ -7,6 +7,7 @@ import { UserService } from '../user/user.service';
 import { AuthService } from '../auth/auth.service';
 import { DataSource } from 'typeorm';
 import { UserEmailRepository } from '@tookey/database';
+import { InjectPinoLogger, Logger } from 'nestjs-pino';
 
 @Injectable()
 export class AuthEmailService {
@@ -15,6 +16,7 @@ export class AuthEmailService {
     private readonly userService: UserService,
     private readonly authService: AuthService,
     private readonly userEmailRepository: UserEmailRepository,
+    @InjectPinoLogger(AuthEmailService.name) private readonly logger: Logger
   ) {}
 
   async register(dto: AuthRegisterLoginDto) {
@@ -29,12 +31,19 @@ export class AuthEmailService {
     await queryRunner.startTransaction();
     const entityManager = queryRunner.manager;
 
-    const user = await this.userService.createUser({}, entityManager);
-    const email = await this.userEmailRepository.createOrUpdateOne({ ...dto, user, hash }, entityManager);
-    // TODO: send email or fail rollback transaction
-    await queryRunner.commitTransaction();
+    try {
+      const user = await this.userService.createUser({}, entityManager);
+      const email = await this.userEmailRepository.createOrUpdateOne({ ...dto, user, hash }, entityManager);
+      // TODO: send email or fail rollback transaction
+      await queryRunner.commitTransaction();
 
-    return email.user;
+      return email.user;
+    } catch (error) {
+      queryRunner.isTransactionActive && (await queryRunner.rollbackTransaction());
+      this.logger.error('Create Discord User transaction', error);
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async confirmEmail(hash: string) {
@@ -88,7 +97,7 @@ export class AuthEmailService {
     const hash = crypto.createHash('sha256').update(randomStringGenerator()).digest('hex');
 
     user.hash = hash;
-    return this.userEmailRepository.save(user)
+    return this.userEmailRepository.save(user);
   }
 
   async resetPassword(hash: string, password: string) {
@@ -103,12 +112,12 @@ export class AuthEmailService {
     }
 
     user.password = password;
-    
+
     const access = this.authService.getJwtAccessToken(user.user);
     const refresh = this.authService.getJwtRefreshToken(user.user);
     await this.userService.setCurrentRefreshToken(refresh.token, user.userId);
 
-    await this.userEmailRepository.save(user)
+    await this.userEmailRepository.save(user);
 
     return { access, refresh, user };
   }
